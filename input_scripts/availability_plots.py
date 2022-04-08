@@ -10,23 +10,22 @@ Script for plotting the spectroscopic availability of the matched catalogue
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import util.configure_matplotlib as cm
+import util.my_tools as mt
 from matplotlib.patches import Patch
-
-import configure_matplotlib as cm
-import my_tools as mt
 
 
 def plot_r_band_magnitude(df):
     fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.5))
     with_z = df[df["ZSPEC"] > 0]
     without_z = df[~(df["ZSPEC"] > 0)]
-    axes.hist([with_z["MAG_r"], without_z["MAG_r"]],
+    axes.hist([with_z["mag_r"], without_z["mag_r"]],
               bins=30, stacked=True, color=['orange', 'b'], label=["spec-z available", "no spec-z"], histtype="stepfilled")
     axes.set_xlabel("r band magnitude")
     axes.legend(loc="upper left")
     axes.set_title(
-        f"r-band distribution ({len(df[df['MAG_r']>0])} sources, eFEDS field)", size="small")
-    cm.save_figure(fig, "data/plots/r_band_hist", format_="pdf")
+        f"r-band distribution ({len(df[df['mag_r']>0])} sources, eFEDS field)", size="small")
+    cm.save_figure(fig, "input_analysis/r_band_hist")
 
 
 def plot_input_distribution(df):
@@ -83,18 +82,13 @@ def plot_input_distribution(df):
     fig.add_artist(legend_2)
     fig.legend(handles=legend_patches, prop={
         "size": "x-small"}, bbox_to_anchor=(0.9, 0.9), loc=2)
-    cm.save_figure(fig, "data/plots/input_distribution")
+    cm.save_figure(fig, "input_analysis/input_distribution")
     return my_df
 
 
 if __name__ == "__main__":
     df = mt.read_plike_and_ext("data/input/plike_processed_input.fits",
                                "data/input/ext_processed_input.fits")
-    weird_cols = [col for col in df.columns if col.startswith(
-        "c_") and "flux" in col and "kids" not in col]
-    renamed = {col: col[2:].split("_flux")[
-        0] + "_err" if "err" in col else col[2:].split("_flux")[0] for col in weird_cols}
-    df = df.rename(columns=renamed)
     df = mt.add_mag_columns(df)
     # plot_r_band_magnitude(df)
     my_df = plot_input_distribution(df)

@@ -10,6 +10,8 @@ Script for setting the matplotlib defaults
 
 import matplotlib
 
+import util.my_tools as mt
+
 LATEXHEIGHT = 8.94046  # in inches
 LATEXWIDTH = 5.87614
 
@@ -46,7 +48,8 @@ def set_figsize(width=LATEXWIDTH, fraction=1, subplots=(1, 1), aspect=False):
 
 def save_figure(fig, name, format_="pdf"):
     # Save and remove excess whitespace
-    fig.savefig(f"{name}.{format_}", format=format_, bbox_inches='tight')
+    fig.savefig(f"{mt.PLOTPATH}{name}.{format_}",
+                format=format_, bbox_inches='tight')
 
 
 font = {'family': 'sans',
@@ -69,4 +72,4 @@ tex_fonts = {
 
 
 matplotlib.rcParams.update(tex_fonts)
-matplotlib.rc({'figure.facecolor': 'white'})
+matplotlib.rcParams["figure.facecolor"] = "white"

@@ -1,7 +1,7 @@
 # %%
-import configure_matplotlib as cm
+import util.configure_matplotlib as cm
 import matplotlib.pyplot as plt
-import my_tools as mt
+import util.my_tools as mt
 import numpy as np
 import pandas as pd
 

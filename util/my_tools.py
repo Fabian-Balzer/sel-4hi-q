@@ -14,6 +14,9 @@ import pandas as pd
 from astropy.table import Table
 
 DATAPATH = os.environ["LEPHARE"] + "/data/"
+OUTPUTPATH = DATAPATH + "lephare_output/"
+MATCHPATH = DATAPATH + "matches/"
+PLOTPATH = os.environ["LEPHARE"] + "/plots/"
 
 VHS_BANDS = ["Y", "J", "H", "Ks"]
 SWEEP_BANDS = ["g", "r", "z", "W1", "W2", "W3", "W4"]
@@ -65,11 +68,11 @@ def save_dataframe_as_fits(df, filename, overwrite=False):
     print(f"Successfully saved the dataframe at {filename}.")
 
 
-def read_plike_and_ext(plikename, extname):
-    """Reads a pointlike and extended fits file and merges them into a single pandas dataframe.
+def read_plike_and_ext(prefix, suffix):
+    """Reads a pointlike and extended fits file conforming to the prefix-ttype-suffix notation and merges them into a single pandas dataframe.
     Adds the 'Type' column set to either 'pointlike' or 'extended' and returns the df."""
-    df1 = read_fits_as_dataframe(plikename)
-    df2 = read_fits_as_dataframe(extname)
+    df1 = read_fits_as_dataframe(f"{DATAPATH}{prefix}pointlike{suffix}")
+    df2 = read_fits_as_dataframe(f"{DATAPATH}{prefix}extended{suffix}")
     # Add type columns for distinction
     df1["Type"] = "pointlike"
     df2["Type"] = "extended"
@@ -88,25 +91,18 @@ def read_ascii_as_dataframe(filename):
 def add_mag_columns(df, verbose=False):
     """Adds magnitude columns to a dataframe with given fluxes for the
     columnlist"""
-    for column in BAND_LIST:
+    for band in BAND_LIST:
+        colname = f"c_flux_{band}"
+        errcolname = f"c_flux_err_{band}"
         try:
-            df.loc[df[column] <= 0, column] = None
-            err = column + "_err"
-            df.loc[df[err] <= 0, err] = None
-            df["MAG_" + column] = flux_to_AB(df[column])
-            df["MAG_err" + column] = flux_to_AB(df[column + "_err"])
+            df.loc[df[colname] <= 0, colname] = None
+            df.loc[df[errcolname] <= 0, errcolname] = None
+            df["mag_" + band] = flux_to_AB(df[colname])
+            df["mag_err" + band] = flux_to_AB(df[errcolname])
         except KeyError:
-            try:
-                cname = "flux_" + column
-                errname = "flux_err_" + column
-                df.loc[df[cname] <= 0, cname] = None
-                df.loc[df[errname] <= 0, errname] = None
-                df["mag_" + column] = flux_to_AB(df[cname])
-                df["mag_err_" + column] = flux_to_AB(df[errname])
-            except KeyError:
-                print(f"Could not find {column} column in dataframe.")
-                if verbose:
-                    print(f"Available columns: {' '.join(list(df.columns))}")
+            print(f"Could not find {colname} column in dataframe.")
+            if verbose:
+                print(f"Available columns: {' '.join(list(df.columns))}")
     return df
 
 

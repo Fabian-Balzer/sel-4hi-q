@@ -17,8 +17,8 @@ import pandas as pd
 from matplotlib.offsetbox import AnchoredText
 from scipy.stats import gaussian_kde, rayleigh
 
-import configure_matplotlib as cm
-import my_tools as mt
+import util.configure_matplotlib as cm
+import util.my_tools as mt
 
 NBINS = 30
 
