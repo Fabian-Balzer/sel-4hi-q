@@ -6,18 +6,10 @@ Created on Wed Feb 23 12:20:24 2022
 """
 
 # %%
-
-import os
-from glob import escape
-
-import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import util.configure_matplotlib as cm
 import util.my_tools as mt
-from matplotlib.offsetbox import AnchoredText
-from scipy.stats import gaussian_kde
 
 
 def read_filter_info_file(fname="filter_transmissions.filt"):
@@ -118,8 +110,8 @@ Here, the columns correspond to the mean wavelength $\Mean{\lambda}=\frac{\int R
 
 
 if __name__ == "__main__":
-    # filter_df = read_filter_info_file()
-    # produce_filter_plot(filter_df)
+    filter_df = read_filter_info_file()
+    produce_filter_plot(filter_df)
 
     df = read_filter_overview_file()
     save_filter_info(df)

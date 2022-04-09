@@ -27,8 +27,9 @@ input_df = mt.add_mag_columns(input_df)
 # av.plot_input_distribution(df)
 # filter_df = fc.read_filter_info_file()
 # fc.produce_filter_plot(filter_df)
-info_df = fc.read_filter_overview_file()
-fc.save_filter_info(info_df)
+# info_df = fc.read_filter_overview_file()
+# fc.save_filter_info(info_df)
+# sep.plot_all_separations(input_df, verbose=True)
 
 
 # output dataframes:
