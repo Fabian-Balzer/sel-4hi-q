@@ -13,10 +13,11 @@ import numpy as np
 import pandas as pd
 from astropy.table import Table
 
-DATAPATH = os.environ["LEPHARE"] + "/data/"
+MYDIR = os.environ["LEPHARE"] + "/"
+DATAPATH = MYDIR + "data/"
 OUTPUTPATH = DATAPATH + "lephare_output/"
 MATCHPATH = DATAPATH + "matches/"
-PLOTPATH = os.environ["LEPHARE"] + "/plots/"
+PLOTPATH = MYDIR + "plots/"
 
 VHS_BANDS = ["Y", "J", "H", "Ks"]
 SWEEP_BANDS = ["g", "r", "z", "W1", "W2", "W3", "W4"]

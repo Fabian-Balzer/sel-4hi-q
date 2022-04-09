@@ -16,6 +16,7 @@ from matplotlib.patches import Patch
 
 
 def plot_r_band_magnitude(df):
+    """Plots the number of sources for multiple r-band bins and shows how much spec-z is available for each."""
     fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.5))
     with_z = df[df["ZSPEC"] > 0]
     without_z = df[~(df["ZSPEC"] > 0)]
@@ -33,32 +34,34 @@ def plot_input_distribution(df):
     total_count = len(df)
     # Count the number of available photometry for each band:
     counts = {}
-    for type_ in ["extended", "pointlike"]:
-        type_df = df[df["Type"] == type_]
-        total_length = len(type_df)
-        type_df = type_df.rename(columns={"ZSPEC": "spec-z"})
+    for ttype in ["extended", "pointlike"]:
+        ttypedf = df[df["Type"] == ttype]
+        total_length = len(ttypedf)
+        ttypedf = ttypedf.rename(columns={"ZSPEC": "spec-z"})
         for band in mt.BAND_LIST + ["spec-z"]:
-            subset = type_df[type_df[band] > 0]
+            refname = f"mag_{band}" if band != "spec-z" else band
+            subset = ttypedf[ttypedf[refname] > 0]
+            band = band.replace('_', '-')
             if band in counts:
-                counts[f"{band}"][type_] = len(subset) / total_length
+                counts[band][ttype] = len(subset) / total_length
             else:
-                counts[f"{band}"] = {type_: len(subset) / total_length}
-    my_df = pd.DataFrame(counts).T
+                counts[band] = {ttype: len(subset) / total_length}
+    count_df = pd.DataFrame(counts).T
     colors = {"galex": "blue", "sweep": "green",
-              "vhs": "red", "hsc": "lightgreen"}
-    color_dict = {band: color for key, color in colors.items()
+              "vhs": "red", "hsc": "lightgreen", "kids": "darkgreen"}
+    color_dict = {band.replace("_", "-"): color for key, color in colors.items()
                   for band in mt.BAND_DICT[key]}
     color_dict["spec-z"] = "black"
-    my_df["Color"] = pd.DataFrame.from_dict(color_dict, orient="index")
+    count_df["Color"] = pd.DataFrame.from_dict(color_dict, orient="index")
     axes.grid(True, axis="y")
-    labels = my_df.index
+    labels = count_df.index
     x = np.arange(len(labels))
     width = 0.4  # the width of the bars
     space = 0
     rects1 = axes.bar(
-        x - width / 2 - space, my_df["extended"], width, label='Extended', color=my_df["Color"], edgecolor="k", alpha=0.7)
+        x - width / 2 - space, count_df["extended"], width, label='Extended', color=count_df["Color"], edgecolor="k", alpha=0.7)
     rects2 = axes.bar(
-        x + width / 2 + space, my_df["pointlike"], width, label='Pointlike', color=my_df["Color"], edgecolor="k")
+        x + width / 2 + space, count_df["pointlike"], width, label='Pointlike', color=count_df["Color"], edgecolor="k")
     for bar in rects1:
         bar.set_linewidth(0.5)
         bar.set_linestyle("dashed")
@@ -78,17 +81,17 @@ def plot_input_distribution(df):
     ext_plike_patches = [Patch(facecolor="white", edgecolor='k',
                                label=label, linestyle=lstyle, hatch=hatch) for label, lstyle, hatch in [("Extended", "dashed", ""), ("Pointlike", "-", "///")]]
     legend_2 = plt.legend(handles=ext_plike_patches, prop={
-        "size": "x-small"}, bbox_to_anchor=(1, 0.75), loc=2)
+        "size": "x-small"}, bbox_to_anchor=(1, 0.7), loc=2)
     fig.add_artist(legend_2)
     fig.legend(handles=legend_patches, prop={
         "size": "x-small"}, bbox_to_anchor=(0.9, 0.9), loc=2)
     cm.save_figure(fig, "input_analysis/input_distribution")
-    return my_df
+    return count_df
 
 
 if __name__ == "__main__":
-    df = mt.read_plike_and_ext("data/input/plike_processed_input.fits",
-                               "data/input/ext_processed_input.fits")
+    df = mt.read_plike_and_ext(prefix="matches/test2_",
+                               suffix="_processed_table.fits")
     df = mt.add_mag_columns(df)
-    # plot_r_band_magnitude(df)
-    my_df = plot_input_distribution(df)
+    plot_r_band_magnitude(df)
+    count_df1 = plot_input_distribution(df)
