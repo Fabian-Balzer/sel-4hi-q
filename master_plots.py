@@ -25,12 +25,23 @@ input_df = mt.read_plike_and_ext(prefix="matches/test2_",
 input_df = mt.add_mag_columns(input_df)
 # av.plot_r_band_magnitude(df)
 # av.plot_input_distribution(df)
+
+# %% Filter analysis:
 # filter_df = fc.read_filter_info_file()
 # fc.produce_filter_plot(filter_df)
 # info_df = fc.read_filter_overview_file()
 # fc.save_filter_info(info_df)
+
+# %% Separation plots:
 # sep.plot_all_separations(input_df, verbose=True)
 
 
+# %%
+
 # output dataframes:
-# df = mt.read_plike_and_ext(prefix="lephare_output/test2_", suffix=".fits")
+output_df = mt.read_plike_and_ext(
+    prefix="lephare_output/test2_", suffix=".fits")
+output_df = mt.add_filter_columns(output_df)
+
+for ttype in ["pointlike", "extended"]:
+    s_p.plot_photoz_vs_specz(output_df, ttype)

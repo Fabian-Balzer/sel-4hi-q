@@ -76,24 +76,18 @@ def plot_photoz_vs_specz(df, ttype, comparison=False, fnamesuffix=""):
                fancybox=True)
     ax.get_legend().remove()
 
-    cm.save_figure(fig, f"data/plots/spec_z_phot_z_{ttype}{fnamesuffix}")
+    cm.save_figure(fig, f"output_analysis/spec_z_phot_z_{ttype}{fnamesuffix}")
 
 
 if __name__ == "__main__":
-    df = mt.read_plike_and_ext("data/output/PLIKE_output_220126_test.fits",
-                               "data/output/EXT_output_220126_test.fits")
-    df = mt.add_filter_columns(df)
+    output_df = mt.read_plike_and_ext(
+        prefix="lephare_output/test2_", suffix=".fits")
+    output_df = mt.add_filter_columns(output_df)
 
     for ttype in ["pointlike", "extended"]:
-        plot_photoz_vs_specz(df, ttype)
-    df = mt.read_plike_and_ext("data/output/test2_pointlike.fits",
-                               "data/output/test2_extended.fits")
+        plot_photoz_vs_specz(output_df, ttype)
 
-    mt.save_dataframe_as_fits(df["ra", "dec", "Type"], "Ra_dec_sources")
-    df = mt.add_filter_columns(df)
-
-    for ttype in ["pointlike", "extended"]:
-        plot_photoz_vs_specz(df, ttype)
+    # mt.save_dataframe_as_fits(df["ra", "dec", "Type"], "Ra_dec_sources")
 
     # df = mt.read_plike_and_ext("data/input/plike_processed_input.fits",
     #                            "data/input/ext_processed_input.fits")
