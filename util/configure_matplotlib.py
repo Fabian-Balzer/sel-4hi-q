@@ -54,7 +54,7 @@ def save_figure(fig, name, format_="pdf"):
 
 font = {'family': 'sans',
         'weight': 'normal',
-        'size': 10}
+        'size': 6}
 matplotlib.rc('font', **font)
 
 tex_fonts = {
@@ -62,12 +62,12 @@ tex_fonts = {
     "text.usetex": True,
     "font.family": "serif",
     # Use 10pt font in plots, to match 10pt font in document
-    "axes.labelsize": 10,
-    "font.size": 10,
+    "axes.labelsize": 8,
+    "font.size": 8,
     # Make the legend/label fonts a little smaller
     "legend.fontsize": 8,
-    "xtick.labelsize": 8,
-    "ytick.labelsize": 8,
+    "xtick.labelsize": 6,
+    "ytick.labelsize": 6,
 }
 
 
