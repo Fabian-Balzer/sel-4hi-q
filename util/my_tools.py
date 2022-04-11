@@ -7,7 +7,6 @@ Created on Mon Jul 19 09:31:46 2021
 
 
 import os
-from multiprocessing.sharedctypes import Value
 
 import numpy as np
 import pandas as pd
@@ -69,11 +68,15 @@ def save_dataframe_as_fits(df, filename, overwrite=False):
     print(f"Successfully saved the dataframe at {filename}.")
 
 
-def read_plike_and_ext(prefix, suffix):
+def read_plike_and_ext(prefix, suffix, fmt="fits"):
     """Reads a pointlike and extended fits file conforming to the prefix-ttype-suffix notation and merges them into a single pandas dataframe.
     Adds the 'Type' column set to either 'pointlike' or 'extended' and returns the df."""
-    df1 = read_fits_as_dataframe(f"{DATAPATH}{prefix}pointlike{suffix}")
-    df2 = read_fits_as_dataframe(f"{DATAPATH}{prefix}extended{suffix}")
+    if fmt == "fits":
+        df1 = read_fits_as_dataframe(f"{DATAPATH}{prefix}pointlike{suffix}")
+        df2 = read_fits_as_dataframe(f"{DATAPATH}{prefix}extended{suffix}")
+    else:
+        df1 = read_ascii_as_dataframe(f"{DATAPATH}{prefix}pointlike{suffix}")
+        df2 = read_ascii_as_dataframe(f"{DATAPATH}{prefix}extended{suffix}")
     # Add type columns for distinction
     df1["Type"] = "pointlike"
     df2["Type"] = "extended"
@@ -99,7 +102,7 @@ def add_mag_columns(df, verbose=False):
             df.loc[df[colname] <= 0, colname] = None
             df.loc[df[errcolname] <= 0, errcolname] = None
             df["mag_" + band] = flux_to_AB(df[colname])
-            df["mag_err" + band] = flux_to_AB(df[errcolname])
+            df["mag_err_" + band] = flux_to_AB(df[errcolname])
         except KeyError:
             print(f"Could not find {colname} column in dataframe.")
             if verbose:
