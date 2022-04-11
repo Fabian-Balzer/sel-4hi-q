@@ -9,6 +9,8 @@ Script for setting the matplotlib defaults
 
 
 import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 import util.my_tools as mt
 
@@ -50,6 +52,19 @@ def save_figure(fig, name, format_="pdf"):
     # Save and remove excess whitespace
     fig.savefig(f"{mt.PLOTPATH}{name}.{format_}",
                 format=format_, bbox_inches='tight')
+
+
+def save_current_figures(name, format_="pdf"):
+    """Takes the current instances of figures and saves them all to a single file"""
+    path = f"{mt.PLOTPATH}{name}.{format_}"
+    pp = PdfPages(path)
+    fig_nums = plt.get_fignums()
+    figs = [plt.figure(n) for n in fig_nums]
+    for fig in figs:
+        fig.savefig(pp, format=format_, bbox_inches='tight')
+    pp.close()
+    plt.close('all')
+    print(f"Saved a joint figure to {path}")
 
 
 font = {'family': 'sans',

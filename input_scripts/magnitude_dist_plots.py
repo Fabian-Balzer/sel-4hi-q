@@ -74,7 +74,7 @@ def plot_color_difference(df, c1, c2, c3=None):
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.legend()
-    ax.set_title("Color-color plot")
+    ax.set_title("Colour-colour plot")
     cm.save_figure(
         fig, f"input_analysis/color_diff_{c1}-{ylabel.replace(' ', '')}")
 
@@ -88,4 +88,4 @@ if __name__ == "__main__":
     plot_color_difference(df, "r", "z")
     plot_color_difference(df, "FUV", "NUV")
     plot_color_difference(df, "i_kids", "r")
-    plot_color_difference(df, "i_kids", "i_hsc")
+    plot_color_difference(df, "i_kids", "i_hsc")  # Why is this off?

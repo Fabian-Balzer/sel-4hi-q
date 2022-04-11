@@ -27,6 +27,8 @@ BAND_DICT = {"vhs": VHS_BANDS, "sweep": SWEEP_BANDS,
              "galex": GALEX_BANDS, "hsc": HSC_BANDS, "kids": KIDS_BANDS}
 BAND_LIST = GALEX_BANDS + SWEEP_BANDS[:3] + \
     VHS_BANDS + SWEEP_BANDS[3:] + HSC_BANDS + KIDS_BANDS
+ORDERED_BANDS = GALEX_BANDS + SWEEP_BANDS[:2] + HSC_BANDS + KIDS_BANDS\
+    + SWEEP_BANDS[2:3] + VHS_BANDS + SWEEP_BANDS[3:]
 VHS_WL = [1020, 1250, 1650, 2220]
 SWEEP_WL = [472, 641.5, 926, 3400, 4600, 12000, 22000]
 HSC_WL = [806, 806]
@@ -92,6 +94,34 @@ def read_ascii_as_dataframe(filename):
     return df
 
 
+def read_template_library(fname):
+    """Reads a template library .dat file"""
+    path = DATAPATH + "lephare_files/" + fname
+    print(path)
+
+    with open(path, "r") as f:
+        coltext = f.readline()
+    cols = coltext.split()[1:]
+    cols = cols[:-3] + [f"mag_{band}"for band in BAND_LIST]
+    cols = cols + [f"mag_err_{band}"for band in BAND_LIST]
+    df = pd.read_csv(path, delim_whitespace=True,
+                     header=None, skiprows=1, names=cols)
+    df = df.rename(columns={"redshift": "ZSPEC"})
+    return df
+
+
+def provide_template_info(fname):
+    path = DATAPATH + "lephare_files/template_lists/" + fname
+    with open(path, "r") as f:
+        number_to_name = {}
+        for i, line in enumerate(f.readlines(), start=1):
+            if len(line) > 4:
+                if "/" in line:
+                    line = line.split("/")[-1]
+                number_to_name[i] = line.split(".")[0]
+    return number_to_name
+
+
 def add_mag_columns(df, verbose=False):
     """Adds magnitude columns to a dataframe with given fluxes for the
     columnlist"""
@@ -147,6 +177,11 @@ def add_filter_columns(df):
     df["filter_list"] = df.apply(convert_context_to_filter_indices, axis=1)
     # this way, for each list the length is taken
     df["nfilters"] = df["filter_list"].str.len()
+    # rename capitalized mag columns
+    cols = [col for col in df.columns if "MAG" in col]
+    newnames = [col.replace("MAG", "mag").replace(
+        "ERR_mag", "mag_err") for col in cols]
+    df = df.rename(columns=dict(zip(cols, newnames)))
     return add_outlier_information(df)
 
 

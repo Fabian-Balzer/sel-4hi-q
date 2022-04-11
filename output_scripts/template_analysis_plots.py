@@ -1,4 +1,6 @@
 # %%
+from math import ceil, floor
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -6,19 +8,62 @@ import util.configure_matplotlib as cm
 import util.my_tools as mt
 
 
-def produce_template_data(temp_df, band_1: str, band_2: str):
+def produce_template_data(temp_df, templates_to_plot):
     """Read out a given lib template file and produce an x-array containing
-    the redshift and an dict with x- and y-arrays and the template number as the keys."""
+    the redshift and an dict with dataframes for each model."""
     temp_dict = {}
-    for temp_number in set(temp_df["Model"]):
-        subset = temp_df[temp_df["Model"] == temp_number]
-        y_array = subset[band_1] - subset[band_2]
-        x_array = subset["Redshift"]
-        temp_dict[temp_number] = [x_array, y_array]
+    available_templates = set(temp_df["model"])
+    templates_to_plot = available_templates if templates_to_plot is None else available_templates.intersection(
+        set(templates_to_plot))
+    for temp_number in templates_to_plot:
+        subset = temp_df[temp_df["model"] == temp_number].sort_values(by=[
+                                                                      "ZSPEC"])
+        subset = subset[(subset["ext_law"] == 0) & (subset["E(B-V)"] == 0)]
+        temp_dict[temp_number] = subset
     return temp_dict
 
 
-def plot_against_redshift(source_df, template_df, bands):
+def plot_single_against_redshift(df, ax, template_dict, c1, c2, ttype):
+    # Select a subset of the source dataframe with valid spec-z and actual data points in both of the requested bands
+    for param in ["ZSPEC", f"mag_{c1}", f"mag_{c2}"]:
+        df = df[(df[param] > 0) & (df[param] < 99)]
+    colname = f"{c1.replace('_', '-')} - {c2.replace('_', '-')}"
+
+    # Plot all templates:
+    info_dict = mt.provide_template_info(f"{ttype}_baseline_templates.list")
+    for temp_num in template_dict:
+        t_df = template_dict[temp_num]
+        y_data = t_df[f"mag_{c1}"] - t_df[f"mag_{c2}"]
+        label = ""  # str(info_dict.get(temp_num)).replace("_", "-")
+        ax.plot(t_df["ZSPEC"], y_data, "-", lw="0.5", label=label)
+    df[colname] = df[f"mag_{c1}"] - df[f"mag_{c2}"]
+    zmax = 2.5 if ttype == "extended" else 4.5
+    ymin, ymax = -1, 1
+    # for i, row in df.iterrows():
+    #     if row["ZSPEC"] - row["ZBEST"] > 0.2:
+    #         x = [row["ZSPEC"], row["ZBEST"]]
+    #         y = [row[colname], row[colname]]
+    #         ax.plot(x, y, "k-", linewidth=0.2)
+    #         ax.plot(x[0], y[0], "rx", markersize=0.2)
+    # for col, style in [("ZBEST", "rx"), ("ZSPEC", "kx")]:
+    #     ax.plot(df[col], df[colname], style,
+    #             markersize=0.5, label=col, alpha=0.5)
+
+    bad, good = df[df["ISOUTLIER"]], df[~df["ISOUTLIER"]]
+    for subset, label, style in [(bad, "Outliers", "rx"), (good, "Good sources", "kx")]:
+        z, y = subset["ZSPEC"], subset[colname]
+        if len(y) > 0:
+            ymin = min(ymin, min(y))
+            ymax = max(ymax, max(y))
+            ax.plot(z, y, style, markersize=1,
+                    label=f"{label} ({len(y)})", alpha=0.5)
+    ax.set_xlim(0, zmax)
+    ax.set_ylim(floor(ymin), ceil(ymax))
+    ax.set_xlabel("z", labelpad=0.4)
+    ax.set_ylabel(colname, labelpad=0.4)
+
+
+def plot_multiple_against_redshift(df, template_df, ttype, bands=("g", "z"), templates_to_plot=None, onebigplot=False):
     """Creates a plot of color difference vs. redshift to analyse wether the
     templates cover the parameter space.
     Parameters:
@@ -26,37 +71,46 @@ def plot_against_redshift(source_df, template_df, bands):
         template_df: The pandas DataFrame hosting the template information
         bands: The bands of interest for the plots."""
     # Iterate over all possible combinations of the bands requested
-    for i, lower_band in enumerate(bands):
-        for higher_band in bands[i + 1:]:
-            # Select a subset of the source dataframe with valid spec-z and actual data points in both of the requested bands
-            for param in ["ZSPEC", lower_band, higher_band]:
-                df = source_df[source_df[param] > 0]
-                df = df[df[param] < 99]
-    # TODO... !
-    fig, axes = plt.subplots(figsize=(8, 8))
-    temp_dict = produce_template_data(temp_df, band_1, band_2)
-    for tempxy in temp_dict.values():
-        axes.plot(tempxy[0], tempxy[1], "-")
-    outliers = df[df["ISOUTLIER"]]
-    good = df[~df["ISOUTLIER"]]
-    xg = good["ZSPEC"]
-    yg = good[band_1] - good[band_2]
-    xb = outliers["ZSPEC"]
-    yb = outliers[band_1] - outliers[band_2]
-    axes.plot(xg, yg, "kx", markersize=2, label="Good sources")
-    axes.plot(xb, yb, "rx", markersize=3, label="Outliers")
-    zmin = 0
-    zmax = max(xg)
-    axes.set_xlim(zmin, zmax)
-    axes.set_xlabel("Redshift z")
-    axes.legend()
-    band_1, band_2 = (band.split("_")[1] for band in (band_1, band_2))
-    label = f"{band_1} - {band_2}"
-    axes.set_ylabel(label)
-    name = f"{sourcetype}_template_plot_{band_1}-{band_2}_{stem_name}"
-    axes.set_title(name)
-    name = name + ".png"
-    save_to_stempath(fig, stem_name, name, sourcetype)
+    df = df[df["Type"] == ttype]
+    template_df = template_df.sort_values(by=["ZSPEC", "model"])
+    temp_dict = produce_template_data(template_df, templates_to_plot)
+    if onebigplot:
+        # Gaussian formula for the number of plots
+        n = len(bands) - 1
+        num_plots = n * (n + 1) / 2
+        num_cols = 3
+        num_rows = 2
+        coords = [(i, j) for i in range(2) for j in range(3)]
+        num_figs = ceil(num_plots / 6)
+        fig_list = []
+        for i in range(num_figs):
+            fig, axes = plt.subplots(
+                num_rows, num_cols, figsize=cm.set_figsize(subplots=(num_rows, num_cols)), sharex=True, sharey=False)
+            fig_list.append((fig, axes))
+        plt.subplots_adjust(left=None, bottom=None, right=None,
+                            top=None, wspace=0.5, hspace=0.5)
+    n = 0
+    for k, c1 in enumerate(bands):
+        for c2 in bands[k + 1:]:
+            if not onebigplot:
+                fig, ax = plt.subplots(
+                    1, 1, figsize=cm.set_figsize(fraction=.5))
+            else:
+                fig, axes = fig_list[floor(n / 6)]
+                i, j = coords[n % 6]
+                ax = axes[i][j]
+            plot_single_against_redshift(df, ax, temp_dict, c1, c2, ttype)
+            ax.legend(prop={"size": "x-small"})
+            if not onebigplot:
+                name = f"{ttype}_template_plot_{c1}-{c2}"
+                cm.save_figure(fig, f"output_analysis/templates/{name}")
+            n += 1
+    if onebigplot:
+        name = f"{ttype}_joint_template_plot"
+        cm.save_current_figures(f"output_analysis/templates/{name}")
+    else:
+        filename = f"output_analysis/templates/{ttype}_all_temp_plots.pdf"
+        cm.save_current_figures(filename)
 
 
 def plot_problematic_templates(df, ttype):
@@ -92,7 +146,6 @@ def plot_problematic_templates(df, ttype):
 
     x = np.arange(len(labels))
     width = 0.4  # the width of the bars
-    space = 0
 
     rects1 = axes.bar(x, both["Good"], width, bottom=both["Bad"].fillna(
         0), label='Good fits', align="center")
@@ -111,11 +164,13 @@ def plot_problematic_templates(df, ttype):
 
 
 if __name__ == "__main__":
-    # output_df = mt.read_plike_and_ext(
-    #     prefix="lephare_output/test2_", suffix=".fits")
-    # output_df = mt.add_filter_columns(output_df)
+    output_df = mt.read_plike_and_ext(
+        prefix="lephare_output/test2_", suffix=".fits")
+    output_df = mt.add_filter_columns(output_df)
 
-    # for ttype in ["extended", "pointlike"]:
-    #     df2 = plot_problematic_templates(output_df, ttype)
-    template_df = mt.read_plike_and_ext(
-        prefix="lephare_files/", suffix="_mag_lib.dat", fmt="ASCII")
+    for ttype, templates_to_plot in [("extended", [54, 13, 30, 15, 23, 16, 29, 85, 11, 28, 69, 68, "Other"]), ("pointlike", [27, 25, 28, 29, 18, 22, 23])]:
+        # df2 = plot_problematic_templates(output_df, ttype)
+        # templates_to_plot = list(df2.index)
+        template_df = mt.read_template_library(f"{ttype}_mag_lib.dat")
+        plot_multiple_against_redshift(
+            output_df, template_df, ttype, bands=mt.ORDERED_BANDS, templates_to_plot=templates_to_plot, onebigplot=True)
