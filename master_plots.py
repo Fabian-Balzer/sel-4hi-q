@@ -19,6 +19,10 @@ import output_scripts.specz_photz_plots as s_p
 import output_scripts.template_analysis_plots as ta
 import util.my_tools as mt
 
+bands = [band for band in mt.BAND_LIST if band not in [
+    "i_hsc", "i2_hsc", "i_kids", "FUV", "NUV"]]
+print(mt.give_context(bands))
+# %%
 # input dataframes:
 input_df = mt.read_plike_and_ext(prefix="matches/test2_",
                                  suffix="_processed_table.fits")
