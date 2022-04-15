@@ -63,7 +63,7 @@ def plot_single_against_redshift(df, ax, template_dict, c1, c2, ttype):
     ax.set_ylabel(colname, labelpad=0.4)
 
 
-def plot_multiple_against_redshift(df, template_df, ttype, bands=("g", "z"), templates_to_plot=None, onebigplot=False):
+def plot_multiple_against_redshift(df, template_df, ttype, bands=("g", "z"), templates_to_plot=None, onebigplot=False, joint_fig=False):
     """Creates a plot of color difference vs. redshift to analyse wether the
     templates cover the parameter space.
     Parameters:
@@ -108,7 +108,7 @@ def plot_multiple_against_redshift(df, template_df, ttype, bands=("g", "z"), tem
     if onebigplot:
         name = f"{ttype}_joint_template_plot"
         cm.save_current_figures(f"output_analysis/templates/{name}")
-    else:
+    elif joint_fig:
         filename = f"output_analysis/templates/{ttype}_all_temp_plots.pdf"
         cm.save_current_figures(filename)
 
@@ -173,4 +173,12 @@ if __name__ == "__main__":
         # templates_to_plot = list(df2.index)
         template_df = mt.read_template_library(f"{ttype}_mag_lib.dat")
         plot_multiple_against_redshift(
-            output_df, template_df, ttype, bands=mt.ORDERED_BANDS, templates_to_plot=templates_to_plot, onebigplot=True)
+            output_df, template_df, ttype, bands=mt.ORDERED_BANDS, templates_to_plot=templates_to_plot, onebigplot=True, joint_fig=True)
+    #     plot_multiple_against_redshift(
+    #         output_df, template_df, ttype, bands=("W1", "W2"), onebigplot=False)
+    #     plot_multiple_against_redshift(
+    #         output_df, template_df, ttype, bands=("g", "z"), onebigplot=False)
+    #     plot_multiple_against_redshift(
+    #         output_df, template_df, ttype, bands=("i_kids", "z"), onebigplot=False)
+    # filename = f"output_analysis/templates/selection_plots.pdf"
+    # cm.save_current_figures(filename)

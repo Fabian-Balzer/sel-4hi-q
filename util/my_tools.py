@@ -97,7 +97,6 @@ def read_ascii_as_dataframe(filename):
 def read_template_library(fname):
     """Reads a template library .dat file"""
     path = DATAPATH + "lephare_files/" + fname
-    print(path)
 
     with open(path, "r") as f:
         coltext = f.readline()
