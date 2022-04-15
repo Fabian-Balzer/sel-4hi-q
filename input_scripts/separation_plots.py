@@ -13,7 +13,6 @@ import pandas as pd
 import util.configure_matplotlib as cm
 import util.my_tools as mt
 from matplotlib.offsetbox import AnchoredText
-from regex import X
 from scipy.stats import gaussian_kde, rayleigh
 
 NBINS = 30

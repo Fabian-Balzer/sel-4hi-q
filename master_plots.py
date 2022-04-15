@@ -19,6 +19,17 @@ import output_scripts.specz_photz_plots as s_p
 import output_scripts.template_analysis_plots as ta
 import util.my_tools as mt
 
+
+STEM_OUT = "without_i"
+# %%
+mt.init_plot_directory()
+
+bands = [band for band in mt.BAND_LIST if band not in [
+    "i_hsc", "i2_hsc", "i_kids"]]
+context = mt.give_context(bands)
+filters = mt.convert_context_to_filter_indices(context)
+print(f"Use {context} for only using {bands} ({filters})")
+# %%
 # input dataframes:
 input_df = mt.read_plike_and_ext(prefix="matches/test2_",
                                  suffix="_processed_table.fits")
@@ -39,9 +50,11 @@ input_df = mt.add_mag_columns(input_df)
 # %%
 
 # output dataframes:
+STEM_OUT = "without_i_suraj"
 output_df = mt.read_plike_and_ext(
-    prefix="lephare_output/test2_", suffix=".fits")
+    prefix=f"lephare_output/{STEM_OUT}_", suffix=".fits")
 output_df = mt.add_filter_columns(output_df)
 
 for ttype in ["pointlike", "extended"]:
-    s_p.plot_photoz_vs_specz(output_df, ttype)
+    # ta.plot_problematic_templates(output_df, ttype)
+    s_p.plot_photoz_vs_specz(output_df, ttype, STEM_OUT, comparison=True)
