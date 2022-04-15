@@ -7,6 +7,7 @@ Created on Mon Jul 19 09:31:46 2021
 
 
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -44,6 +45,13 @@ WL_LIST = GALEX_WL + SWEEP_WL[:3] + \
 EFEDS_PERCENTAGE = 0.0145
 BAND_WL_DICT = {BAND_LIST[i]: WL_LIST[i]
                 for i in range(len(BAND_LIST))}
+
+
+def init_plot_directory():
+    """Constructs a plot directory with the necessary subfolders if there is none already"""
+    for dirs in ["output_analysis/templates", "input_analysis/separation"]:
+        path = MYDIR + "plots/" + dirs
+        Path(path).mkdir(parents=True, exist_ok=True)
 
 
 def read_fits_as_dataframe(filename, saferead=False):

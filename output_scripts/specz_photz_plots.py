@@ -1,9 +1,9 @@
 # %%
-import util.configure_matplotlib as cm
 import matplotlib.pyplot as plt
-import util.my_tools as mt
 import numpy as np
 import pandas as pd
+import util.configure_matplotlib as cm
+import util.my_tools as mt
 
 
 def make_scatter_plot(df, ax, label_prefix="", color="blue"):
@@ -56,7 +56,7 @@ def plot_auxiliary_lines(ax, max_z=5, bounds=True):
                    label=r"$z_{spec} < 0.5$ (false positive)")
 
 
-def plot_photoz_vs_specz(df, ttype, comparison=False, fnamesuffix=""):
+def plot_photoz_vs_specz(df, ttype, stem_name="test", comparison=False, fnamesuffix=""):
     """Makes a scatter plot of photo z vs spectro-z."""
     fig, ax = plt.subplots(
         1, 1, figsize=cm.set_figsize(fraction=.8))
@@ -69,14 +69,16 @@ def plot_photoz_vs_specz(df, ttype, comparison=False, fnamesuffix=""):
     else:
         cut_i_band(df, ax)
     ax.set_title(f"{ttype.capitalize()} sources")
-    plot_auxiliary_lines(ax)
+    max_z = 5 if ttype == "pointlike" else 2
+    plot_auxiliary_lines(ax, max_z)
     # box = axes.get_position()
     # ax.set_position([box.x0, box.y0, box.width * 0.75, box.height * 0.75])
     fig.legend(loc=2, bbox_to_anchor=(0.77, 0.9), shadow=True,
                fancybox=True)
     ax.get_legend().remove()
 
-    cm.save_figure(fig, f"output_analysis/spec_z_phot_z_{ttype}{fnamesuffix}")
+    cm.save_figure(
+        fig, f"output_analysis/{stem_name}_spec_z_phot_z_{ttype}{fnamesuffix}")
 
 
 if __name__ == "__main__":

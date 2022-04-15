@@ -8,6 +8,8 @@ Script for setting the matplotlib defaults
 """
 
 
+import os
+
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -16,6 +18,8 @@ import util.my_tools as mt
 
 LATEXHEIGHT = 8.94046  # in inches
 LATEXWIDTH = 5.87614
+
+USE_LATEX = "LEPHAREDIR" not in os.environ.keys()
 
 
 def set_figsize(width=LATEXWIDTH, fraction=1, subplots=(1, 1), aspect=False):
@@ -72,19 +76,19 @@ font = {'family': 'sans',
         'size': 6}
 matplotlib.rc('font', **font)
 
-tex_fonts = {
-    # Use LaTeX to write all text
-    "text.usetex": True,
-    "font.family": "serif",
-    # Use 10pt font in plots, to match 10pt font in document
-    "axes.labelsize": 8,
-    "font.size": 8,
-    # Make the legend/label fonts a little smaller
-    "legend.fontsize": 8,
-    "xtick.labelsize": 6,
-    "ytick.labelsize": 6,
-}
+if USE_LATEX:
+    tex_fonts = {
+        # Use LaTeX to write all text
+        "text.usetex": True,
+        "font.family": "serif",
+        # Use 10pt font in plots, to match 10pt font in document
+        "axes.labelsize": 8,
+        "font.size": 8,
+        # Make the legend/label fonts a little smaller
+        "legend.fontsize": 8,
+        "xtick.labelsize": 6,
+        "ytick.labelsize": 6,
+    }
 
-
-matplotlib.rcParams.update(tex_fonts)
+    matplotlib.rcParams.update(tex_fonts)
 matplotlib.rcParams["figure.facecolor"] = "white"
