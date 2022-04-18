@@ -8,21 +8,6 @@ import util.configure_matplotlib as cm
 import util.my_tools as mt
 
 
-def produce_template_data(temp_df, templates_to_plot):
-    """Read out a given lib template file and produce an x-array containing
-    the redshift and an dict with dataframes for each model."""
-    temp_dict = {}
-    available_templates = set(temp_df["model"])
-    templates_to_plot = available_templates if templates_to_plot is None else available_templates.intersection(
-        set(templates_to_plot))
-    for temp_number in templates_to_plot:
-        subset = temp_df[temp_df["model"] == temp_number].sort_values(by=[
-                                                                      "ZSPEC"])
-        subset = subset[(subset["ext_law"] == 0) & (subset["E(B-V)"] == 0)]
-        temp_dict[temp_number] = subset
-    return temp_dict
-
-
 def plot_single_against_redshift(df, ax, template_dict, c1, c2, ttype):
     # Select a subset of the source dataframe with valid spec-z and actual data points in both of the requested bands
     for param in ["ZSPEC", f"mag_{c1}", f"mag_{c2}"]:
@@ -70,10 +55,9 @@ def plot_multiple_against_redshift(df, template_df, ttype, bands=("g", "z"), tem
         source_df: The pandas DataFrame containing output information of the sources.
         template_df: The pandas DataFrame hosting the template information
         bands: The bands of interest for the plots."""
-    # Iterate over all possible combinations of the bands requested
     df = df[df["Type"] == ttype]
     template_df = template_df.sort_values(by=["ZSPEC", "model"])
-    temp_dict = produce_template_data(template_df, templates_to_plot)
+    temp_dict = mt.construct_template_dict(template_df, templates_to_plot)
     if onebigplot:
         # Gaussian formula for the number of plots
         n = len(bands) - 1
@@ -90,6 +74,7 @@ def plot_multiple_against_redshift(df, template_df, ttype, bands=("g", "z"), tem
         plt.subplots_adjust(left=None, bottom=None, right=None,
                             top=None, wspace=0.5, hspace=0.5)
     n = 0
+    # Iterate over all possible combinations of the bands requested
     for k, c1 in enumerate(bands):
         for c2 in bands[k + 1:]:
             if not onebigplot:
