@@ -77,32 +77,44 @@ def read_filter_overview_file(fname=mt.DATAPATH + "lephare_files/compiled_filter
         for line in f.readlines():
             if line.startswith("# "):
                 colnames = line.strip("# ").split()
-    new_colnames = {"IDENT": "Id", "NAME": "Band", "Lbda_mean": r"$\Mean{\lambda}$ [$\mu$m]",
+    new_colnames = {"IDENT": "Context", "NAME": "Band", "Lbda_mean": r"$\Mean{\lambda}$ [$\mu$m]",
                     "Lbeff(Vega)": r"$\lambda_\tx{eff}^\tx{Vega}$ [$\mu$m]", "FWHM": r"FWHM [$\mu$m]", "AB-cor": r"$m_\tx{AB, c}$", "TG-cor": "TG-cor", "VEGA": r"$m_\tx{Vega}$", "M_sun(AB)": r"$M_{\odot,\tx{AB}}$", "CALIB": "Cal", "Lb_eff": r"$\lambda_0^{B_\nu}$ [$\mu$m]", "Fac_corr": r"$F_\tx{c}$"}
     colnames = [new_colnames[col] for col in colnames]
     df = pd.read_csv(fname, delim_whitespace=True,
                      skiprows=3, comment="#", names=colnames, skipfooter=1, engine='python')
+    df["Context"] = df["Context"].apply(lambda x: int(2**(x - 1)))
     # for col in colnames:
     #     if "lambda" in col:
     # df[col] *= 1000  # In case we want the values to be in nm
     key_to_name_dict = {"FUV.pb": "FUV_GALEX", "NUV.pb": "NUV_GALEX", "r.pb": "r_DECam", "z.pb": "z_DECam", "newg.pb": "g_DECam", "wHSC_i.txt": "i2_hsc",
                         "wHSC_i2.txt": "i_hsc", "Y.lowres": "Y_VISTA", "j.lowres": "J_VISTA", "h.lowres": "H_VISTA", "k.lowres": "Ks_VISTA", "W1.res": "W_1", "W2.res": "W_2", "W3.res": "W_3", "W4.res": "W_4", "KiDSVIKING_aibn139_i.res": "i_kids"}
+    key_to_name_dict = {"FUV.pb": "FUV", "NUV.pb": "NUV", "r.pb": "r", "z.pb": "z", "newg.pb": "g", "wHSC_i.txt": "i_hsc",
+                        "wHSC_i2.txt": "i2_hsc", "Y.lowres": "Y", "j.lowres": "J", "h.lowres": "H", "k.lowres": "Ks", "W1.res": "W1", "W2.res": "W2", "W3.res": "W3", "W4.res": "W4", "KiDSVIKING_aibn139_i.res": "i_kids"}
     key_to_name_dict = {"filters/" + key: val for key,
                         val in key_to_name_dict.items()}
-    for key, val in key_to_name_dict.items():
-        vals = val.split("_")
-        newval = vals[0] if len(vals) == 1 else f"{vals[0]}_\\tx{{{vals[1]}}}"
-        key_to_name_dict[key] = f"${newval}$"
+    # for key, val in key_to_name_dict.items():
+    #     vals = val.split("_")
+    #     newval = vals[0] if len(vals) == 1 else f"{vals[0]}_\\tx{{{vals[1]}}}"
+    #     key_to_name_dict[key] = f"{newval}"
     df = df.replace({"Band": key_to_name_dict})
+    df["Survey"] = df["Band"].apply(
+        lambda band: mt.SURVEY_NAME_DICT[mt.give_survey_for_band(band)])
+    df["Band"] = df["Band"].apply(
+        lambda band: mt.generate_pretty_band_name(band))
     return df
 
 
 def save_filter_info(df, fname=mt.MYDIR + "other/filter_overview.tex"):
     """Saves the filter info overview in a LaTeX-readable document."""
     caption = r"""Overview on the important parameters for the table.\\
-Here, the columns correspond to the mean wavelength $\Mean{\lambda}=\frac{\int R(\lambda)\lambda\dd \lambda}{\int R(\lambda)\dd\lambda}$, the effective wavelength w. r. t. Vega $\lambda_\tx{eff}=\frac{\int R(\lambda)\lambda F_\tx{Vega}(\lambda)\dd \lambda}{\int R(\lambda) F_\tx{Vega}(\lambda)\dd\lambda}$, the Full Width at Half Maximum, the AB correction factor with $m_\tx{AB}=m_\tx{Vega} + m_\tx{AB, c}$, the Vega Magnitude $m_\tx{Vega}=-2.5\log_{10}\BracedIn{\frac{\int R(\lambda)\dd \lambda}{\int R(\lambda)F_\tx{Vega}(\lambda)\dd\lambda}}$, the absolute magnitude of the sun in this filter, and the correction factor that is applied in \LePhare{}."""
+Here, the columns correspond to the mean wavelength $\Mean{\lambda}=\frac{\int R(\lambda)\lambda\dd \lambda}{\int R(\lambda)\dd\lambda}$, the Full Width at Half Maximum, the AB correction factor with $m_\tx{AB}=m_\tx{Vega} + m_\tx{AB, c}$, the Vega Magnitude $m_\tx{Vega}=-2.5\log_{10}\BracedIn{\frac{\int R(\lambda)\dd \lambda}{\int R(\lambda)F_\tx{Vega}(\lambda)\dd\lambda}}$, and the absolute magnitude of the sun in this filter.\\
+In \LePhare{}, """
+    cols = [col for col in df.columns if col not in [
+        "Cal", "TG-cor", r"$\lambda_0^{B_\nu}$ [$\mu$m]",  # r"$F_\tx{c}$",
+        r"$\lambda_\tx{eff}^\tx{Vega}$ [$\mu$m]"]]
+    cols = cols[-1:] + cols[:-1]  # Move the 'Survey name' column to the front
     tabletext = latex_with_lines(df, na_rep="-", index=False, caption=caption,
-                                 label="tab:filter_overview", position="htbp", float_format="{:0.2f}".format, columns=[col for col in df.columns if col not in ["Cal", "TG-cor", r"$\lambda_0^{B_\nu}$ [$\mu$m]"]], escape=False)
+                                 label="tab:filter_overview", position="htbp", float_format="{:0.2f}".format, columns=cols, escape=False)
     with open(fname, "w") as f:
         f.write(tabletext)
         print(
@@ -111,7 +123,7 @@ Here, the columns correspond to the mean wavelength $\Mean{\lambda}=\frac{\int R
 
 if __name__ == "__main__":
     filter_df = read_filter_info_file()
-    produce_filter_plot(filter_df)
+    # produce_filter_plot(filter_df)
 
     df = read_filter_overview_file()
     save_filter_info(df)

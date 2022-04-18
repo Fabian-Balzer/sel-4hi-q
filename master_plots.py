@@ -19,7 +19,6 @@ import output_scripts.specz_photz_plots as s_p
 import output_scripts.template_analysis_plots as ta
 import util.my_tools as mt
 
-
 STEM_OUT = "without_i"
 # %%
 mt.init_plot_directory()
@@ -35,13 +34,13 @@ input_df = mt.read_plike_and_ext(prefix="matches/test2_",
                                  suffix="_processed_table.fits")
 input_df = mt.add_mag_columns(input_df)
 # av.plot_r_band_magnitude(df)
-# av.plot_input_distribution(df)
+av.plot_input_distribution(input_df)
 
 # %% Filter analysis:
-# filter_df = fc.read_filter_info_file()
-# fc.produce_filter_plot(filter_df)
-# info_df = fc.read_filter_overview_file()
-# fc.save_filter_info(info_df)
+filter_df = fc.read_filter_info_file()
+fc.produce_filter_plot(filter_df)
+info_df = fc.read_filter_overview_file()
+fc.save_filter_info(info_df)
 
 # %% Separation plots:
 # sep.plot_all_separations(input_df, verbose=True)

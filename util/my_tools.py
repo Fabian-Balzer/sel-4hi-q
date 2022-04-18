@@ -38,8 +38,8 @@ KIDS_WL = [806]
 BAND_DICT = {"galex": GALEX_BANDS, "vhs": VHS_BANDS,
              "sweep": SWEEP_BANDS, "hsc": HSC_BANDS,
              "kids": KIDS_BANDS}
-SURVEY_NAME_DICT = {"galex": "GALEX",
-                    "vhs": "VHS DR6", "sweep": "LS DR9", "hsc": "HSC", "kids": "KiDS DR4"}
+SURVEY_NAME_DICT = {"galex": "GALEX (GR6+7)",
+                    "vhs": "VHS (DR6)", "sweep": "LS (DR9)", "hsc": "HSC (DR3)", "kids": "KiDS (DR4)"}
 WL_LIST = GALEX_WL + SWEEP_WL[:3] + \
     VHS_WL + SWEEP_WL[3:] + HSC_WL + KIDS_WL
 EFEDS_PERCENTAGE = 0.0145
@@ -343,6 +343,19 @@ def convert_context_to_filter_indices(context):
 def give_context(bands):
     """Returns the context belonging to the set of bands provided."""
     return sum([2**i for i, band in enumerate(BAND_LIST) if band in bands])
+
+
+def give_survey_for_band(band):
+    """Returns the survey that the band appeared in."""
+    surveys = [key for key in BAND_DICT if band in BAND_DICT[key]]
+    return surveys[0] if len(surveys) > 0 else "unknown"
+
+
+def generate_pretty_band_name(band, in_math_environ=False):
+    """Generates a band name that can be used in LaTeX."""
+    suffix = r"}" if "_" in band else ""
+    new = band.replace('_', r'_\tx{') + suffix
+    return f"${new}$" if not in_math_environ else new
 
 # path = "../../data/"
 # filename = path + "eFEDS_test_output_EXT.out"

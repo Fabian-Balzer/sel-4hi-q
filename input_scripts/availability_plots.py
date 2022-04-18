@@ -29,7 +29,11 @@ def plot_r_band_magnitude(df):
     cm.save_figure(fig, "input_analysis/r_band_hist")
 
 
-def plot_input_distribution(df):
+def plot_input_distribution(df, excluded_surveys=()):
+    """Produce a bar plot of the relative input distribution for pointlike and extended.
+    Parameters:
+        df: Input or output Dataframe with magnitude columns in each band.
+        excluded_surveys: i. e. hsc or kids not intended for plotting"""
     fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.8))
     total_count = len(df)
     # Count the number of available photometry for each band:
@@ -38,7 +42,7 @@ def plot_input_distribution(df):
         ttypedf = df[df["Type"] == ttype]
         total_length = len(ttypedf)
         ttypedf = ttypedf.rename(columns={"ZSPEC": "spec-z"})
-        for band in mt.BAND_LIST + ["spec-z"]:
+        for band in mt.ORDERED_BANDS + ["spec-z"]:
             refname = f"mag_{band}" if band != "spec-z" else band
             subset = ttypedf[ttypedf[refname] > 0]
             band = band.replace('_', '-')
