@@ -117,6 +117,20 @@ def read_template_library(fname):
     return df
 
 
+def construct_template_dict(temp_df, templates_to_plot):
+    """Construct a dict with dataframes for each of the models requested, removing templates at E(B-V) != 0."""
+    temp_dict = {}
+    available_templates = set(temp_df["model"])
+    templates_to_plot = available_templates if templates_to_plot is None else available_templates.intersection(
+        set(templates_to_plot))
+    for temp_number in templates_to_plot:
+        subset = temp_df[temp_df["model"] == temp_number].sort_values(by=[
+                                                                      "ZSPEC"])
+        subset = subset[(subset["ext_law"] == 0) & (subset["E(B-V)"] == 0)]
+        temp_dict[temp_number] = subset
+    return temp_dict
+
+
 def provide_template_info(fname):
     path = DATAPATH + "lephare_files/template_lists/" + fname
     with open(path, "r") as f:

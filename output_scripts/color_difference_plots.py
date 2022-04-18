@@ -1,13 +1,14 @@
 
 # %%
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import util.configure_matplotlib as cm
 import util.my_tools as mt
 
 
-def plot_color_difference(df, c1, c2, c3=None, c4=None, stem="", **kwargs):
+def plot_color_difference(df, c1, c2, c3=None, c4=None, stem="", temp_df=None, templates_to_plot=None, **kwargs):
     """Plots the color difference in two bands against the first color given.
     Parameters:
         df: DataFrame containing Type and magnitude columns.
@@ -33,6 +34,8 @@ def plot_color_difference(df, c1, c2, c3=None, c4=None, stem="", **kwargs):
                 subset[f"mag_{c4}"]
             ylabel = clabels[c4] if c3 is None else f"{clabels[c3]} - {clabels[c4]}"
         ax.scatter(x_data, y_data, s=0.9, label=ttype)
+    if temp_df is not None:
+        plot_template_tracks(ax, temp_df, templates_to_plot, c1, c2, c3, c4)
     xlabel = f'{clabels[c1]} - {clabels[c2]}'
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -49,12 +52,35 @@ def plot_color_difference(df, c1, c2, c3=None, c4=None, stem="", **kwargs):
         fig, f"input_analysis/color_diff_{c1}-{ylabel.replace(' ', '')}_{stem}")
 
 
+def plot_template_tracks(ax, temp_df, templates_to_plot, c1, c2, c3=None, c4=None):
+    """Plots the redshift tracks of the templates into the colour-colour space."""
+    template_dict = mt.construct_template_dict(template_df, templates_to_plot)
+    for key, subset in template_dict.items():
+        x_data = subset[f"mag_{c1}"] - subset[f"mag_{c2}"]
+        if c4 is None:
+            y_data = subset[f"mag_{c2}"] if c3 is None else subset[f"mag_{c2}"] - \
+                subset[f"mag_{c3}"]
+        else:
+            y_data = subset[f"mag_{c4}"] if c3 is None else subset[f"mag_{c3}"] - \
+                subset[f"mag_{c4}"]
+        # TODO: set colors according to redshift
+        ax.scatter(x_data, y_data,
+                   c=subset["ZSPEC"], cmap="viridis", s=0.1, label=key)
+
+
 if __name__ == "__main__":
     df = mt.read_plike_and_ext(prefix="matches/test2_",
                                suffix="_processed_table.fits")
     df = mt.add_mag_columns(df)
     # plot_magnitude_dist(df)
     stem = "test2"
-    plot_color_difference(df, "g", "r", "z", "W1", stem,
-                          xlim=(-0.5, 2), ylim=(-3, 3))
+    temps_to_plot = [27, 25]  # , 28, 29, 18, 22, 23]
+    template_df = mt.read_template_library(f"pointlike_mag_lib.dat")
+    plot_color_difference(df, "g", "r", "z", "W1", stem, temp_df=template_df,
+                          templates_to_plot=temps_to_plot, xlim=(-0.5, 2), ylim=(-3, 3))
+
+    # for ttype, templates_to_plot in [("extended", [54, 13, 30, 15, 23, 16, 29, 85, 11, 28, 69, 68, "Other"]), ("pointlike", )]:
+    # df2 = plot_problematic_templates(output_df, ttype)
+    # templates_to_plot = list(df2.index)
+
     # plot_color_difference(df, "i_kids", "i_hsc", stem=stem)  # Why is this off?

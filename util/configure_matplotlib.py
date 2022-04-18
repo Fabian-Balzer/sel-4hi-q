@@ -19,6 +19,8 @@ import util.my_tools as mt
 LATEXHEIGHT = 8.94046  # in inches
 LATEXWIDTH = 5.87614
 
+
+# TODO: Change this to actually search for the availability of LaTeX (this is just a workaround)
 USE_LATEX = "LEPHAREDIR" not in os.environ.keys()
 
 
