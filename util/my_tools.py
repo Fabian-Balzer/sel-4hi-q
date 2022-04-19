@@ -22,12 +22,17 @@ PLOTPATH = MYDIR + "plots/"
 VHS_BANDS = ["Y", "J", "H", "Ks"]
 SWEEP_BANDS = ["g", "r", "z", "W1", "W2", "W3", "W4"]
 GALEX_BANDS = ["FUV", "NUV"]
-HSC_BANDS = ["i_hsc", "i2_hsc"]
-KIDS_BANDS = ["i_kids"]
+HSC_BANDS = ["i-hsc", "i2-hsc"]
+KIDS_BANDS = ["i-kids"]
+
 BAND_DICT = {"vhs": VHS_BANDS, "sweep": SWEEP_BANDS,
              "galex": GALEX_BANDS, "hsc": HSC_BANDS, "kids": KIDS_BANDS}
 BAND_LIST = GALEX_BANDS + SWEEP_BANDS[:3] + \
     VHS_BANDS + SWEEP_BANDS[3:] + HSC_BANDS + KIDS_BANDS
+# Used for LaTeX axis labels
+BAND_LABEL_DICT = {band: "$" + band.replace(
+    '-', r'_{\rm ') + f"{'}' if '-' in band else ''}$" for band in BAND_LIST}
+BAND_LABEL_DICT["ZSPEC"] = "spec-$z$"
 ORDERED_BANDS = GALEX_BANDS + SWEEP_BANDS[:2] + HSC_BANDS + KIDS_BANDS\
     + SWEEP_BANDS[2:3] + VHS_BANDS + SWEEP_BANDS[3:]
 VHS_WL = [1020, 1250, 1650, 2220]
@@ -147,8 +152,8 @@ def add_mag_columns(df, verbose=False):
     """Adds magnitude columns to a dataframe with given fluxes for the
     columnlist"""
     for band in BAND_LIST:
-        colname = f"c_flux_{band}"
-        errcolname = f"c_flux_err_{band}"
+        colname = f"c_flux_{band.replace('-', '_')}"
+        errcolname = f"c_flux_err_{band.replace('-', '_')}"
         try:
             df.loc[df[colname] <= 0, colname] = None
             df.loc[df[errcolname] <= 0, errcolname] = None
