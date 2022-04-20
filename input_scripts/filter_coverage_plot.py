@@ -42,25 +42,23 @@ def read_filter_info_file(fname="filter_transmissions.filt"):
 def produce_filter_plot(df):
     """Create a plot showing the normalised transmission curves of the filters."""
     fig, ax = plt.subplots(figsize=cm.set_figsize(fraction=0.912))
-    # key_to_name_dict = {"FUV": "FUV_GALEX", "NUV": "NUV_GALEX",
-    #                     "r_decals": "r_DECam", "z_decals": "z_DECam", "decam_g": "g_DECam",
-    #                     "HSC_i2": "i_2, HSC", "HSC-i": "i_HSC", "KiDS" "Y_VISTA": "Y_VISTA",
-    #                     "J_VISTA": "J_VISTA", "H_VISTA": "H_VISTA", "K_VISTA": "Ks_VISTA",
-    #                     "W1": "W_1", "W2": "W_2", "W3": "W_3", "W4": "W_4"}
     for key in df.keys().get_level_values(0).drop_duplicates().sort_values():
         x_data = df[key]["Wavelength"]
         y_data = df[key]["Transmission"]
-        key = key.split(">")[1].replace("_", "-")
+        band = key.split(">")[1]
+        label = mt.BAND_LABEL_DICT[band.replace("_", "-")]
         # y_data = y_data / max(y_data)
-        ax.plot(x_data, y_data, label=f"${key}$")
+        ax.plot(x_data, y_data, label=label)
         ax.fill_between(x_data, y_data, alpha=0.5)
     # ax.set_xscale("log")
     ax.set_xlim(0, 50000)
-    ax.set_ylim(0, 1.3)
+    ax.set_ylim(0, 1)
     ax.grid(True)
+    ax.axhline(y=1, color="k", linewidth=0.5)
     ax.set_xlabel("$\lambda$ [$\AA$]")
     ax.set_ylabel("Normalised filter transmission")
-    ax.legend(ncol=4, prop={'size': "x-small"})
+    ax.legend(ncol=6, prop={'size': "small"},
+              bbox_to_anchor=(0, 1.2), loc="upper left")
     cm.save_figure(fig, "input_analysis/filter_coverage_plot")
 
 
@@ -86,10 +84,8 @@ def read_filter_overview_file(fname=mt.DATAPATH + "lephare_files/compiled_filter
     # for col in colnames:
     #     if "lambda" in col:
     # df[col] *= 1000  # In case we want the values to be in nm
-    key_to_name_dict = {"FUV.pb": "FUV_GALEX", "NUV.pb": "NUV_GALEX", "r.pb": "r_DECam", "z.pb": "z_DECam", "newg.pb": "g_DECam", "wHSC_i.txt": "i2_hsc",
-                        "wHSC_i2.txt": "i_hsc", "Y.lowres": "Y_VISTA", "j.lowres": "J_VISTA", "h.lowres": "H_VISTA", "k.lowres": "Ks_VISTA", "W1.res": "W_1", "W2.res": "W_2", "W3.res": "W_3", "W4.res": "W_4", "KiDSVIKING_aibn139_i.res": "i_kids"}
-    key_to_name_dict = {"FUV.pb": "FUV", "NUV.pb": "NUV", "r.pb": "r", "z.pb": "z", "newg.pb": "g", "wHSC_i.txt": "i_hsc",
-                        "wHSC_i2.txt": "i2_hsc", "Y.lowres": "Y", "j.lowres": "J", "h.lowres": "H", "k.lowres": "Ks", "W1.res": "W1", "W2.res": "W2", "W3.res": "W3", "W4.res": "W4", "KiDSVIKING_aibn139_i.res": "i_kids"}
+    key_to_name_dict = {"FUV.pb": "FUV", "NUV.pb": "NUV", "r.pb": "r", "z.pb": "z", "newg.pb": "g", "wHSC_i.txt": "i-hsc",
+                        "wHSC_i2.txt": "i2-hsc", "Y.lowres": "Y", "j.lowres": "J", "h.lowres": "H", "k.lowres": "Ks", "W1.res": "W1", "W2.res": "W2", "W3.res": "W3", "W4.res": "W4", "KiDSVIKING_aibn139_i.res": "i-kids"}
     key_to_name_dict = {"filters/" + key: val for key,
                         val in key_to_name_dict.items()}
     # for key, val in key_to_name_dict.items():
@@ -110,7 +106,7 @@ def save_filter_info(df, fname=mt.MYDIR + "other/filter_overview.tex"):
 Here, the columns correspond to the mean wavelength $\Mean{\lambda}=\frac{\int R(\lambda)\lambda\dd \lambda}{\int R(\lambda)\dd\lambda}$, the Full Width at Half Maximum, the AB correction factor with $m_\tx{AB}=m_\tx{Vega} + m_\tx{AB, c}$, the Vega Magnitude $m_\tx{Vega}=-2.5\log_{10}\BracedIn{\frac{\int R(\lambda)\dd \lambda}{\int R(\lambda)F_\tx{Vega}(\lambda)\dd\lambda}}$, and the absolute magnitude of the sun in this filter.\\
 In \LePhare{}, """
     cols = [col for col in df.columns if col not in [
-        "Cal", "TG-cor", r"$\lambda_0^{B_\nu}$ [$\mu$m]",  # r"$F_\tx{c}$",
+        "Cal", "TG-cor", r"$\lambda_0^{B_\nu}$ [$\mu$m]", r"$F_\tx{c}$",
         r"$\lambda_\tx{eff}^\tx{Vega}$ [$\mu$m]"]]
     cols = cols[-1:] + cols[:-1]  # Move the 'Survey name' column to the front
     tabletext = latex_with_lines(df, na_rep="-", index=False, caption=caption,
@@ -122,7 +118,7 @@ In \LePhare{}, """
 
 
 if __name__ == "__main__":
-    filter_df = read_filter_info_file()
+    # filter_df = read_filter_info_file()
     # produce_filter_plot(filter_df)
 
     df = read_filter_overview_file()
