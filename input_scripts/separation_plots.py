@@ -204,9 +204,10 @@ def plot_all_separations(df, verbose=False, names=None):
     radius_dict = {"opt_agn": 0.01, "vhs": 0.5,
                    "eros": 0.1, "hsc": 1, "galex": 3.5, "kids": 1.5}
     if names is None:
-        names = (col for col in input_df.columns if col.startswith("ra"))
+        names = [col[3:] for col in input_df.columns if col.startswith(
+            "ra") and col[3:] in radius_dict]
     for name in names:
-        radius = radius_dict[names]
+        radius = radius_dict[name]
         plot_separation(df, name, radius, verbose=verbose)
 
 
@@ -214,4 +215,5 @@ if __name__ == "__main__":
     input_df = mt.read_plike_and_ext(prefix="matches/test2_",
                                      suffix="_processed_table.fits")
     input_df = mt.add_mag_columns(input_df)
-    plot_all_separations(input_df, verbose=True)
+    plot_all_separations(input_df, verbose=True, names=[
+                         "vhs", "galex", "kids"])
