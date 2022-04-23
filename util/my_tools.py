@@ -22,12 +22,25 @@ PLOTPATH = MYDIR + "plots/"
 VHS_BANDS = ["Y", "J", "H", "Ks"]
 SWEEP_BANDS = ["g", "r", "z", "W1", "W2", "W3", "W4"]
 GALEX_BANDS = ["FUV", "NUV"]
-HSC_BANDS = ["i_hsc", "i2_hsc"]
-KIDS_BANDS = ["i_kids"]
+HSC_BANDS = ["i-hsc", "i2-hsc"]
+KIDS_BANDS = ["i-kids"]
+
+
+def generate_pretty_band_name(band, in_math_environ=False):
+    """Generates a band name that can be used in LaTeX."""
+    band = band.replace("-", "_")
+    suffix = r"}" if "_" in band else ""
+    new = band.replace('_', r'_{\rm ') + suffix
+    return f"${new}$" if not in_math_environ else new
+
+
 BAND_DICT = {"vhs": VHS_BANDS, "sweep": SWEEP_BANDS,
              "galex": GALEX_BANDS, "hsc": HSC_BANDS, "kids": KIDS_BANDS}
 BAND_LIST = GALEX_BANDS + SWEEP_BANDS[:3] + \
     VHS_BANDS + SWEEP_BANDS[3:] + HSC_BANDS + KIDS_BANDS
+# Used for LaTeX axis labels
+BAND_LABEL_DICT = {band: generate_pretty_band_name(band) for band in BAND_LIST}
+BAND_LABEL_DICT["ZSPEC"] = "spec-$z$"
 ORDERED_BANDS = GALEX_BANDS + SWEEP_BANDS[:2] + HSC_BANDS + KIDS_BANDS\
     + SWEEP_BANDS[2:3] + VHS_BANDS + SWEEP_BANDS[3:]
 VHS_WL = [1020, 1250, 1650, 2220]
@@ -160,8 +173,8 @@ def add_mag_columns(df, verbose=False):
     """Adds magnitude columns to a dataframe with given fluxes for the
     columnlist"""
     for band in BAND_LIST:
-        colname = f"c_flux_{band}"
-        errcolname = f"c_flux_err_{band}"
+        colname = f"c_flux_{band.replace('-', '_')}"
+        errcolname = f"c_flux_err_{band.replace('-', '_')}"
         try:
             df.loc[df[colname] <= 0, colname] = None
             df.loc[df[errcolname] <= 0, errcolname] = None
@@ -399,12 +412,6 @@ def give_survey_for_band(band):
     surveys = [key for key in BAND_DICT if band in BAND_DICT[key]]
     return surveys[0] if len(surveys) > 0 else "unknown"
 
-
-def generate_pretty_band_name(band, in_math_environ=False):
-    """Generates a band name that can be used in LaTeX."""
-    suffix = r"}" if "_" in band else ""
-    new = band.replace('_', r'_\tx{') + suffix
-    return f"${new}$" if not in_math_environ else new
 
 # path = "../../data/"
 # filename = path + "eFEDS_test_output_EXT.out"
