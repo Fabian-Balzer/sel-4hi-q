@@ -24,7 +24,7 @@ LATEXWIDTH = 5.87614
 USE_LATEX = "LEPHAREDIR" not in os.environ.keys()
 
 
-def set_figsize(width=LATEXWIDTH, fraction=1, subplots=(1, 1), aspect=False):
+def set_figsize(width=LATEXWIDTH, height=None, fraction=1, subplots=(1, 1), aspect=False):
     """Set figure dimensions to avoid scaling in LaTeX.
 
     Parameters
@@ -44,13 +44,15 @@ def set_figsize(width=LATEXWIDTH, fraction=1, subplots=(1, 1), aspect=False):
     # Width of figure (in pts)
     fig_width = width * fraction
 
-    # Golden ratio to set aesthetic figure height
-    # https://disq.us/p/2940ij3
-    golden_ratio = (5**.5 - 1) / 2
-
     # Figure height in inches
-    fig_height = fig_width if aspect else fig_width * \
-        golden_ratio * (subplots[0] / subplots[1])
+    if height is None:
+        # Golden ratio to set aesthetic figure height
+        # https://disq.us/p/2940ij3
+        golden_ratio = (5**.5 - 1) / 2
+        fig_height = fig_width if aspect else fig_width * \
+            golden_ratio * (subplots[0] / subplots[1])
+    else:
+        fig_height = height
     return (fig_width, fig_height)
 
 

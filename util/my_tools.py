@@ -94,6 +94,19 @@ def read_plike_and_ext(prefix, suffix, fmt="fits"):
     return df
 
 
+def read_glb_context(fname):
+    """Scans the given .fits file for the GLB_CONTEXT keyword"""
+    path = f"{DATAPATH}{fname}"
+    with open(path, "r") as f:
+        while True:
+            line = f.readline()
+            if "GLB_CONTEXT" in line:
+                break
+    context = int(line.split(":")[1].strip())
+    print(context)
+    print(give_bands_for_context(context))
+
+
 def read_ascii_as_dataframe(filename):
     """Read a .out ASCII-file as a dataframe"""
     table = Table.read(filename, format="ascii")
@@ -195,7 +208,7 @@ def add_filter_columns(df):
     mycols = [col for col in df.columns if "MAG" in col and "ERR" not in col]
     df["used_context"] = df[mycols].apply(
         lambda x: calculate_used_context(x, mycols), axis=1)
-    df["filter_list"] = df.apply(convert_context_to_filter_indices, axis=1)
+    df["filter_list"] = df.apply(convert_context_to_band_indices, axis=1)
     # this way, for each list the length is taken
     df["nfilters"] = df["filter_list"].str.len()
     # rename capitalized mag columns
@@ -211,10 +224,11 @@ def add_outlier_information(df):
     Renames Z_BEST to ZBEST."""
     if "Z_BEST" in df.columns:
         df = df.rename(columns={"Z_BEST": "ZBEST"})
-    bool_series = (df["ZBEST"] < linearfunc(df["ZSPEC"], m=0.15)) & \
-                  (df["ZBEST"] > linearfunc(df["ZSPEC"], m=-0.15))
-    df["ISOUTLIER"] = ~bool_series
+    df["ZMeasure"] = (df["ZBEST"] - df["ZSPEC"]) / (1 + df["ZSPEC"])
+    df["ISOUTLIER"] = abs(df["ZMeasure"]) > 0.15
     df["HASGOODZ"] = ((df["ZSPEC"] > 0) & (df["ZBEST"] > 0))
+    df["IsFalsePositive"] = ((df["ZSPEC"] > 0.5) & (df["ZBEST"] < 0.5))
+    df["IsFalseNegative"] = ((df["ZSPEC"] < 0.5) & (df["ZBEST"] > 0.5))
     return df
 
 
@@ -223,7 +237,7 @@ def linearfunc(z, m=0):
     return z + m * (1 + z)
 
 
-def give_output_statistics(df, sourcetype, filters_used=False):
+def give_output_statistics(df, sourcetype="", filters_used=False, verbose=True):
     """Takes a LePhare output DataFrame, filters it for good specz and photo-z
     rows and calculates the statistics (outlier fraction eta and accuracy
     sig_NMAD) for them.
@@ -233,20 +247,35 @@ def give_output_statistics(df, sourcetype, filters_used=False):
     df = df[df["HASGOODZ"]]
     outliers = len(df[df["ISOUTLIER"]])
     eta = outliers / len(df)
-    sig_nmad = 1.45 * (abs(df["ZSPEC"] - df["Z_BEST"]
-                           ) / (1 + df["ZSPEC"])).median()
-    print(f"The outlier fraction for {sourcetype} is eta = {eta:.4f}")
-    print(f"The accuracy for {sourcetype} is sig_NMAD = {sig_nmad:.4f}")
+    sig_nmad = 1.45 * (abs(df["ZMeasure"])).median()
+    if verbose:
+        print(f"The outlier fraction for {sourcetype} is eta = {eta:.4f}")
+        print(f"The accuracy for {sourcetype} is sig_NMAD = {sig_nmad:.4f}")
     if filters_used:
         df_good = df[~df["ISOUTLIER"]]
         df_bad = df[df["ISOUTLIER"]]
         bads = [item for sublist in df_bad["filter_list"] for item in sublist]
         goods = [item for sublist in df_good["filter_list"]
                  for item in sublist]
-        print("Filter\tgood photoz\tbad photoz")
-        for n, filt in enumerate(BAND_LIST):
-            print(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
+        if verbose:
+            print("Filter\tgood photoz\tbad photoz")
+            for n, filt in enumerate(BAND_LIST):
+                print(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
     return eta, sig_nmad
+
+
+def give_photoz_performance_label(df):
+    """Produces a label that can be displayed in a spec-z-phot-z plot."""
+    eta, sig_nmad = give_output_statistics(df, verbose=False)
+    etalabel = "$\eta = " + f"{eta:.3f}$\n"
+    sig_nmadlabel = r"$\sigma_{\rm NMAD} = " + f"{sig_nmad:.3f}$"
+    length = len(df)
+    fpos = df['IsFalsePositive'].sum()
+    fposlabel = "\n" + r"$\psi_{\rm pos} = " + f"{fpos/length:.3f}$ ({fpos})"
+    fneg = df['IsFalseNegative'].sum()
+    fneglabel = "\n" + r"$\psi_{\rm pos} = " + f"{fneg/length:.3f}$ ({fneg})"
+    label = f"{len(df)} sources\n{etalabel}{sig_nmadlabel}"
+    return label + fposlabel + fneglabel
 
 
 def give_row_statistics(df):
@@ -333,7 +362,7 @@ def find_lower_exponent(context):
     return i - 1
 
 
-def convert_context_to_filter_indices(context):
+def convert_context_to_band_indices(context):
     """Decodes a given context and returns the used filter numbers.
     Works for a given pandas Series with a context column and also for a given
     number.
@@ -357,6 +386,12 @@ def convert_context_to_filter_indices(context):
 def give_context(bands):
     """Returns the context belonging to the set of bands provided."""
     return sum([2**i for i, band in enumerate(BAND_LIST) if band in bands])
+
+
+def give_bands_for_context(context):
+    """Returns the context belonging to the set of bands provided."""
+    band_indices = convert_context_to_band_indices(context)
+    return [BAND_LIST[index - 1] for index in band_indices]
 
 
 def give_survey_for_band(band):

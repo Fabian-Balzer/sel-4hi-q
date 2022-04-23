@@ -123,7 +123,7 @@ In \LePhare{}, """
 
 if __name__ == "__main__":
     filter_df = read_filter_info_file()
-    # produce_filter_plot(filter_df)
+    produce_filter_plot(filter_df)
 
     df = read_filter_overview_file()
     save_filter_info(df)
