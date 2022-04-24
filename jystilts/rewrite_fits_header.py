@@ -55,22 +55,33 @@ def generate_names_for_libfile(fname):
     """Reads the libfile to get the first few names"""
     f = open(fname, "r")
     columns = f.readline()[2:].split()
+    entries = f.readline().split()
     f.close()
     vectors = [col for col in columns if "vector" in col]
     colnames = [col for col in columns if "vector" not in col]
+    # Just in case something doesn't match up:
+    has_weird_length = len(colnames) + len(FILTER_LIST) * 2 != len(entries)
+    if has_weird_length:
+        colnames = ["col " + str(i)
+                    for i in range(len(entries) - len(FILTER_LIST))]
     for filt in FILTER_LIST:
         colnames.append("mag_" + filt)
-
-    for filt in FILTER_LIST:
-        colnames.append("kcor_" + filt)
+    if not has_weird_length:
+        for filt in FILTER_LIST:
+            colnames.append("kcor_" + filt)
     return colnames
 
 
 def rewrite_colnames(filename, colnames):
     """Reads the file given in ASCII, replaces the colnames and rewrites it as a fits file."""
     table = stilts.tread(filename, fmt="ASCII")
-    for i, colname in enumerate(colnames):
-        table = table.cmd_colmeta("-name", colname, "col" + str(i + 1))
+    if len(colnames) == len(table.columns()):
+        for i, colname in enumerate(colnames):
+            table = table.cmd_colmeta("-name", colname, "col" + str(i + 1))
+    else:
+        print("Couldn't properly rename the column names. Keeping the old ones.")
+        print(colnames)
+        print(table.columns())
     pre, ext = os.path.splitext(filename)  # separate filename and extension
     newname = pre + ".fits"
     table.write(newname, fmt="fits")
