@@ -7,7 +7,7 @@ import util.configure_matplotlib as cm
 import util.my_tools as mt
 
 
-def plot_performance_against_band_num(df):
+def plot_performance_against_band_num(df, stem_name):
     """Plot the photo-z performance against the number of bands used for the fit (according to LePhare)."""
     fig, ax = plt.subplots(
         1, 1, figsize=cm.set_figsize(fraction=.8))
@@ -21,9 +21,10 @@ def plot_performance_against_band_num(df):
 
 
 if __name__ == "__main__":
+    STEM = "new_test"
     output_df = mt.read_plike_and_ext(
-        prefix="lephare_output/test2_", suffix=".fits")
+        prefix=f"lephare_output/{STEM}_", suffix=".fits")
     output_df = mt.add_filter_columns(output_df)
 
     for ttype in ["pointlike", "extended"]:
-        plot_performance_against_band_num(output_df)
+        plot_performance_against_band_num(output_df, STEM)
