@@ -2,17 +2,11 @@
 # Script to run LePhare's filter command and provide extinction information if desired.
 PARAPATH=$LEPHARE/lephare_scripts/lephare_parameters/
 
-
 # Create the filter file:
-FILTFILENAME=compiled_filter_file
+FILTFILENAME=${1:-compiled_filter_file}
 $LEPHAREDIR/source/filter -c ${PARAPATH}inputpara.para >${PARAPATH}${FILTFILENAME}.filt
 
-
-
-
 echo "A filter file has been written to '${PARAPATH}${FILTFILENAME}.'"
-
-
 
 while getopts ":e" opt; do
   case $opt in
