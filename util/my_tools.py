@@ -284,9 +284,9 @@ def give_photoz_performance_label(df):
     sig_nmadlabel = r"$\sigma_{\rm NMAD} = " + f"{sig_nmad:.3f}$"
     length = len(df)
     fpos = df['IsFalsePositive'].sum()
-    fposlabel = "\n" + r"$\psi_{\rm pos} = " + f"{fpos/length:.3f}$ ({fpos})"
+    fposlabel = "\n" + r"$\psi_{\rm Pos} = " + f"{fpos/length:.3f}$ ({fpos})"
     fneg = df['IsFalseNegative'].sum()
-    fneglabel = "\n" + r"$\psi_{\rm pos} = " + f"{fneg/length:.3f}$ ({fneg})"
+    fneglabel = "\n" + r"$\psi_{\rm Neg} = " + f"{fneg/length:.3f}$ ({fneg})"
     label = f"{len(df)} sources\n{etalabel}{sig_nmadlabel}"
     return label + fposlabel + fneglabel
 

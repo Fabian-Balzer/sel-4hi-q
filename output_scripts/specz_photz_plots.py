@@ -71,12 +71,12 @@ def plot_auxiliary_lines(main_ax, secondary_ax, max_z=5, bounds=True, label=""):
     secondary_ax.axhline(0.15, linestyle="--", color="r", lw=lwidth)
     secondary_ax.axhline(-0.15, linestyle="--", color="r", lw=lwidth)
     at = AnchoredText(
-        label, prop=dict(size="small"), frameon=True, loc='upper left')
+        label, prop=dict(size="x-small"), frameon=True, loc='upper left')
     at.patch.set_boxstyle("round, pad=0.1, rounding_size=0.1")
     at.patch.set_alpha(0.8)
     main_ax.add_artist(at)
     main_ax.legend(loc="lower right", prop=dict(
-        size="small"), frameon=True)
+        size="x-small"), frameon=True)
     legend = main_ax.get_legend()
     legend.legendPatch.set_boxstyle("round, pad=0.1, rounding_size=0.1")
     legend.legendPatch.set_edgecolor("k")
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     context = mt.read_glb_context(f"lephare_output/{STEM}_pointlike.fits")
 
     for ttype in ["pointlike", "extended"]:
-        plot_photoz_vs_specz(output_df, ttype)
+        plot_photoz_vs_specz(output_df, ttype, STEM)
 
     # mt.save_dataframe_as_fits(df["ra", "dec", "Type"], "Ra_dec_sources")
 
