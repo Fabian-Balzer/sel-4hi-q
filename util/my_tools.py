@@ -87,8 +87,9 @@ def read_fits_as_dataframe(filename, saferead=False):
 def save_dataframe_as_fits(df, filename, overwrite=False):
     """Store the given dataframe df as a fits file in 'filename'"""
     table = Table.from_pandas(df)
-    table.write(filename, overwrite=overwrite)
-    print(f"Successfully saved the dataframe at {filename}.")
+    fpath = DATAPATH + filename
+    table.write(fpath, overwrite=overwrite)
+    print(f"Successfully saved the dataframe at {fpath}.")
 
 
 def read_plike_and_ext(prefix, suffix, fmt="fits"):

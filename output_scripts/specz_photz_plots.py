@@ -123,7 +123,7 @@ if __name__ == "__main__":
         prefix=f"lephare_output/{STEM}_", suffix=".fits")
     output_df = mt.add_filter_columns(output_df)
     context = mt.read_glb_context(f"lephare_output/{STEM}_pointlike.fits")
-
+    # output_df = output_df[output_df["NBAND_USED"] > 10]
     for ttype in ["pointlike", "extended"]:
         plot_photoz_vs_specz(output_df, ttype, STEM)
 
