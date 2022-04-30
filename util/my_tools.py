@@ -87,8 +87,9 @@ def read_fits_as_dataframe(filename, saferead=False):
 def save_dataframe_as_fits(df, filename, overwrite=False):
     """Store the given dataframe df as a fits file in 'filename'"""
     table = Table.from_pandas(df)
-    table.write(filename, overwrite=overwrite)
-    print(f"Successfully saved the dataframe at {filename}.")
+    fpath = DATAPATH + filename
+    table.write(fpath, overwrite=overwrite)
+    print(f"Successfully saved the dataframe at {fpath}.")
 
 
 def read_plike_and_ext(prefix, suffix, fmt="fits"):
@@ -229,6 +230,7 @@ def add_filter_columns(df):
     newnames = [col.replace("MAG", "mag").replace(
         "ERR_mag", "mag_err") for col in cols]
     df = df.rename(columns=dict(zip(cols, newnames)))
+    df = df.rename(columns={f"mag_{band}": f"mag_{band.replace('_', '-')}" for band in ["i_hsc", "i2_hsc", "i_kids"]})
     return add_outlier_information(df)
 
 
