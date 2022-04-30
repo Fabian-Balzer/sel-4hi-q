@@ -1,0 +1,43 @@
+#####################################
+# It s building the filter file     #
+#   with the following options :    #
+# Config file : /home/hslxrsrv3/p1wx150/LePhare_work/lephare_scripts/lephare_parameters/inputpara.para
+# TRANS_TYPE  :  1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
+# FILTER_CALIB:   0  0  0  0  0  0  0  0  0  1  1  1  1  0  0  0
+# FILTER_FILE : /hs/fs14/data/4most/4hi-q/LEPHARE/work/filt/compiled_filter_file
+# FILTER_FILE.doc: /hs/fs14/data/4most/4hi-q/LEPHARE/work/filt/.doc
+# FILTER_LIST : filters/FUV.pb filters/NUV.pb filters/newg.pb filters/r.pb filters/z.pb filters/Y.lowres filters/j.lowres filters/h.lowres filters/k.lowres filters/W1.res filters/W2.res filters/W3.res filters/W4.res filters/wHSC_i.txt filters/wHSC_i2.txt kids/KiDSVIKING_aibn139_i.res 
+#####################################
+#    471             FUV     0    1
+#   1321             NUV     0    2
+#    758         decam_g     0    3
+#    717        r_decals     0    4
+#    766        z_decals     0    5
+#    116         Y_VISTA     0    6
+#    148         J_VISTA     0    7
+#    224         H_VISTA     0    8
+#    259         K_VISTA     0    9
+#     85              W1     1   10
+#     71              W2     1   11
+#    521              W3     1   12
+#    521              W4     1   13
+#    121           HSC-i     0   14
+#    568          HSC_i2     0   15
+#    128               i     0   16
+# NAME    IDENT      Lbda_mean    Lbeff(Vega)       FWHM     AB-cor  TG-cor  VEGA  M_sun(AB) CALIB    Lb_eff   Fac_corr
+FUV          1         0.1546         0.1550         0.0234   2.340 -99.990 -20.678  18.851   0         0.1546  1.000
+NUV          2         0.2345         0.2309         0.0795   1.749 -99.990 -20.966   9.988   0         0.2345  1.000
+decam_g      3         0.4892         0.4778         0.1100  -0.081  -0.237 -20.743   5.070   0         0.4892  1.000
+r_decals     4         0.6471         0.6376         0.1477   0.190   0.325 -21.637   4.620   0         0.6471  1.000
+z_decals     5         0.9196         0.9139         0.1485   0.522   0.760 -22.739   4.514   0         0.9196  1.000
+Y_VISTA      6         1.0223         1.0196         0.0919   0.604   0.818 -23.057   4.513   0         1.0223  1.000
+J_VISTA      7         1.2555         1.2481         0.1713   0.923 -99.990 -23.819   4.564   0         1.2555  1.000
+H_VISTA      8         1.6498         1.6351         0.2893   1.370 -99.990 -24.856   4.705   0         1.6498  1.000
+K_VISTA      9         2.1577         2.1435         0.2926   1.833 -99.990 -25.906   5.132   0         2.1577  1.000
+W1          10         3.4002         3.3150         0.6357   2.674 -99.990 -27.719   5.950   1         3.3791  1.007
+W2          11         4.6521         4.5648         1.1070   3.310 -99.990 -29.040   6.617   1         4.6293  1.005
+W3          12        12.8109        11.7042         6.2767   4.736 -99.990 -32.553   8.008   1        12.3337  1.044
+W4          13        22.3764        22.2096         4.7459   6.312 -99.990 -35.451   9.578   1        22.2541  1.005
+HSC-i       14         0.7736         0.7657         0.1467   0.397   0.618 -22.237   4.532   0         0.7736  1.000
+HSC_i2      15         0.7801         0.7713         0.1574   0.409   0.631 -22.266   4.531   0         0.7801  1.000
+i           16         0.7599         0.7508         0.1575   0.373   0.587 -22.172   4.537   0         0.7599  1.000

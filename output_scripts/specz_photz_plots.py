@@ -118,7 +118,7 @@ def plot_photoz_vs_specz(df, ttype, stem_name="test", fnamesuffix=""):
 
 
 if __name__ == "__main__":
-    STEM = "new_test"
+    STEM = "without_i"
     output_df = mt.read_plike_and_ext(
         prefix=f"lephare_output/{STEM}_", suffix=".fits")
     output_df = mt.add_filter_columns(output_df)

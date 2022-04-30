@@ -1,0 +1,29 @@
+ Option "-e" not defined
+ Option "-g" not defined
+ Option "-o" not defined
+########################################
+# Computing the ATMOSPHERIC/GALACTIC EXTINCTION #
+#     with the following OPTIONS       #
+# FILTER_FILE : /hs/fs14/data/4most/4hi-q/LEPHARE/work/filt/compiled_filter_file
+# EXT_CURVE   : NONE
+# GAL_CURVE   : CARDELLI law
+# OUTPUT      : NONE
+###########################################
+ Filters Ext(mag/airmass) Albda/Av Albda/E(B-V) 
+assuming Rv=    3.10   for this Extinction law 
+FUV           99.990     2.674     8.290
+NUV           99.990     2.778     8.612
+decam_g       99.990     1.171     3.629
+r_decals      99.990     0.833     2.583
+z_decals      99.990     0.466     1.444
+Y_VISTA       99.990     0.391     1.211
+J_VISTA       99.990     0.281     0.871
+H_VISTA       99.990     0.181     0.563
+K_VISTA       99.990     0.118     0.364
+W1            99.990     0.057     0.177
+W2            99.990     0.034     0.106
+W3            99.990     0.007     0.022
+W4            99.990     0.003     0.009
+HSC-i         99.990     0.638     1.979
+HSC_i2        99.990     0.629     1.950
+i             99.990     0.659     2.043
