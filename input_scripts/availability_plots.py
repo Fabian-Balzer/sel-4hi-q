@@ -15,7 +15,7 @@ import util.my_tools as mt
 from matplotlib.patches import Patch
 
 
-def plot_r_band_magnitude(df):
+def plot_r_band_magnitude(df, stem=""):
     """Plots the number of sources for multiple r-band bins and shows how much spec-z is available for each."""
     fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.5))
     with_z = df[df["ZSPEC"] > 0]
@@ -28,7 +28,7 @@ def plot_r_band_magnitude(df):
     ax.set_ylabel("Number of sources")
     ax.set_title(
         f"{mt.BAND_LABEL_DICT['r']}-band distribution ({len(df[df['mag_r']>0])} sources, eFEDS field)", size="small")
-    cm.save_figure(fig, "input_analysis/r_band_hist")
+    cm.save_figure(fig, f"input_analysis/{stem}_r_band_hist")
 
 
 def construct_band_availability_dataframe(df, desired_bands):
@@ -107,7 +107,7 @@ def construct_availability_bar_plots(band_count_df, ax, title, source_nums):
                  int(num * source_nums["pointlike"]) for num in band_count_df["pointlike"]], label_type='edge', rotation=90, padding=2.5, size="x-small")
 
 
-def plot_input_distribution(df, excluded_surveys=(), title=True):
+def plot_input_distribution(df, stem="", excluded_surveys=(), title=True):
     """Produce a bar plot of the relative input distribution for pointlike and extended.
     Parameters:
         df: Input or output Dataframe with magnitude columns in each band.
@@ -134,7 +134,7 @@ def plot_input_distribution(df, excluded_surveys=(), title=True):
     return band_count_df
 
 
-def plot_band_number_distribution(df, excluded_surveys=("hsc", "kids"), suffix="", title=False):
+def plot_band_number_distribution(df, stem="", excluded_surveys=("hsc", "kids"), suffix="", title=False):
     """Construct a bar plot with the number of possible bands for each of the sources."""
     total_count = len(df)
     allowed_bands = [f"mag_{band}" for band in mt.BAND_LIST if mt.give_survey_for_band(

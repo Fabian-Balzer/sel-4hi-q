@@ -27,13 +27,15 @@ def read_args():
     """Reads out the arguments given by the user."""
     parser = argparse.ArgumentParser(
         description="Assess a LePhare output file.")
+    parser.add_argument("-b", "--build_dirs", action="store_true",
+                        help="Builds the directories necessary for running the code.")
     stem_defaults = {"input": "baseline_input", "separation": "baseline_input",
                      "Filter": "compiled_filters", "output": "test", "template": "baseline_templates"}
-    for argtype in ["input", "separation", "Filter", "output", "template"]:
-        # Introduce a boolean call:
+    for argtype in ["input", "Filter", "output", "template"]:
+        # Introduce a boolean call on whether to produce any of the datasets:
         short = f"-{argtype[0]}"  # i, s, F, o and t can be specified now.
-        long = f"--produce_{argtype}_plots"
-        helpstring = f"Specify wether to save the {argtype} plots"
+        long = f"--produce_{argtype}_data"
+        helpstring = f"Specify whether to run scripts producing the {argtype} data"
         parser.add_argument(short, long, action="store_true",
                             help=helpstring, default=True)
         # Allow to specify the stem names:
@@ -41,8 +43,6 @@ def read_args():
         default = stem_defaults[argtype]
         helpstring = f"Specify the stem name of the {argtype} data."
         parser.add_argument(argname, help=helpstring, default=default)
-    parser.add_argument("--context", action="store_const",
-                        help="The context for the LePhare run.", const=-1, type=int)
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Increase output verbosity.")
     args, _ = parser.parse_known_args()
@@ -54,14 +54,21 @@ def read_args():
 args = read_args()
 
 # %%
+if args.build_dirs:
+    mt.init_plot_directory()
+
+bands = [band for band in mt.BAND_LIST if band not in [
+    "i_hsc", "i2_hsc", "i_kids"]]
+context = mt.give_context(bands)
+filters = mt.convert_context_to_filter_indices(context)
+print(f"Use {context} for only using {bands} ({filters})")
+# %%
 # input dataframes:
-if args.produce_input_plots:
-    input_df = mt.read_plike_and_ext(prefix=f"matches/{args.input_stem}",
-                                     suffix="_processed_table.fits")
-    input_df = mt.add_mag_columns(input_df)
-    av.plot_r_band_magnitude(input_df, args.input_stem)
-    av.plot_input_distribution(input_df, args.input_stem)
-    av.plot_band_number_distribution(input_df, args.input_stem)
+input_df = mt.read_plike_and_ext(prefix="matches/test2_",
+                                 suffix="_processed_table.fits")
+input_df = mt.add_mag_columns(input_df)
+# av.plot_r_band_magnitude(df)
+av.plot_input_distribution(input_df)
 
 # %% Filter analysis:
 filter_df = fc.read_filter_info_file()

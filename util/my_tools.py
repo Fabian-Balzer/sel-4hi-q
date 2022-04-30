@@ -250,43 +250,43 @@ def linearfunc(z, m=0):
     return z + m * (1 + z)
 
 
-def give_output_statistics(df, sourcetype="", filters_used=False, verbose=True):
+def give_output_statistics(df, filters_used=False):
     """Takes a LePhare output DataFrame, filters it for good specz and photo-z
-    rows and calculates the statistics (outlier fraction eta and accuracy
-    sig_NMAD) for them.
+    rows and calculates the statistics (outlier fraction eta, accuracy
+    sig_NMAD, false positive fraction and false negative fraction) for them.
     returns:
-        eta, sig_NMAD
+        Dictionary with 'eta', 'sig_nmad', 'psi_pos' and 'psi_neg' as keys.
     """
     df = df[df["HASGOODZ"]]
-    outliers = len(df[df["ISOUTLIER"]])
-    eta = outliers / len(df)
+    source_num = len(df)
+    outliers = df['ISOUTLIER'].sum()
+    eta = outliers / source_num
     sig_nmad = 1.45 * (abs(df["ZMeasure"])).median()
-    if verbose:
-        print(f"The outlier fraction for {sourcetype} is eta = {eta:.4f}")
-        print(f"The accuracy for {sourcetype} is sig_NMAD = {sig_nmad:.4f}")
+    psi_pos = df['IsFalsePositive'].sum() / source_num
+    psi_neg = df['IsFalseNegative'].sum() / source_num
     if filters_used:
         df_good = df[~df["ISOUTLIER"]]
         df_bad = df[df["ISOUTLIER"]]
         bads = [item for sublist in df_bad["filter_list"] for item in sublist]
         goods = [item for sublist in df_good["filter_list"]
                  for item in sublist]
-        if verbose:
-            print("Filter\tgood photoz\tbad photoz")
-            for n, filt in enumerate(BAND_LIST):
-                print(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
-    return eta, sig_nmad
+        print("Filter\tgood photoz\tbad photoz")
+        for n, filt in enumerate(BAND_LIST):
+            print(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
+    return {"eta": eta, "sig_nmad": sig_nmad, "psi_pos": psi_pos, "psi_neg": psi_neg}
 
 
 def give_photoz_performance_label(df):
     """Produces a label that can be displayed in a spec-z-phot-z plot."""
-    eta, sig_nmad = give_output_statistics(df, verbose=False)
-    etalabel = "$\eta = " + f"{eta:.3f}$\n"
-    sig_nmadlabel = r"$\sigma_{\rm NMAD} = " + f"{sig_nmad:.3f}$"
-    length = len(df)
+    stat_dict = give_output_statistics(df)
+    etalabel = "$\eta = " + f"{stat_dict['eta']:.3f}$\n"
+    sig_nmadlabel = r"$\sigma_{\rm NMAD} = " + f"{stat_dict['sig_nmad']:.3f}$"
     fpos = df['IsFalsePositive'].sum()
-    fposlabel = "\n" + r"$\psi_{\rm Pos} = " + f"{fpos/length:.3f}$ ({fpos})"
+    fposlabel = "\n" + r"$\psi_{\rm Pos} = " + \
+        f"{stat_dict['psi_pos']:.3f}$ ({fpos})"
     fneg = df['IsFalseNegative'].sum()
-    fneglabel = "\n" + r"$\psi_{\rm Neg} = " + f"{fneg/length:.3f}$ ({fneg})"
+    fneglabel = "\n" + r"$\psi_{\rm Neg} = " + \
+        f"{stat_dict['psi_neg']:.3f}$ ({fneg})"
     label = f"{len(df)} sources\n{etalabel}{sig_nmadlabel}"
     return label + fposlabel + fneglabel
 
@@ -413,18 +413,20 @@ def give_survey_for_band(band):
     return surveys[0] if len(surveys) > 0 else "unknown"
 
 
-# path = "../../data/"
-# filename = path + "eFEDS_test_output_EXT.out"
-#
-# df = read_ascii_as_dataframe(filename)  # Takes some time
+def print_verbose(verbose, statement, sep=True):
+    """Helper function to print only if verbose. Separate the text from the rest"""
+    if verbose:
+        prefix = "-*" * 40 + "\n" if sep else ""
+        suffix = "\n" + "-*" * 40 if sep else ""
+        print(f"{prefix}{statement}{suffix}")
 
 
-#
-#    z = df["SPECZ_Redshift"]
-#    data = plt.cm.jet(z)
-#    im = axes.scatter(a, b, color=data, cmap="coolwarm")
-#    fig.colorbar(im)
-#    axes.grid(True)
-#    axes.set_title(f"Available photometry in the efeds field for {name} sources")
-
-# flatten filter lists
+def get_yes_no_input(question):
+    """Tries to get user input for a yes/no question."""
+    answer = input(question + "\n>>> ")
+    while True:
+        if answer.lower() in ["y", "yes", "yep"]:
+            return True
+        if answer.lower() in ["n", "no", "nope"]:
+            return False
+        answer = input("Please answer with 'yes' or 'no'\n>>> ")
