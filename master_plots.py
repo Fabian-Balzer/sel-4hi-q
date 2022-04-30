@@ -24,9 +24,9 @@ STEM_OUT = "without_i"
 mt.init_plot_directory()
 
 bands = [band for band in mt.BAND_LIST if band not in [
-    "i_hsc", "i2_hsc", "i_kids"]]
+    "i-hsc", "i2-hsc", "i-kids"]]
 context = mt.give_context(bands)
-filters = mt.convert_context_to_filter_indices(context)
+filters = mt.convert_context_to_band_indices(context)
 print(f"Use {context} for only using {bands} ({filters})")
 # %%
 # input dataframes:

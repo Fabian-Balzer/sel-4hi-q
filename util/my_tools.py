@@ -230,6 +230,7 @@ def add_filter_columns(df):
     newnames = [col.replace("MAG", "mag").replace(
         "ERR_mag", "mag_err") for col in cols]
     df = df.rename(columns=dict(zip(cols, newnames)))
+    df = df.rename(columns={f"mag_{band}": f"mag_{band.replace('_', '-')}" for band in ["i_hsc", "i2_hsc", "i_kids"]})
     return add_outlier_information(df)
 
 

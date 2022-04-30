@@ -41,11 +41,15 @@ def plot_performance_for_each_survey(df, ttype, stem_name):
     df = df[df["Type"] == ttype]
     df = df[df["ZSPEC"] > 0]
     survey_dataframes = {}
-    for i, survey in enumerate(mt.BAND_DICT):
+    for i, survey in enumerate(mt.BAND_DICT.keys()):
         # any([x[f"mag_{band}"] > 0 for band in mt.BAND_DICT[survey]]))]
-        subframe = df[df.apply(lambda x: print(x))]
-        subframe.plot.scatter(i, "ZMeasure", ax=ax, s=1)
-
+        subframe = df
+        for band in mt.BAND_DICT[survey]:
+            subframe = subframe[subframe[f"mag_{band}"] > 0]
+        ax.scatter(np.ones(len(subframe)) * i,
+                   subframe["ZMeasure"], s=1, label=f"{survey} ({len(subframe)})")
+        survey_dataframes[survey] = subframe
+    ax.legend()
     # sizes = df["ZSPEC"].apply(lambda x: x if x < 2 else 2)
     # colors = df["PDZ_BEST"]
     # df.plot.scatter("NBAND_USED", "ZMeasure", ax=ax, s=40 / sizes, marker="_",
