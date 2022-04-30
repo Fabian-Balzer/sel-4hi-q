@@ -9,16 +9,17 @@ Script for plotting the separations of the matched catalogue
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import util.configure_matplotlib as cm
 import util.my_tools as mt
 from matplotlib.offsetbox import AnchoredText
 from scipy.stats import gaussian_kde, rayleigh
+from util.my_logger import logger
 
 NBINS = 30
 
 
 class ColumnMissingError(Exception):
+    """Error raised when a column expected to be found is not found."""
     pass
 
 
@@ -55,21 +56,21 @@ def scatter_points(x, y, ax, lim, true_radius=None):
     z = gaussian_kde(xy)(xy)
     ax.scatter(x, y, label=f"{len(x)} sources", c=z,
                marker=".", cmap="viridis", s=1)
-    ax.set_xlabel("$\Delta$ RA [arcsec]")
-    ax.set_ylabel("$\Delta$ Dec [arcsec]", labelpad=0.1)
+    ax.set_xlabel(r"$\Delta$ RA [arcsec]")
+    ax.set_ylabel(r"$\Delta$ Dec [arcsec]", labelpad=0.1)
     ax.set_xlim((-lim, lim))
     ax.set_ylim((-lim, lim))
     ax.axvline(0, -1, 1, color="gray", linestyle="dashed", alpha=0.5)
     ax.axhline(0, -1, 1, color="gray", linestyle="dashed", alpha=0.5)
     # Encircle the data with the maximum matching radius:
     circle1 = plt.Circle((0, 0), lim, color='gray',
-                         linestyle="dashed", alpha=0.5, fill=False, label="$r_{match}$")
+                         linestyle="dashed", alpha=0.5, fill=False, label=r"$r_{\rm match}$")
     ax.add_patch(circle1)
     # Encircle the data that is actually used:
     xmed, ymed = x.median(), y.median()
     if true_radius is not None:
         circle2 = plt.Circle((xmed, ymed), true_radius, color='r',
-                             linestyle="dashed", alpha=0.85, fill=False, label="$r_{3\sigma}$")
+                             linestyle="dashed", alpha=0.85, fill=False, label=r"$r_{3\sigma}$")
         ax.add_patch(circle2)
     ax.legend(prop={"size": "x-small"})
     # fig.suptitle(f"Match separation of {len(df)} sources between {ttype} and VHS data in eFEDS")
@@ -98,13 +99,13 @@ def produce_histograms(x, y, x_ax, y_ax, lim):
     x_ax.axvline(xmed, color='k', linewidth=2)
     y_ax.axhline(ymed, color='k', linewidth=2)
     annotation = f"Median:\n  ${xmed:.3f}''$\n"
-    annotation += "$\sigma=" + f"{x.std():.3f}''$"
+    annotation += r"$\sigma=" + f"{x.std():.3f}''$"
     at = AnchoredText(annotation, prop=dict(size="x-small"),
                       frameon=True, loc="upper left")
     at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
     x_ax.add_artist(at)
     annotation = f"Median:\n  ${ymed:.3f}''$\n"
-    annotation += "$\sigma=" + f"{y.std():.3f}''$"
+    annotation += r"$\sigma=" + f"{y.std():.3f}''$"
     at = AnchoredText(annotation, prop=dict(size="x-small"),
                       frameon=True, loc="upper left")
     at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
@@ -154,7 +155,7 @@ def add_cols_if_necessary(df, ttype):
     return df, all_columns_found
 
 
-def plot_separation(df, ttype, radius, verbose=False):
+def plot_separation(df, ttype, radius, stem):
     fig, axes = plt.subplots(2, 2, figsize=cm.set_figsize(
         fraction=.5, subplots=(2, 2), aspect=True))
     fig.patch.set_facecolor('white')
@@ -162,13 +163,12 @@ def plot_separation(df, ttype, radius, verbose=False):
     try:
         df, all_columns_found = add_cols_if_necessary(df, ttype)
     except ColumnMissingError:
-        print(
+        logger.warning(
             f"Could not find fitting columns to compare to for '{ttype}'. No plots are produced for it.")
         return
     df = df[df[f"delta_ra_{ttype}"].notnull()]
-    if verbose:
-        print(
-            f"In total, there are {len(df)} matched sources within a matching radius of {radius}'' for {ttype}.")
+    logger.info(
+        f"In total, there are {len(df)} matched sources within a matching radius of {radius}'' for {ttype}.")
     x_data = df[f"delta_ra_{ttype}"] * 3600
     y_data = df[f"delta_dec_{ttype}"] * 3600
     if all_columns_found:
@@ -176,44 +176,43 @@ def plot_separation(df, ttype, radius, verbose=False):
         true_radius = 3 * true_sep.std()
         # Calculate the point density:
         scatter_points(x_data, y_data, main, radius, true_radius)
-        if verbose:
-            num_good = len(true_sep[true_sep < true_radius])
-            print(true_radius / 3)
-            print(
-                f"The radius including sources with less than 3 \
-        \sigma separation from the center is {true_radius}'', \
-        corresponding to {num_good} ({num_good/len(true_sep)*100:.1f} %) sources.")
+        num_good = len(true_sep[true_sep < true_radius])
+        logger.info(
+            f"The radius including sources with less than 3 \\sigma (3*{true_radius / 3:.3f}'') separation from the center is {true_radius:.3f}'', corresponding to {num_good} ({num_good/len(true_sep)*100:.1f} %) sources.")
     else:
         scatter_points(x_data, y_data, main, radius)
     # Look at the vertical and horizontal histograms
     produce_histograms(x_data, y_data, xhist, yhist, radius)
     cm.save_figure(
-        fig, f"input_analysis/separation/separation_plot_{ttype}", format_="pdf")
+        fig, f"{ttype}_separation_plot", "input_analysis/separation", stem)
 
     # Produce a histogram with the given data
     fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.5))
     sep = df[f"sep_to_{ttype}"] if not all_columns_found else true_sep
     plot_separation_hist(axes, sep, radius, all_columns_found)
     cm.save_figure(
-        fig, f"input_analysis/separation/separation_hist_{ttype}", format_="pdf")
-    plt.show()
+        fig, f"{ttype}_separation_hist", "input_analysis/separation", stem)
 
 
-def plot_all_separations(df, verbose=False, names=None):
+def plot_all_separations(df, stem="", context=-1):
     """Produce separation plots for all columns"""
     radius_dict = {"opt_agn": 0.01, "vhs": 0.5,
                    "eros": 0.1, "hsc": 1, "galex": 3.5, "kids": 1.5}
-    if names is None:
-        names = [col[3:] for col in input_df.columns if col.startswith(
-            "ra") and col[3:] in radius_dict]
+    names = [col[3:] for col in df.columns if col.startswith(
+        "ra") and col[3:] in radius_dict]
+    if context != -1:
+        desired_bands = set(mt.give_bands_for_context(context))
+        surveys = [survey for survey, bands in mt.BAND_DICT.items if len(
+            set(bands).intersection(desired_bands)) > 0]
+        names = [name for name in names if name in surveys]
+    logger.info(f"Creating separation plots for {names}.")
     for name in names:
         radius = radius_dict[name]
-        plot_separation(df, name, radius, verbose=verbose)
+        plot_separation(df, name, radius, stem)
 
 
 if __name__ == "__main__":
     input_df = mt.read_plike_and_ext(prefix="matches/test2_",
                                      suffix="_processed_table.fits")
     input_df = mt.add_mag_columns(input_df)
-    plot_all_separations(input_df, verbose=True, names=[
-                         "vhs", "galex", "kids"])
+    plot_all_separations(input_df, context=8191)  # Exclude Kids

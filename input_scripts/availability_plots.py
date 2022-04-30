@@ -15,7 +15,7 @@ import util.my_tools as mt
 from matplotlib.patches import Patch
 
 
-def plot_r_band_magnitude(df, stem=""):
+def plot_r_band_magnitude(df, stem="", title=""):
     """Plots the number of sources for multiple r-band bins and shows how much spec-z is available for each."""
     fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.5))
     with_z = df[df["ZSPEC"] > 0]
@@ -26,9 +26,11 @@ def plot_r_band_magnitude(df, stem=""):
     ax.legend(loc="upper left")
     ax.set_xlabel(f"{mt.BAND_LABEL_DICT['r']}-band magnitude")
     ax.set_ylabel("Number of sources")
-    ax.set_title(
-        f"{mt.BAND_LABEL_DICT['r']}-band distribution ({len(df[df['mag_r']>0])} sources, eFEDS field)", size="small")
-    cm.save_figure(fig, f"input_analysis/{stem}_r_band_hist")
+    if title != "":
+        title = f"{mt.BAND_LABEL_DICT['r']}-band distribution ({len(df[df['mag_r']>0])} sources, eFEDS field)" if title == "default" else title
+        ax.set_title(title, size="small")
+    cm.save_figure(fig, directory="input_analysis",
+                   stem=stem, name="r_band_hist")
 
 
 def construct_band_availability_dataframe(df, desired_bands):
@@ -76,7 +78,7 @@ def construct_num_band_dataframe(df, allowed_bands):
 
 
 def construct_availability_bar_plots(band_count_df, ax, title, source_nums):
-    """Constructs the desired bar plots on the given ax."""
+    """Constructs bar plots for the extended and pointlike subsample on the given ax."""
     ax.grid(True, axis="y")
     labels = [mt.BAND_LABEL_DICT[band] for band in band_count_df.index]
     x = np.arange(len(labels))
@@ -96,7 +98,7 @@ def construct_availability_bar_plots(band_count_df, ax, title, source_nums):
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Relative availability')
     ax.set_ylim(0, 1)
-    if title:
+    if title != "":
         ax.set_title(title, size="small")
     ax.set_xticks(x)
     ax.set_xticklabels(list(labels), minor=False, rotation=90)
@@ -107,19 +109,17 @@ def construct_availability_bar_plots(band_count_df, ax, title, source_nums):
                  int(num * source_nums["pointlike"]) for num in band_count_df["pointlike"]], label_type='edge', rotation=90, padding=2.5, size="x-small")
 
 
-def plot_input_distribution(df, stem="", excluded_surveys=(), title=True):
+def plot_input_distribution(df, stem="", glb_context=-1, title=""):
     """Produce a bar plot of the relative input distribution for pointlike and extended.
     Parameters:
         df: Input or output Dataframe with magnitude columns in each band.
-        excluded_surveys: i. e. hsc or kids not intended for plotting"""
-    fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.8))
-    total_count = len(df)
-    desired_bands = [
-        band for band in mt.ORDERED_BANDS if not band in excluded_surveys] + ["ZSPEC"]
+        glb_context: Global context to identify the used bands"""
+    desired_bands = mt.give_bands_for_context(glb_context) + ["ZSPEC"]
     band_count_df, colours, source_nums = construct_band_availability_dataframe(
         df, desired_bands)
-    if title:
-        title = f"Photometry in the eFEDS field  ({total_count} sources in total)"
+    fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.8))
+    if title != "":
+        title = f"Photometry in the eFEDS field  ({len(df)} sources in total)" if title == "default" else title
     construct_availability_bar_plots(band_count_df, axes, title, source_nums)
     legend_patches = [Patch(facecolor=colour, edgecolor='k',
                             label=mt.SURVEY_NAME_DICT[key]) for key, colour in colours.items()]
@@ -130,18 +130,16 @@ def plot_input_distribution(df, stem="", excluded_surveys=(), title=True):
     fig.add_artist(legend_2)
     fig.legend(handles=legend_patches, prop={
         "size": "x-small"}, bbox_to_anchor=(0.9, 0.9), loc=2)
-    cm.save_figure(fig, "input_analysis/input_distribution")
+    cm.save_figure(fig, "input_distribution", "input_analysis", stem)
     return band_count_df
 
 
-def plot_band_number_distribution(df, stem="", excluded_surveys=("hsc", "kids"), suffix="", title=False):
+def plot_band_number_distribution(df, stem="", glb_context=-1, title=""):
     """Construct a bar plot with the number of possible bands for each of the sources."""
-    total_count = len(df)
-    allowed_bands = [f"mag_{band}" for band in mt.BAND_LIST if mt.give_survey_for_band(
-        band) not in excluded_surveys]
+    allowed_bands = [
+        f"mag_{band}" for band in mt.give_bands_for_context(glb_context)]
     band_count_df = construct_num_band_dataframe(df, allowed_bands)
-    fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.8))
-    ax = axes
+    fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.8))
     ax.grid(True, axis="y")
     labels = list(band_count_df.index)
     x = np.arange(len(labels))
@@ -151,14 +149,14 @@ def plot_band_number_distribution(df, stem="", excluded_surveys=("hsc", "kids"),
     rects2 = ax.bar(
         x, band_count_df["with_z"], width, label=f"With spec-$z$ ({band_count_df['with_z'].sum()})", color="k", edgecolor="k", alpha=0.7)
     ax.legend()
-    if title:
-        title = "Number of bands available for the sources in the eFEDS field"
+    if title != "":
+        title = "Number of bands available for the sources in the eFEDS field" if title == "default" else title
         ax.set_title(title)
     ax.set_xlabel("Number of bands with photometry available")
     ax.set_ylabel("Number of sources")
     ax.set_xticks(x)
     ax.set_xlim(4, max(x) + 1)
-    cm.save_figure(fig, f"input_analysis/band_number_distribution{suffix}")
+    cm.save_figure(fig, "band_number_distribution", "input_analysis", stem)
 
 
 if __name__ == "__main__":
@@ -166,6 +164,6 @@ if __name__ == "__main__":
                                suffix="_processed_table.fits")
     df = mt.add_mag_columns(df)
     # df = df[df["Type"] == "extended"]
-    plot_band_number_distribution(df, suffix="excluding_i_band", title=False)
+    plot_band_number_distribution(df)
     # plot_r_band_magnitude(df)
     # plot_input_distribution(df, title=False)

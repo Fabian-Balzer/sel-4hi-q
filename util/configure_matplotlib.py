@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 import util.my_tools as mt
+from util.my_logger import logger
 
 LATEXHEIGHT = 8.94046  # in inches
 LATEXWIDTH = 5.87614
@@ -56,10 +57,13 @@ def set_figsize(width=LATEXWIDTH, height=None, fraction=1, subplots=(1, 1), aspe
     return (fig_width, fig_height)
 
 
-def save_figure(fig, name, format_="pdf"):
-    # Save and remove excess whitespace
-    fig.savefig(f"{mt.PLOTPATH}{name}.{format_}",
-                format=format_, bbox_inches='tight')
+def save_figure(fig, name="", directory="", stem="", format_="pdf"):
+    """Save a given figure while removing excess whitespace"""
+    directory = directory + "/" if directory != "" else directory
+    stem = stem + "_" if stem != "" else stem
+    fpath = f"{mt.PLOTPATH}{directory}{stem}{name}.{format_}"
+    fig.savefig(fpath, format=format_, bbox_inches='tight')
+    logger.info(f"Successfully saved the {stem}{name} plot at {directory}.")
 
 
 def save_current_figures(name, format_="pdf"):
@@ -72,7 +76,7 @@ def save_current_figures(name, format_="pdf"):
         fig.savefig(pp, format=format_, bbox_inches='tight')
     pp.close()
     plt.close('all')
-    print(f"Saved a joint figure to {path}")
+    logger.info(f"Saved a joint figure to {path}")
 
 
 font = {'family': 'sans',

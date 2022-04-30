@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from astropy.table import Table
+from util.my_logger import logger
 
 MYDIR = os.environ["LEPHARE"] + "/"
 DATAPATH = MYDIR + "data/"
@@ -89,7 +90,7 @@ def save_dataframe_as_fits(df, filename, overwrite=False):
     table = Table.from_pandas(df)
     fpath = DATAPATH + filename
     table.write(fpath, overwrite=overwrite)
-    print(f"Successfully saved the dataframe at {fpath}.")
+    logger.info(f"Successfully saved the dataframe at {fpath}.")
 
 
 def read_plike_and_ext(prefix, suffix, fmt="fits"):
@@ -117,8 +118,8 @@ def read_glb_context(fname):
             if "GLB_CONTEXT" in line:
                 break
     context = int(line.split(":")[1].strip())
-    print(context)
-    print(give_bands_for_context(context))
+    logger.info(context)
+    logger.info(give_bands_for_context(context))
 
 
 def read_ascii_as_dataframe(filename):
@@ -182,9 +183,9 @@ def add_mag_columns(df, verbose=False):
             df["mag_" + band] = flux_to_AB(df[colname])
             df["mag_err_" + band] = flux_to_AB(df[errcolname])
         except KeyError:
-            print(f"Could not find {colname} column in dataframe.")
+            logger.info(f"Could not find {colname} column in dataframe.")
             if verbose:
-                print(f"Available columns: {' '.join(list(df.columns))}")
+                logger.info(f"Available columns: {' '.join(list(df.columns))}")
     return df
 
 
@@ -230,7 +231,8 @@ def add_filter_columns(df):
     newnames = [col.replace("MAG", "mag").replace(
         "ERR_mag", "mag_err") for col in cols]
     df = df.rename(columns=dict(zip(cols, newnames)))
-    df = df.rename(columns={f"mag_{band}": f"mag_{band.replace('_', '-')}" for band in ["i_hsc", "i2_hsc", "i_kids"]})
+    df = df.rename(columns={
+                   f"mag_{band}": f"mag_{band.replace('_', '-')}" for band in ["i_hsc", "i2_hsc", "i_kids"]})
     return add_outlier_information(df)
 
 
@@ -272,9 +274,9 @@ def give_output_statistics(df, filters_used=False):
         bads = [item for sublist in df_bad["filter_list"] for item in sublist]
         goods = [item for sublist in df_good["filter_list"]
                  for item in sublist]
-        print("Filter\tgood photoz\tbad photoz")
+        logger.info("Filter\tgood photoz\tbad photoz")
         for n, filt in enumerate(BAND_LIST):
-            print(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
+            logger.info(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
     return {"eta": eta, "sig_nmad": sig_nmad, "psi_pos": psi_pos, "psi_neg": psi_neg}
 
 
@@ -297,11 +299,11 @@ def give_row_statistics(df):
     """Takes a dataframe and computes the mean values for each band."""
     for column in BAND_LIST:
         try:
-            print(f"{column}:\t{df[column].mean()*1e28:.4g}\t\pm \
+            logger.info(f"{column}:\t{df[column].mean()*1e28:.4g}\t\pm \
               {df[column].std()*1e28:.4g}\t 10**(-28) ergs/cm**2/Hz/s")
         except KeyError as k:
-            print(f"Could not find the column {column} in the dataframe."
-                  "\nMoving on to the next one.")
+            logger.info(f"Could not find the column {column} in the dataframe."
+                        "\nMoving on to the next one.")
 
 
 def find_good_indices(df):
@@ -338,9 +340,9 @@ def give_input_statistics(df, sourcetype):
     """Takes an input dataframe and constructs input statistics, including the number of sources and the the number this would correspond to on the whole sky.
     """
     source_num = len(df)
-    print(f"There are {source_num} sources in the {sourcetype} eFEDS dataset, \
+    logger.info(f"There are {source_num} sources in the {sourcetype} eFEDS dataset, \
         corresponding to {int(source_num/EFEDS_PERCENTAGE)} sources in the whole sky.")
-    print(
+    logger.info(
         f"There are {len(find_good_indices(df))} sources with photometry in all bands.")
     bands = sorted(calculate_number_of_photometry(df))
     sources = [calculate_number_of_photometry(df)[band] for band in bands]
@@ -350,10 +352,10 @@ def give_input_statistics(df, sourcetype):
     tablestring += "# sources:" + \
         "|".join([f"{source:4}" for source in sources]) + "\n"
     tablestring += "_" * 80 + "\n"
-    print(tablestring)
+    logger.info(tablestring)
     for band_num, source_num in \
             sorted(calculate_number_of_photometry(df).items()):
-        print(
+        logger.info(
             f"There are {source_num} sources with {band_num} bands of photometry available.")
 
 
@@ -373,7 +375,7 @@ def find_lower_exponent(context):
         if 2**i > context:
             break
         i += 1
-#    print(f"For a context of {context}, the lower exponent is {i-1}.")
+#    logger.info(f"For a context of {context}, the lower exponent is {i-1}.")
     return i - 1
 
 
@@ -388,7 +390,9 @@ def convert_context_to_band_indices(context):
         context = int(context["used_context"])
     if type(context) is not int:
         context = int(context)
-        print(f"Forcing context to become {context}")
+        logger.info(f"Forcing context to become {context}")
+    if context == -1:  # Return all bands if context is -1
+        return list(range(1, len(BAND_LIST) + 1))
     filter_numbers = []
     while context > 0:
         last = find_lower_exponent(context)
@@ -413,14 +417,6 @@ def give_survey_for_band(band):
     """Returns the survey that the band appeared in."""
     surveys = [key for key in BAND_DICT if band in BAND_DICT[key]]
     return surveys[0] if len(surveys) > 0 else "unknown"
-
-
-def print_verbose(verbose, statement, sep=True):
-    """Helper function to print only if verbose. Separate the text from the rest"""
-    if verbose:
-        prefix = "-*" * 40 + "\n" if sep else ""
-        suffix = "\n" + "-*" * 40 if sep else ""
-        print(f"{prefix}{statement}{suffix}")
 
 
 def get_yes_no_input(question):

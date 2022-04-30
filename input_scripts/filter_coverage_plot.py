@@ -10,15 +10,16 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import util.configure_matplotlib as cm
 import util.my_tools as mt
+from util.my_logger import logger
 
 
-def read_filter_info_file(fname="filter_transmissions.filt"):
+def read_filter_info_file(stem, directory="lephare_files"):
     """Reads and returns a .filt file from LePhare and converts it to a pandas
     dataframe."""
-    path = mt.DATAPATH + "lephare_files/" + fname
+    fpath = mt.DATAPATH + directory + "/" + stem + "_transmissions.filt"
     filter_wls = {}
     filter_trans = {}
-    with open(path, "r") as f:
+    with open(fpath, "r") as f:
         for line in f.readlines():
             if line.startswith("# "):
                 # We can be sure that this is always called first
@@ -31,7 +32,7 @@ def read_filter_info_file(fname="filter_transmissions.filt"):
                     filter_wls[name] = [float(val)
                                         for val in line.strip("\n").split(", ")]
     df_dict = {}
-    for key in filter_wls.keys():
+    for key in filter_wls:
         filter_df = pd.DataFrame(
             {"Wavelength": filter_wls[key], "Transmission": filter_trans[key]})
         df_dict[f"{filter_df['Wavelength'].mean():6.0f}>{key}"] = filter_df
@@ -39,7 +40,7 @@ def read_filter_info_file(fname="filter_transmissions.filt"):
     return df
 
 
-def produce_filter_plot(df):
+def produce_filter_plot(df, stem):
     """Create a plot showing the normalised transmission curves of the filters."""
     fig, ax = plt.subplots(figsize=cm.set_figsize(fraction=0.912))
     for key in df.keys().get_level_values(0).drop_duplicates().sort_values():
@@ -59,7 +60,7 @@ def produce_filter_plot(df):
     ax.set_ylabel("Normalised filter transmission")
     ax.legend(ncol=6, prop={'size': "small"},
               bbox_to_anchor=(0, 1.2), loc="upper left")
-    cm.save_figure(fig, "input_analysis/filter_coverage_plot")
+    cm.save_figure(fig, "coverage_plot", "input_analysis", stem)
 
 
 def latex_with_lines(df, *args, **kwargs):
@@ -69,8 +70,9 @@ def latex_with_lines(df, *args, **kwargs):
     return res
 
 
-def read_filter_overview_file(fname=mt.DATAPATH + "lephare_files/compiled_filter_file.filt"):
+def read_filter_overview_file(stem, directory="lephare_files"):
     """Read the overview file and store the information in a dataframe. Format the column names to a LaTeX-readable format."""
+    fname = mt.DATAPATH + directory + "/" + stem + "_overview.filt"
     with open(fname, "r") as f:
         for line in f.readlines():
             if line.startswith("# "):
@@ -100,8 +102,9 @@ def read_filter_overview_file(fname=mt.DATAPATH + "lephare_files/compiled_filter
     return df
 
 
-def save_filter_info(df, fname=mt.MYDIR + "other/filter_overview.tex"):
+def save_filter_info(df, stem):
     """Saves the filter info overview in a LaTeX-readable document."""
+    fname = mt.MYDIR + "other/" + stem + "_table_overview.tex"
     caption = r"""Overview on the important parameters for the table.\\
 Here, the columns correspond to the mean wavelength $\Mean{\lambda}=\frac{\int R(\lambda)\lambda\dd \lambda}{\int R(\lambda)\dd\lambda}$, the Full Width at Half Maximum, the AB correction factor with $m_\tx{AB}=m_\tx{Vega} + m_\tx{AB, c}$, the Vega Magnitude $m_\tx{Vega}=-2.5\log_{10}\BracedIn{\frac{\int R(\lambda)\dd \lambda}{\int R(\lambda)F_\tx{Vega}(\lambda)\dd\lambda}}$, and the absolute magnitude of the sun in this filter.\\
 In \LePhare{}, """
@@ -113,7 +116,7 @@ In \LePhare{}, """
                                  label="tab:filter_overview", position="htbp", float_format="{:0.2f}".format, columns=cols, escape=False)
     with open(fname, "w") as f:
         f.write(tabletext)
-        print(
+        logger.info(
             f"The LaTeX input text for the filters has been written to {fname}")
 
 
