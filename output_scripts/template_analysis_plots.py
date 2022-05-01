@@ -6,20 +6,21 @@ import numpy as np
 import pandas as pd
 import util.configure_matplotlib as cm
 import util.my_tools as mt
+from util.my_logger import logger
 
 
-def plot_single_against_redshift(df, ax, template_dict, c1, c2, ttype):
+def plot_single_against_redshift(df, ttype, stem, ax, template_dict, c1, c2):
     # Select a subset of the source dataframe with valid spec-z and actual data points in both of the requested bands
     for param in ["ZSPEC", f"mag_{c1}", f"mag_{c2}"]:
         df = df[(df[param] > 0) & (df[param] < 99)]
-    colname = f"{c1.replace('_', '-')} - {c2.replace('_', '-')}"
+    colname = f"{c1} - {c2}"
 
     # Plot all templates:
-    info_dict = mt.provide_template_info(f"{ttype}_baseline_templates.list")
+    info_dict = mt.provide_template_info(f"{stem}_{ttype}.list")
     for temp_num in template_dict:
         t_df = template_dict[temp_num]
         y_data = t_df[f"mag_{c1}"] - t_df[f"mag_{c2}"]
-        label = ""  # str(info_dict.get(temp_num)).replace("_", "-")
+        label = temp_num  # str(info_dict.get(temp_num)).replace("_", "-")
         ax.plot(t_df["ZSPEC"], y_data, "-", lw="0.5", label=label)
     df[colname] = df[f"mag_{c1}"] - df[f"mag_{c2}"]
     zmax = 2.5 if ttype == "extended" else 4.5
@@ -48,14 +49,16 @@ def plot_single_against_redshift(df, ax, template_dict, c1, c2, ttype):
     ax.set_ylabel(colname, labelpad=0.4)
 
 
-def plot_multiple_against_redshift(df, template_df, ttype, bands=("g", "z"), templates_to_plot=None, onebigplot=False, joint_fig=False):
+def plot_multiple_against_redshift(source_df, template_df, ttype, stem, bands=("g", "z"), templates_to_plot=None, onebigplot=False, joint_fig=False):
     """Creates a plot of color difference vs. redshift to analyse wether the
     templates cover the parameter space.
     Parameters:
         source_df: The pandas DataFrame containing output information of the sources.
         template_df: The pandas DataFrame hosting the template information
+        ttype: pointlike, extended or 
         bands: The bands of interest for the plots."""
-    df = df[df["Type"] == ttype]
+    if ttype != "both":
+        source_df = source_df[source_df["Type"] == ttype]
     template_df = template_df.sort_values(by=["ZSPEC", "model"])
     temp_dict = mt.construct_template_dict(template_df, templates_to_plot)
     if onebigplot:
@@ -84,7 +87,8 @@ def plot_multiple_against_redshift(df, template_df, ttype, bands=("g", "z"), tem
                 fig, axes = fig_list[floor(n / 6)]
                 i, j = coords[n % 6]
                 ax = axes[i][j]
-            plot_single_against_redshift(df, ax, temp_dict, c1, c2, ttype)
+            plot_single_against_redshift(
+                source_df, ax, temp_dict, c1, c2, ttype)
             ax.legend(prop={"size": "x-small"})
             if not onebigplot:
                 name = f"{ttype}_template_plot_{c1}-{c2}"
@@ -98,7 +102,7 @@ def plot_multiple_against_redshift(df, template_df, ttype, bands=("g", "z"), tem
         cm.save_current_figures(filename)
 
 
-def plot_problematic_templates(df, ttype):
+def plot_problematic_templates(df, ttype, stem=""):
     """Plots a histogram with the available templates and the percentage of usage for LePhare"""
     fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.8))
     subset = df[df["Type"] == ttype]
@@ -111,7 +115,7 @@ def plot_problematic_templates(df, ttype):
     both = both.sort_values(by="Total", ascending=False)
 
     threshold = max(1, max(both["Total"]) * 0.07)
-    print(
+    logger.info(
         f"Adopting threshold (number of most occurences for models to be combined in 'other') of {threshold:.0f} for {ttype}.")
     other_dict = {"Good": {"Other": 0}, "Bad": {
         "Other": 0}, "Total": {"Other": 0}}
@@ -119,8 +123,7 @@ def plot_problematic_templates(df, ttype):
         is_single = (both[check] <= threshold) & (
             both["Total"] <= threshold * 2)
         singles = both[is_single]
-        ind = [model for model in singles.index]
-        # print(ind)
+        # logger.info([model for model in singles.index])
         other_dict[check]["Other"] = len(singles)
     is_single = (both["Bad"].fillna(0) <= threshold) & (
         both["Good"].fillna(0) <= threshold)
@@ -144,7 +147,7 @@ def plot_problematic_templates(df, ttype):
     axes.set_xticklabels(list(labels), minor=False, rotation=90, )
     axes.legend(loc="upper right")
     fig.set_facecolor("white")
-    cm.save_figure(fig, f"output_analysis/{ttype}_used_templates")
+    cm.save_figure(fig, f"{ttype}_used_templates", "output_analysis", stem)
     return both
 
 

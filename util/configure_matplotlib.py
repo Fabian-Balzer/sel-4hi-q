@@ -63,7 +63,8 @@ def save_figure(fig, name="", directory="", stem="", format_="pdf"):
     stem = stem + "_" if stem != "" else stem
     fpath = f"{mt.PLOTPATH}{directory}{stem}{name}.{format_}"
     fig.savefig(fpath, format=format_, bbox_inches='tight')
-    logger.info(f"Successfully saved the {stem}{name} plot at {directory}.")
+    logger.info(
+        f"Successfully saved the {stem}{name}.{format_} plot at {directory}.")
 
 
 def save_current_figures(name, format_="pdf"):

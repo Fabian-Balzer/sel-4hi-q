@@ -28,7 +28,7 @@ def read_args():
     parser = argparse.ArgumentParser(
         description="Analyse a variety of files related to the LePhare photo-z process.")
     stem_defaults = {"input": "baseline_input", "separation": "baseline_input",
-                     "Filter": "baseline_filters", "output": "test", "template": "baseline_templates"}
+                     "Filter": "baseline_filters", "output": "new_test", "template": "baseline_templates"}
     for argtype in ["input", "separation", "Filter", "output", "template"]:
         # Introduce a boolean call:
         short = f"-{argtype[0]}"  # i, s, F, o and t can be specified now.
@@ -85,14 +85,21 @@ if args.produce_Filter_plots:
     fc.save_filter_info(info_df, args.Filter_stem)
 
 
+# %% Output dataframe and analysis:
+if args.produce_output_plots:
+    output_df = mt.read_plike_and_ext(
+        prefix=f"lephare_output/{args.output_stem}_", suffix=".fits")
+    output_df = mt.add_filter_columns(output_df)
+    for ttype in ["pointlike", "extended"]:
+        # ta.plot_problematic_templates(output_df, ttype)
+        s_p.plot_photoz_vs_specz(output_df, ttype, args.output_stem)
+
 # %%
-
-# output dataframes:
-STEM_OUT = "without_i_suraj"
-output_df = mt.read_plike_and_ext(
-    prefix=f"lephare_output/{STEM_OUT}_", suffix=".fits")
-output_df = mt.add_filter_columns(output_df)
-
-for ttype in ["pointlike", "extended"]:
-    # ta.plot_problematic_templates(output_df, ttype)
-    s_p.plot_photoz_vs_specz(output_df, ttype, STEM_OUT, comparison=True)
+if args.produce_template_plots:
+    output_df = mt.read_plike_and_ext(
+        prefix=f"lephare_output/{args.output_stem}_", suffix=".fits")
+    output_df = mt.add_filter_columns(output_df)
+    for ttype in ["pointlike", "extended"]:
+        ta.plot_problematic_templates(output_df, ttype, args.output_stem)
+        template_df = mt.read_template_library(
+            f"{args.template_stem}_{ttype}_mag_lib.dat")

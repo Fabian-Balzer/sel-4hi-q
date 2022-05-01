@@ -1,46 +1,22 @@
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import util.configure_matplotlib as cm
 import util.my_tools as mt
 from matplotlib.offsetbox import AnchoredText
 
 
-def make_scatter_plots(df, main_ax, secondary_ax, label_prefix="", color="k"):
+def make_scatter_plots(df, main_ax, secondary_ax, color="k"):
     """Makes a scatter plot of the ZSPEC vs the ZBEST column on the given ax.
     Distinguishes the i and non-i-band."""
     markerstyle = "."
     size = 1
-    bad, total = len(df[df['ISOUTLIER']]), len(df)
-    perc = bad / total  # Outlier percentage
-    # label_prefix + f"{bad} of {total} ({perc*100:.1f} \%) outliers"
-    label = "Sources"
     df[~df["ISOUTLIER"]].plot.scatter("ZSPEC", "ZBEST", s=size,  # label=label,
                                       color=color, ax=main_ax, marker=markerstyle)
     df[df["ISOUTLIER"]].plot.scatter(
         "ZSPEC", "ZBEST", s=size, color=color, ax=main_ax, marker=markerstyle, alpha=0.7)
     df.plot.scatter("ZSPEC", "ZMeasure", s=size,
                     color=color, ax=secondary_ax, marker=markerstyle)
-
-
-def cut_i_band(df, ax):
-    """Filter for i or i2 bands:
-    # Without i or i2 band:"""
-    with_i = df[df["filter_list"].apply(
-        lambda x: 14 in x or 15 in x or 16 in x)]
-    if len(with_i) == 0:
-        label = "Sources without i band\n"
-        make_scatter_plot(df, ax, label)
-        return
-    without_i = df[df["filter_list"].apply(
-        lambda x: not(14 in x or 15 in x or 16 in x))]
-    if len(without_i) == 0:
-        label = "Sources with i band\n"
-        make_scatter_plot(df, ax, label)
-        return
-    make_scatter_plot(without_i, ax, "Without i band\n")
-    make_scatter_plot(with_i, ax, "Including i band\n", "black")
 
 
 def plot_auxiliary_lines(main_ax, secondary_ax, max_z=5, bounds=True, label=""):
@@ -96,7 +72,7 @@ def set_subplot_positions(main, secondary):
     secondary.set_position(rect_secondary)
 
 
-def plot_photoz_vs_specz(df, ttype, stem_name="test", fnamesuffix=""):
+def plot_photoz_vs_specz(df, ttype, stem=""):
     """Makes a scatter plot of photo z vs spectro-z."""
     df = df[df["HASGOODZ"]]
     df = df[df["Type"] == ttype]
@@ -114,7 +90,7 @@ def plot_photoz_vs_specz(df, ttype, stem_name="test", fnamesuffix=""):
     # main.get_legend().remove()
 
     cm.save_figure(
-        fig, f"output_analysis/{stem_name}_spec_z_phot_z_{ttype}{fnamesuffix}")
+        fig, f"{ttype}_spec_z_phot_z", "output_analysis", stem)
 
 
 if __name__ == "__main__":
@@ -126,13 +102,3 @@ if __name__ == "__main__":
     # output_df = output_df[output_df["NBAND_USED"] > 10]
     for ttype in ["pointlike", "extended"]:
         plot_photoz_vs_specz(output_df, ttype, STEM)
-
-    # mt.save_dataframe_as_fits(df["ra", "dec", "Type"], "Ra_dec_sources")
-
-    # df = mt.read_plike_and_ext("data/input/plike_processed_input.fits",
-    #                            "data/input/ext_processed_input.fits")
-    # df = df.rename(columns={"PHOT_Z": "ZBEST"})
-    # mt.add_outlier_information(df)
-    # for ttype in ["pointlike", "extended"]:
-    #     plot_photoz_vs_specz(df, ttype, comparison=True,
-    #                          fnamesuffix="_shu_agn_")

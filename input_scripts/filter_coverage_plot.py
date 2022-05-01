@@ -56,7 +56,7 @@ def produce_filter_plot(df, stem):
     ax.set_ylim(0, 1)
     ax.grid(True)
     ax.axhline(y=1, color="k", linewidth=0.5)
-    ax.set_xlabel("$\lambda$ [$\AA$]")
+    ax.set_xlabel(r"$\lambda$ [$\AA$]")
     ax.set_ylabel("Normalised filter transmission")
     ax.legend(ncol=6, prop={'size': "small"},
               bbox_to_anchor=(0, 1.2), loc="upper left")
@@ -102,7 +102,7 @@ def read_filter_overview_file(stem, directory="lephare_files"):
     return df
 
 
-def save_filter_info(df, stem):
+def save_filter_info(df, stem=""):
     """Saves the filter info overview in a LaTeX-readable document."""
     fname = mt.MYDIR + "other/" + stem + "_table_overview.tex"
     caption = r"""Overview on the important parameters for the table.\\
@@ -124,5 +124,5 @@ if __name__ == "__main__":
     # filter_df = read_filter_info_file()
     # produce_filter_plot(filter_df)
 
-    df = read_filter_overview_file()
+    df = read_filter_overview_file("baseline_filters")
     save_filter_info(df)

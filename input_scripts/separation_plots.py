@@ -15,7 +15,7 @@ from matplotlib.offsetbox import AnchoredText
 from scipy.stats import gaussian_kde, rayleigh
 from util.my_logger import logger
 
-NBINS = 30
+NBINS = 40
 
 
 class ColumnMissingError(Exception):
@@ -73,7 +73,7 @@ def scatter_points(x, y, ax, lim, true_radius=None):
                              linestyle="dashed", alpha=0.85, fill=False, label=r"$r_{3\sigma}$")
         ax.add_patch(circle2)
     ax.legend(prop={"size": "x-small"})
-    # fig.suptitle(f"Match separation of {len(df)} sources between {ttype} and VHS data in eFEDS")
+    # fig.suptitle(f"Match separation of {len(df)} sources between {survtype} and VHS data in eFEDS")
     # box = dict(boxstyle="round, pad=0.1", fc="gray", ec="k", lw=1, alpha=0.3)
 
 
@@ -138,41 +138,41 @@ def plot_separation_hist(ax, histdata, lim, draw_cutoff):
     ax.legend(prop={"size": "x-small"})
 
 
-def add_cols_if_necessary(df, ttype):
+def add_cols_if_necessary(df, survtype):
     """Checks wether the given columns are already present."""
     cols = df.columns
-    if f"ra_{ttype}" not in cols:
+    if f"ra_{survtype}" not in cols:
         raise ColumnMissingError
-    all_columns_found = f"true_sep_{ttype}" in cols
+    all_columns_found = f"true_sep_{survtype}" in cols
     for col in ["ra", "dec"]:
-        colname = f"delta_{col}_{ttype}"
+        colname = f"delta_{col}_{survtype}"
         if not colname in cols:
-            df[colname] = df[f"{col}_{ttype}"] - df[col]
-    colname = f"sep_to_{ttype}"
+            df[colname] = df[f"{col}_{survtype}"] - df[col]
+    colname = f"sep_to_{survtype}"
     if not colname in cols:
-        df[colname] = (df[f"delta_ra_{ttype}"] **
-                       2 + df[f"delta_dec_{ttype}"]**2)**0.5
+        df[colname] = (df[f"delta_ra_{survtype}"] **
+                       2 + df[f"delta_dec_{survtype}"]**2)**0.5
     return df, all_columns_found
 
 
-def plot_separation(df, ttype, radius, stem):
+def plot_separation(df, survtype, radius, stem):
     fig, axes = plt.subplots(2, 2, figsize=cm.set_figsize(
         fraction=.5, subplots=(2, 2), aspect=True))
     fig.patch.set_facecolor('white')
     main, xhist, yhist = arrange_subplots(axes)
     try:
-        df, all_columns_found = add_cols_if_necessary(df, ttype)
+        df, all_columns_found = add_cols_if_necessary(df, survtype)
     except ColumnMissingError:
         logger.warning(
-            f"Could not find fitting columns to compare to for '{ttype}'. No plots are produced for it.")
+            f"Could not find fitting columns to compare to for '{survtype}'. No plots are produced for it.")
         return
-    df = df[df[f"delta_ra_{ttype}"].notnull()]
+    df = df[df[f"delta_ra_{survtype}"].notnull()]
     logger.info(
-        f"In total, there are {len(df)} matched sources within a matching radius of {radius}'' for {ttype}.")
-    x_data = df[f"delta_ra_{ttype}"] * 3600
-    y_data = df[f"delta_dec_{ttype}"] * 3600
+        f"In total, there are {len(df)} matched sources within a matching radius of {radius}'' for {survtype}.")
+    x_data = df[f"delta_ra_{survtype}"] * 3600
+    y_data = df[f"delta_dec_{survtype}"] * 3600
     if all_columns_found:
-        true_sep = df[f"true_sep_{ttype}"] * 3600
+        true_sep = df[f"true_sep_{survtype}"] * 3600
         true_radius = 3 * true_sep.std()
         # Calculate the point density:
         scatter_points(x_data, y_data, main, radius, true_radius)
@@ -184,14 +184,15 @@ def plot_separation(df, ttype, radius, stem):
     # Look at the vertical and horizontal histograms
     produce_histograms(x_data, y_data, xhist, yhist, radius)
     cm.save_figure(
-        fig, f"{ttype}_separation_plot", "input_analysis/separation", stem)
+        fig, f"{survtype}_separation_plot", "input_analysis/separation", stem)
 
     # Produce a histogram with the given data
-    fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.5))
-    sep = df[f"sep_to_{ttype}"] if not all_columns_found else true_sep
-    plot_separation_hist(axes, sep, radius, all_columns_found)
+    fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.5))
+    sep = df[f"sep_to_{survtype}"] * \
+        3600 if not all_columns_found else true_sep
+    plot_separation_hist(ax, sep, radius, all_columns_found)
     cm.save_figure(
-        fig, f"{ttype}_separation_hist", "input_analysis/separation", stem)
+        fig, f"{survtype}_separation_hist", "input_analysis/separation", stem)
 
 
 def plot_all_separations(df, stem="", context=-1):
@@ -202,7 +203,7 @@ def plot_all_separations(df, stem="", context=-1):
         "ra") and col[3:] in radius_dict]
     if context != -1:
         desired_bands = set(mt.give_bands_for_context(context))
-        surveys = [survey for survey, bands in mt.BAND_DICT.items if len(
+        surveys = [survey for survey, bands in mt.BAND_DICT.items() if len(
             set(bands).intersection(desired_bands)) > 0]
         names = [name for name in names if name in surveys]
     logger.info(f"Creating separation plots for {names}.")
@@ -212,7 +213,7 @@ def plot_all_separations(df, stem="", context=-1):
 
 
 if __name__ == "__main__":
-    input_df = mt.read_plike_and_ext(prefix="matches/test2_",
+    input_df = mt.read_plike_and_ext(prefix="matches/baseline_input_",
                                      suffix="_processed_table.fits")
     input_df = mt.add_mag_columns(input_df)
-    plot_all_separations(input_df, context=8191)  # Exclude Kids
+    plot_all_separations(input_df, "baseline_input", context=8191)  # Exclude Kids and hsc
