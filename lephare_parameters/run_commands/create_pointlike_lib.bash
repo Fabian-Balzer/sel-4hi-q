@@ -4,7 +4,7 @@ PARAPATH=$LEPHARE/lephare_scripts/lephare_parameters/
 
 # Create the galaxy pointlike magnitude library (results in 'pointlike${LIB_STEM}_mag_lib'):
 LIB_STEM=${1:-baseline_templates}
-LIB_STEM=pointlike_${LIB_STEM}
+LIB_STEM=${LIB_STEM}_pointlike
 LISTFILE=${LIB_STEM}.list
 echo "Using ${LISTFILE} as the stem for the pointlike magnitude library."
 

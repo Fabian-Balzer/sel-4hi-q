@@ -13,7 +13,7 @@ def plot_single_against_redshift(df, ttype, stem, ax, template_dict, c1, c2):
     # Select a subset of the source dataframe with valid spec-z and actual data points in both of the requested bands
     for param in ["ZSPEC", f"mag_{c1}", f"mag_{c2}"]:
         df = df[(df[param] > 0) & (df[param] < 99)]
-    colname = f"{c1} - {c2}"
+    colname = f"{mt.BAND_LABEL_DICT[c1]} - {mt.BAND_LABEL_DICT[c2]}"
 
     # Plot all templates:
     info_dict = mt.provide_template_info(f"{stem}_{ttype}.list")
@@ -45,7 +45,7 @@ def plot_single_against_redshift(df, ttype, stem, ax, template_dict, c1, c2):
                     label=f"{label} ({len(y)})", alpha=0.5)
     ax.set_xlim(0, zmax)
     ax.set_ylim(floor(ymin), ceil(ymax))
-    ax.set_xlabel("z", labelpad=0.4)
+    ax.set_xlabel("(spectroscopic) redshift $z$", labelpad=0.4)
     ax.set_ylabel(colname, labelpad=0.4)
 
 
@@ -88,11 +88,12 @@ def plot_multiple_against_redshift(source_df, template_df, ttype, stem, bands=("
                 i, j = coords[n % 6]
                 ax = axes[i][j]
             plot_single_against_redshift(
-                source_df, ax, temp_dict, c1, c2, ttype)
-            ax.legend(prop={"size": "x-small"})
+                source_df, ttype, stem, ax, temp_dict, c1, c2)
+            if templates_to_plot is not None:
+                ax.legend(prop={"size": "x-small"})
             if not onebigplot:
-                name = f"{ttype}_template_plot_{c1}-{c2}"
-                cm.save_figure(fig, f"output_analysis/templates/{name}")
+                name = f"{stem}_{ttype}_template_plot_{c1}-{c2}"
+                cm.save_figure(fig, name, "output_analysis/templates")
             n += 1
     if onebigplot:
         name = f"{ttype}_joint_template_plot"

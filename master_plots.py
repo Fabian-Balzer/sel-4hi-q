@@ -41,8 +41,8 @@ def read_args():
         default = stem_defaults[argtype]
         helpstring = f"Specify the stem name of the {argtype} data."
         parser.add_argument(argname, help=helpstring, default=default)
-    parser.add_argument("--context", action="store_const",
-                        help="The context for the LePhare run.", const=-1, default=-1)
+    parser.add_argument("--context",
+                        help="The context for the LePhare run.", type=int, default=-1)
     parser.add_argument("-S", "--Stats", action="store_true",
                         help="Provide statistics on each of the files to the command line.")
     parser.add_argument("-v", "--verbose", action="store_true",
@@ -100,6 +100,8 @@ if args.produce_template_plots:
         prefix=f"lephare_output/{args.output_stem}_", suffix=".fits")
     output_df = mt.add_filter_columns(output_df)
     for ttype in ["pointlike", "extended"]:
-        ta.plot_problematic_templates(output_df, ttype, args.output_stem)
+        # ta.plot_problematic_templates(output_df, ttype, args.template_stem)
         template_df = mt.read_template_library(
-            f"{args.template_stem}_{ttype}_mag_lib.dat")
+            f"{ttype}_mag_lib.dat")  # TODO: {args.template_stem}_
+        ta.plot_multiple_against_redshift(
+            output_df, template_df, ttype, args.template_stem, bands=("g", "z"))

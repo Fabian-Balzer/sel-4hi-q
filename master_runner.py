@@ -21,6 +21,7 @@ import input_scripts.separation_plots as sep
 import output_scripts.specz_photz_plots as s_p
 import output_scripts.template_analysis_plots as ta
 import util.my_tools as mt
+from util.my_logger import logger
 
 
 def read_args():
@@ -29,7 +30,9 @@ def read_args():
         description="Assess a LePhare output file.")
     parser.add_argument("-b", "--build_dirs", action="store_true",
                         help="Builds the directories necessary for running the code.")
-    stem_defaults = {"input": "baseline_input", "separation": "baseline_input",
+    parser.add_argument("--context", type=int,
+                        help="The context for the LePhare run.", default=-99)
+    stem_defaults = {"input": "baseline_input",
                      "Filter": "compiled_filters", "output": "test", "template": "baseline_templates"}
     for argtype in ["input", "Filter", "output", "template"]:
         # Introduce a boolean call on whether to produce any of the datasets:
@@ -48,6 +51,15 @@ def read_args():
     args, _ = parser.parse_known_args()
     for argtype in [argtype.split('_')[1] for argtype, val in vars(args).items() if isinstance(val, bool) and val]:
         print(f"{argtype}_stem: {vars(args)[f'{argtype}_stem']}")
+    if args.context != -99:
+        bands = mt.give_bands_for_context(args.context)
+        filters = mt.convert_context_to_band_indices(args.context)
+        logger.info(
+            f"Using GLB_CONTEXT = {args.context} for only using {bands} ({filters})")
+    else:
+        args.context = 8191
+        logger.info(
+            f"No context specified. Defaulting to the standard bands (GLB_CONTEXT set to {args.context})")
     return args
 
 
@@ -56,14 +68,11 @@ args = read_args()
 # %%
 if args.build_dirs:
     mt.init_plot_directory()
+    mt.init_data_directory()
+    mt.init_other_directory()
 
-bands = [band for band in mt.BAND_LIST if band not in [
-    "i_hsc", "i2_hsc", "i_kids"]]
-context = mt.give_context(bands)
-filters = mt.convert_context_to_filter_indices(context)
-print(f"Use {context} for only using {bands} ({filters})")
 # %%
-# input dataframes:
+# Construct the input dataframe:
 input_df = mt.read_plike_and_ext(prefix="matches/test2_",
                                  suffix="_processed_table.fits")
 input_df = mt.add_mag_columns(input_df)

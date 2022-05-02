@@ -22,7 +22,7 @@ while getopts "l:i:o:g:f:" opt; do
 done
 # TODO: Program the input invocations more elegantly
 LIB_STEM=${LIB_STEM:-baseline_templates}
-LIB_STEM=pointlike_$LIB_STEM
+LIB_STEM=${LIB_STEM}_pointlike
 INPUT_STEM=${INPUT_STEM:-baseline_input}
 OUTPUT_STEM=${OUTPUT_STEM:-test}
 GLB_CONTEXT=${GLB_CONTEXT:--1}

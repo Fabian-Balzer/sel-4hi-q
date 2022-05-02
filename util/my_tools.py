@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from astropy.table import Table
+
 from util.my_logger import logger
 
 MYDIR = os.environ["LEPHARE"] + "/"
@@ -19,6 +20,12 @@ DATAPATH = MYDIR + "data/"
 OUTPUTPATH = DATAPATH + "lephare_output/"
 MATCHPATH = DATAPATH + "matches/"
 PLOTPATH = MYDIR + "plots/"
+JYSTILTS = f"java -jar '{MYDIR}other/programs/jystilts.jar'"
+try:
+    LEPHAREDIR = os.environ["LEPHAREDIR"] + "/"
+except KeyError:
+    logger.warning("No installation of LePhare could be located.")
+
 
 VHS_BANDS = ["Y", "J", "H", "Ks"]
 SWEEP_BANDS = ["g", "r", "z", "W1", "W2", "W3", "W4"]
@@ -62,10 +69,28 @@ BAND_WL_DICT = {BAND_LIST[i]: WL_LIST[i]
 
 
 def init_plot_directory():
-    """Constructs a plot directory with the necessary subfolders if there is none already"""
+    """Constructs a plot directory with the necessary subfolders if it is missing."""
     for dirs in ["output_analysis/templates", "input_analysis/separation"]:
         path = MYDIR + "plots/" + dirs
         Path(path).mkdir(parents=True, exist_ok=True)
+
+
+def init_data_directory():
+    """Constructs a data directory with the necessary subfolders if it is missing"""
+    for dirs in ["lephare_files/templates", "lephare_input", "lephare_output", "matches", "raw_catalogues"]:
+        path = MYDIR + "data/" + dirs
+        Path(path).mkdir(parents=True, exist_ok=True)
+
+
+def init_other_directory():
+    """Constructs a data directory with the necessary subfolders if it is missing"""
+    for dirs in ["latex", "programs"]:
+        path = MYDIR + "other/" + dirs
+        Path(path).mkdir(parents=True, exist_ok=True)
+    jystiltsfpath = f"{MYDIR}other/programs/jystilts.jar"
+    if not os.path.isfile(jystiltsfpath):
+        logger.warning(
+            f"Jystilts couldn't be located. Please install it in {jystiltsfpath}")
 
 
 def read_fits_as_dataframe(filename, saferead=False):
@@ -160,7 +185,7 @@ def construct_template_dict(temp_df, templates_to_plot):
 
 
 def provide_template_info(fname):
-    path = DATAPATH + "lephare_files/template_lists/" + fname
+    path = MYDIR + "lephare_scripts/lephare_parameters/template_lists/" + fname
     with open(path, "r") as f:
         number_to_name = {}
         for i, line in enumerate(f.readlines(), start=1):
