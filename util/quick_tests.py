@@ -12,6 +12,7 @@ df["ZSPEC"] = df[df["SPECZ_NORMQ"] == 3]["SPECZ_REDSHIFT"]
 fluxcols = [col for col in df.columns if "LU_" in col]
 
 # Go through the band list and assign nice photometry to all columns desired
+
 used_cols = []
 for band in mt.BAND_LIST:
     avail_cols = [col for col in fluxcols if band.lower() in col.split("_")[2]]
@@ -38,7 +39,7 @@ df = df[needed_cols]
 pointlike = df[df["CTP_LS8_TYPE"].apply(lambda x: "PSF" in str(x))]
 extended = df[df["CTP_LS8_TYPE"].apply(lambda x: "PSF" not in str(x))]
 
-mt.save_dataframe_as_fits(
-    pointlike, "lephare_input/dr10_test_pointlike.fits", True)
-mt.save_dataframe_as_fits(
-    extended, "lephare_input/dr10_test_extended.fits", True)
+# mt.save_dataframe_as_fits(
+#     pointlike, "lephare_input/dr10_test_pointlike.fits", True)
+# mt.save_dataframe_as_fits(
+#     extended, "lephare_input/dr10_test_extended.fits", True)

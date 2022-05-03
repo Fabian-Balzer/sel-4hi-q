@@ -16,10 +16,11 @@ SWEEP_BANDS = ["g", "r", "z", "W1", "W2", "W3", "W4"]
 GALEX_BANDS = ["FUV", "NUV"]
 HSC_BANDS = ["i_hsc", "i2_hsc"]
 KIDS_BANDS = ["i_kids"]
+LS10_BANDS = ["i_ls10"]
 BAND_DICT = {"vhs": VHS_BANDS, "sweep": SWEEP_BANDS,
-             "galex": GALEX_BANDS, "hsc": HSC_BANDS, "kids": KIDS_BANDS}
+             "galex": GALEX_BANDS, "hsc": HSC_BANDS, "kids": KIDS_BANDS, "ls10": LS10_BANDS}
 BAND_LIST = GALEX_BANDS + SWEEP_BANDS[:3] + \
-    VHS_BANDS + SWEEP_BANDS[3:] + HSC_BANDS + KIDS_BANDS
+    VHS_BANDS + SWEEP_BANDS[3:] + HSC_BANDS + KIDS_BANDS + LS10_BANDS
 # As we are adding these conversions in strings, they are stored as strings.
 # Y, H, Ks Taken from Mara, J mag conversion from Blanton et al., Astronomical Journal 129, 2562 (2005), Eqs. (5) (2005AJ....129.2562B).
 # OLD: {"Y": "0.938", "J": "0.91", "H": "1.379", "Ks": "1.85"}
@@ -27,7 +28,7 @@ FILTER_NAME_DICT = {"FUV": "filters/FUV.pb", "NUV": "filters/NUV.pb",
                     "g": "filters/newg.pb", "r": "filters/r.pb", "z": "filters/z.pb",
                     "Y": "filters/Y.lowres", "J": "filters/j.lowres", "H": "filters/h.lowres",
                     "Ks": "filters/k.lowres", "W1": "filters/W1.res", "W2": "filters/W2.res",
-                    "W3": "filters/W3.res", "W4": "filters/W4.res", "i_hsc": "filters/wHSC_i.txt", "i2_hsc": "filters/wHSC_i2.txt", "i_kids": "kids/KiDSVIKING_aibn139_i.res"}
+                    "W3": "filters/W3.res", "W4": "filters/W4.res", "i_hsc": "filters/wHSC_i.txt", "i2_hsc": "filters/wHSC_i2.txt", "i_kids": "kids/KiDSVIKING_aibn139_i.res", "i_dr10": "dr10i.pb"}
 VEGA_AB_DICT = {"Y": "0.60", "J": "0.92", "H": "1.37", "Ks": "1.83"}
 
 WORKPATH = os.environ["LEPHARE"] + "/"
@@ -77,7 +78,8 @@ def pre_clean_table(name, table):
     any processing, only the selection of the relevant colums."""
     funcs = {"vhs": clean_vhs, "eros": clean_eros,
              "opt_agn": clean_opt_agn, "sweep": clean_sweep, "hsc": clean_hsc,
-             "kids": clean_kids, "xray_agn": clean_xray_agn}
+             "kids": clean_kids, "xray_agn": clean_xray_agn
+             "ls10": clean_ls10}
     return funcs[name](table)
 
 
@@ -109,6 +111,14 @@ def clean_kids(table):
     print("Discarding " + str(table.cmd_select("flag_i != 0").count_rows()) +
           " unreliable sources from the kids catalogue.")
     table = table.cmd_select("flag_i == 0")
+    return table
+
+
+def clean_ls10(table):
+    """Cleans the legacy survey dr10 table."""
+    # Select primary sources
+    table = change_colnames(
+        table, ["ctp_ls8_ra", "ctp_ls8_dec", "LU_flux_i", "LU_flux_i_err"], ["ra", "dec", "c_flux_i_ls10", "c_flux_err_i_ls10"])
     return table
 
 
@@ -206,7 +216,8 @@ def match_given_tables(table_dict, table_list):
              "eros": [match_table_eros, 0.1],
              "hsc": [match_table_hsc, 1],
              "galex": [match_table_galex, 3.5],
-             "kids": [match_table_kids, 1.5]}
+             "kids": [match_table_kids, 1.5],
+             "ls10": [match_table_ls10, 0.1]}
     table = match_opt_agn_sweep(
         table_dict["opt_agn"], table_dict["sweep"], 0.1)
     for name in table_list:
@@ -270,6 +281,17 @@ def match_table_kids(table, kidstable, radius=3):
     # table = table.cmd_keepcols(" ".join(new_columns))
     # table = change_colnames(
     #     table, ["RAdeg", "DEdeg", "iflg"], ["ra_kids", "dec_kids", "flag_i"])
+    return table
+
+
+def match_table_ls10(table, ls_table, radius=0.1):
+    """Skymatches the given tables and changes the columnames"""
+    # Exclusive join with the sweep catalogue
+    table = stilts.tskymatch2(in1=table, in2=ls_table,
+                              error=radius, find="best", join="all1")
+    table = change_colnames(table, ["ra_1", "ra_2", "dec_1", "dec_2"], [
+                            "ra", "ra_ls10", "dec", "dec_ls10"])
+    print_match_number(table, "ls10")
     return table
 
 

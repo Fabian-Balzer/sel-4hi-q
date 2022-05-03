@@ -9,7 +9,7 @@ class TableContainer(dict):
         self.stem = arg_dict["stem"]
         self.match = None
         self.required_tables = ["vhs", "sweep", "opt_agn",
-                                "eros", "hsc", "kids"]  # , "xray_agn"]  # "assef_agn"
+                                "eros", "hsc", "kids", "ls10"]  # , "xray_agn"]  # "assef_agn"
         if not arg_dict["use_matched"]:
             self.load_tables()
             self.pre_clean_tables()
