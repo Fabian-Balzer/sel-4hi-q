@@ -1,6 +1,7 @@
 #!/bin/bash
 # Script to run LePhare's zphota program
 PARAPATH=$LEPHARE/lephare_scripts/lephare_parameters/
+PARANAME=dr10_test_inputpara.para
 
 
 while getopts "l:i:o:g:f:" opt; do
@@ -51,7 +52,7 @@ fi
 printf "\nLib-stem: $LIB_STEM\nInput-stem: $INPUT_STEM\nOutput-stem: $OUTPUT_STEM\nGlobal context: $GLB_CONTEXT, Forbidden context: $FORB_CONTEXT\n\n"
 
 ## Code to run photometric redshifts (pointlike sample) -> Forb_context = 24576 to exclude the HSC bands
-$LEPHAREDIR/source/zphota -c ${PARAPATH}inputpara.para \
+$LEPHAREDIR/source/zphota -c ${PARAPATH}${PARANAME} \
 -CAT_IN ${INPUT_PATH}${INPUT_STEM}_pointlike.in \
 -CAT_OUT $OUT_FPATH.dat \
 -PARA_OUT ${PARAPATH}outputpara.para \
@@ -64,5 +65,5 @@ $LEPHAREDIR/source/zphota -c ${PARAPATH}inputpara.para \
 
 # Convert the output to a .fits file, considering which output cols were requested:
 jystilts="java -jar /home/hslxrsrv3/p1wx150/jystilts.jar"
-$jystilts $LEPHARE/lephare_scripts/jystilts/rewrite_fits_header.py ${PARAPATH}outputpara.para $OUT_FPATH.dat
+$jystilts $LEPHARE/lephare_scripts/jystilts_scripts/rewrite_fits_header.py ${PARAPATH}outputpara.para $OUT_FPATH.dat
 

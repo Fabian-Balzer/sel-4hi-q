@@ -1,6 +1,7 @@
 #!/bin/bash
 # Script to run LePhare's MAG_GAL command for the pointlike sources.
 PARAPATH=$LEPHARE/lephare_scripts/lephare_parameters/
+PARANAME=dr10_test_inputpara.para
 
 # Create the galaxy pointlike magnitude library (results in 'pointlike${LIB_STEM}_mag_lib'):
 LIB_STEM=${1:-baseline_templates}
@@ -34,11 +35,11 @@ if [ -f "${LIBPATH}${MAGLIBNAME}.fits" ]
     fi
 fi
 
-$LEPHAREDIR/source/sedtolib -c ${PARAPATH}inputpara.para -t G \
+$LEPHAREDIR/source/sedtolib -c ${PARAPATH}${PARANAME} -t G \
 -GAL_SED ${LISTPATH}${LISTFILE} \
 -GAL_LIB ${LIB_STEM}_compiled_file
 
-$LEPHAREDIR/source/mag_gal -c ${PARAPATH}inputpara.para -t G \
+$LEPHAREDIR/source/mag_gal -c ${PARAPATH}${PARANAME} -t G \
 -LIB_ASCII YES \
 -GAL_LIB_IN ${LIB_STEM}_compiled_file \
 -GAL_LIB_OUT $MAGLIBNAME \
@@ -50,5 +51,5 @@ mv ${MAGLIBNAME}.dat $LIBPATH
 
 # Convert it to a .fits file:
 jystilts="java -jar /home/hslxrsrv3/p1wx150/jystilts.jar"
-$jystilts $LEPHARE/lephare_scripts/jystilts/rewrite_fits_header.py 0 $MAGLIBFPATH
+$jystilts $LEPHARE/lephare_scripts/jystilts_scripts/rewrite_fits_header.py 0 $MAGLIBFPATH
 rm $MAGLIBFPATH

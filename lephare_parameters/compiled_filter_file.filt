@@ -27,4 +27,4 @@ filters/W4.res                13           22.3739     22.2092      4.7459    6.
 filters/wHSC_i.txt            14            0.7736      0.7657      0.1467    0.3975    0.6178  -22.2375    4.5315       0      0.7686      1.0000
 filters/wHSC_i2.txt           15            0.7803      0.7715      0.1576    0.4089    0.6311  -22.2666    4.5306       0      0.7748      1.0000
 kids/KiDSVIKING_aibn139_i.res 16            0.7598      0.7508      0.1575    0.3727    0.5874  -22.1719    4.5365       0      0.7541      1.0000
-Times to run the code in sec: 0.2464
+Times to run the code in sec: 0.2327

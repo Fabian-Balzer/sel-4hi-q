@@ -1,6 +1,7 @@
 #!/bin/bash
 # Script to run LePhare's zphota program
 PARAPATH=$LEPHARE/lephare_scripts/lephare_parameters/
+PARANAME=dr10_test_inputpara.para
 
 
 while getopts "l:i:o:g:f:" opt; do
@@ -50,21 +51,20 @@ if [ -f "${OUT_FPATH}.fits" ]
 fi
 printf "\nLib-stem: $LIB_STEM\nInput-stem: $INPUT_STEM\nOutput-stem: $OUTPUT_STEM\nGlobal context: $GLB_CONTEXT, Forbidden context: $FORB_CONTEXT\n\n"
 
-# ## Code to run photometric redshifts (extended sample) -> Forb_context = 24576 to exclude the HSC bands
-# $LEPHAREDIR/source/zphota -c ${PARAPATH}inputpara.para \
-# -CAT_IN ${INPUT_PATH}${INPUT_STEM}_extended.in \
-# -CAT_OUT $OUT_FPATH.out \
-# -PARA_OUT ${PARAPATH}outputpara.para \
-# -ZPHOTLIB ${LIB_STEM}_mag_lib,star_mag_lib \
-# -MAG_REF 7 \
-# -MAG_ABS -24,-8 \
-# -ERR_SCALE 0.2,0.2,0.05,0.05,0.05,0.1,0.1,0.1,0.1,0.2,0.2,0.3,0.4,0.05,0.05,0.05 \
-# -GLB_CONTEXT $GLB_CONTEXT -FORB_CONTEXT $FORB_CONTEXT \
-# -PDZ_OUT ${OUT_FPATH}
+## Code to run photometric redshifts (extended sample) -> Forb_context = 24576 to exclude the HSC bands
+$LEPHAREDIR/source/zphota -c ${PARAPATH}${PARANAME} \
+-CAT_IN ${INPUT_PATH}${INPUT_STEM}_extended.in \
+-CAT_OUT $OUT_FPATH.out \
+-PARA_OUT ${PARAPATH}outputpara.para \
+-ZPHOTLIB ${LIB_STEM}_mag_lib,star_mag_lib \
+-MAG_REF 7 \
+-MAG_ABS -24,-8 \
+-GLB_CONTEXT $GLB_CONTEXT -FORB_CONTEXT $FORB_CONTEXT \
+-PDZ_OUT ${OUT_FPATH}
 
-# # Convert the output to a .fits file, considering which output cols were requested:
-# jystilts="java -jar /home/hslxrsrv3/p1wx150/jystilts.jar"
-# $jystilts $LEPHARE/lephare_scripts/jystilts/rewrite_fits_header.py ${PARAPATH}outputpara.para $OUT_FPATH.out
+# Convert the output to a .fits file, considering which output cols were requested:
+jystilts="java -jar /home/hslxrsrv3/p1wx150/jystilts.jar"
+$jystilts $LEPHARE/lephare_scripts/jystilts_scripts/rewrite_fits_header.py ${PARAPATH}outputpara.para $OUT_FPATH.out
 
 # Analyze the output:
 python3 $LEPHARE/lephare_scripts/assess_photoz_run.py $OUT_FPATH.fits extended -v

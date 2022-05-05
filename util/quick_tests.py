@@ -1,4 +1,7 @@
 # %%
+import shlex
+import subprocess
+
 import util.my_tools as mt
 
 df = mt.read_fits_as_dataframe(mt.DATAPATH + "sweep_dr10_corr.fits")
@@ -42,3 +45,10 @@ mt.save_dataframe_as_fits(
     pointlike, "lephare_input/dr10_test_pointlike.fits", True)
 mt.save_dataframe_as_fits(
     extended, "lephare_input/dr10_test_extended.fits", True)
+
+call = shlex.split(
+    f"java -jar /home/hslxrsrv3/p1wx150/stilts.jar tcopy {mt.DATAPATH}lephare_input/dr10_test_extended.fits {mt.DATAPATH}lephare_input/dr10_test_extended.in ifmt=fits ofmt=ascii")
+subprocess.call(call)
+call = shlex.split(
+    f"java -jar /home/hslxrsrv3/p1wx150/stilts.jar tcopy {mt.DATAPATH}lephare_input/dr10_test_pointlike.fits {mt.DATAPATH}lephare_input/dr10_test_pointlike.in ifmt=fits ofmt=ascii")
+subprocess.call(call)
