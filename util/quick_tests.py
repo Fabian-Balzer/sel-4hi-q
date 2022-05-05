@@ -15,6 +15,7 @@ df["ZSPEC"] = df[df["SPECZ_NORMQ"] == 3]["SPECZ_REDSHIFT"]
 fluxcols = [col for col in df.columns if "LU_" in col]
 
 # Go through the band list and assign nice photometry to all columns desired
+
 used_cols = []
 for band in mt.BAND_LIST:
     avail_cols = [col for col in fluxcols if band.lower() in col.split("_")[2]]

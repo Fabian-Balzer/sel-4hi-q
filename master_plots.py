@@ -104,4 +104,4 @@ if args.produce_template_plots:
         template_df = mt.read_template_library(
             f"{ttype}_mag_lib.dat")  # TODO: {args.template_stem}_
         ta.plot_multiple_against_redshift(
-            output_df, template_df, ttype, args.template_stem, bands=("g", "z"))
+            output_df, template_df, ttype, args.template_stem, bands=("i-hsc", "i-kids"))
