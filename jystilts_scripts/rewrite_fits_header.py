@@ -13,8 +13,10 @@ SWEEP_BANDS = ["g", "r", "z", "W1", "W2", "W3", "W4"]
 HSC_BANDS = ["i_hsc", "i2_hsc"]
 GALEX_BANDS = ["FUV", "NUV"]
 KIDS_BANDS = ["i_kids"]
-FILTER_LIST = GALEX_BANDS + \
-    SWEEP_BANDS[:3] + VHS_BANDS + SWEEP_BANDS[3:] + HSC_BANDS + KIDS_BANDS
+LS10_BANDS = ["i_ls10"]
+BAND_LIST = GALEX_BANDS + \
+    SWEEP_BANDS[:3] + VHS_BANDS + SWEEP_BANDS[3:] + \
+    HSC_BANDS + KIDS_BANDS + LS10_BANDS
 try:
     parafile = argv[1]
     rewritefile = argv[2]
@@ -31,10 +33,11 @@ def insert_filter_column(key, newname, colnames):
         print(key + " is not present in the output para file.")
         return colnames
     i = colnames.index(key)
-    return colnames[:i] + [newname + filt for filt in FILTER_LIST] + colnames[i + 1:]
+    return colnames[:i] + [newname + filt for filt in BAND_LIST] + colnames[i + 1:]
 
 
 def generate_names_from_parafile(parafile):
+    """Reads the parafile to extract the correct column names"""
     colnames = []
     file = open(parafile, "r")  # 'with' context doesn't work in jython
     for line in file.readlines():
@@ -45,8 +48,8 @@ def generate_names_from_parafile(parafile):
     # Iterate over all sets where the filters are used.
     key_to_namedict = {
         "MAG_OBS()": "MAG_", "ERR_MAG_OBS()": "ERR_MAG_", "MAG_MOD()": "MOD_MAG_"}
-    for key in key_to_namedict.keys():
-        colnames = insert_filter_column(key, key_to_namedict[key], colnames)
+    for key, name in key_to_namedict.items():
+        colnames = insert_filter_column(key, name, colnames)
     print("Adopting the colnames from the file\n'%s'." % parafile)
     return colnames
 
@@ -60,14 +63,14 @@ def generate_names_for_libfile(fname):
     vectors = [col for col in columns if "vector" in col]
     colnames = [col for col in columns if "vector" not in col]
     # Just in case something doesn't match up:
-    has_weird_length = len(colnames) + len(FILTER_LIST) * 2 != len(entries)
+    has_weird_length = len(colnames) + len(BAND_LIST) * 2 != len(entries)
     if has_weird_length:
         colnames = ["col " + str(i)
-                    for i in range(len(entries) - len(FILTER_LIST))]
-    for filt in FILTER_LIST:
+                    for i in range(len(entries) - len(BAND_LIST))]
+    for filt in BAND_LIST:
         colnames.append("mag_" + filt)
     if not has_weird_length:
-        for filt in FILTER_LIST:
+        for filt in BAND_LIST:
             colnames.append("kcor_" + filt)
     return colnames
 
@@ -75,6 +78,7 @@ def generate_names_for_libfile(fname):
 def rewrite_colnames(filename, colnames):
     """Reads the file given in ASCII, replaces the colnames and rewrites it as a fits file."""
     table = stilts.tread(filename, fmt="ASCII")
+
     if len(colnames) == len(table.columns()):
         for i, colname in enumerate(colnames):
             table = table.cmd_colmeta("-name", colname, "col" + str(i + 1))
@@ -90,8 +94,22 @@ def rewrite_colnames(filename, colnames):
     print(newname)
 
 
+def new_way_to_rewrite(filename):
+    """New way to rewrite colnames if stilts correctly reads out existing colnames"""
+    table = stilts.tread(filename, fmt="ASCII")
+    # cols = [str(col.name) for col in table.columns()]
+    for i, band in enumerate(BAND_LIST):
+        table = table.cmd_colmeta("-name", "MAG_" + band, "MAG_OBS" + str(i))
+        table = table.cmd_colmeta(
+            "-name", "ERR_MAG_" + band, "ERR_MAG_OBS" + str(i))
+    pre, ext = os.path.splitext(filename)  # separate filename and extension
+    newname = pre + ".fits"
+    table.write(newname, fmt="fits")
+
+
 colnames = generate_names_for_libfile(rewritefile) if parafile == "0" \
     else generate_names_from_parafile(parafile)
 
-
-rewrite_colnames(rewritefile, colnames)
+# print(rewritefile)
+# rewrite_colnames(rewritefile, colnames)
+new_way_to_rewrite(rewritefile)

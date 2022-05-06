@@ -1,10 +1,9 @@
 """Script to directly assess the quality of a photo-z run."""
-
+# %%
 import argparse
 import os
 
 import util.my_tools as mt
-
 
 
 def read_args():
@@ -17,7 +16,7 @@ def read_args():
         "ttype", help="The table type of the output file (extended or pointlike).")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Increase output verbosity.")
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
     return args
 
 

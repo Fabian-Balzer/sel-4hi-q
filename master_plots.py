@@ -49,9 +49,12 @@ def read_args():
                         help="Increase output verbosity.")
     args, _ = parser.parse_known_args()
     logger.info("Starting the analysis script for the following subtypes:")
+    args.output_stem = "with_dr10"
+    args.input_stem = "with_dr10"
     for argtype in [argtype.split('_')[1] for argtype, val in vars(args).items() if isinstance(val, bool) and val]:
         stemval = vars(args)[f'{argtype}_stem']
         logger.info(f"{argtype}_stem: {stemval}")
+    args.output_stem = "with_dr10"
     return args
 
 
@@ -90,6 +93,7 @@ if args.produce_output_plots:
     output_df = mt.read_plike_and_ext(
         prefix=f"lephare_output/{args.output_stem}_", suffix=".fits")
     output_df = mt.add_filter_columns(output_df)
+    output_df = output_df[output_df["mag_i-ls10"] > 0]
     for ttype in ["pointlike", "extended"]:
         # ta.plot_problematic_templates(output_df, ttype)
         s_p.plot_photoz_vs_specz(output_df, ttype, args.output_stem)

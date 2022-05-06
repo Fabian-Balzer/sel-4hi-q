@@ -32,7 +32,7 @@ FORB_CONTEXT=${FORB_CONTEXT:--1}
 LIB_PATH=$LEPHARE/data/lephare_files/templates/
 INPUT_PATH=$LEPHARE/data/lephare_input/
 OUTPUT_PATH=$LEPHARE/data/lephare_output/
-OUT_FPATH=${OUTPUT_PATH}${OUTPUT_STEM}_pointlike.out
+OUT_FPATH=${OUTPUT_PATH}${OUTPUT_STEM}_pointlike
 
 printf $OUT_FPATH
 
@@ -54,16 +54,18 @@ printf "\nLib-stem: $LIB_STEM\nInput-stem: $INPUT_STEM\nOutput-stem: $OUTPUT_STE
 ## Code to run photometric redshifts (pointlike sample) -> Forb_context = 24576 to exclude the HSC bands
 $LEPHAREDIR/source/zphota -c ${PARAPATH}${PARANAME} \
 -CAT_IN ${INPUT_PATH}${INPUT_STEM}_pointlike.in \
--CAT_OUT $OUT_FPATH.dat \
+-CAT_OUT $OUT_FPATH.out \
 -PARA_OUT ${PARAPATH}outputpara.para \
 -ZPHOTLIB ${LIB_STEM}_mag_lib,star_mag_lib \
 -MAG_REF 7 \
 -MAG_ABS -30,-20 \
--ERR_SCALE 0.2,0.2,0.05,0.05,0.05,0.1,0.1,0.1,0.1,0.2,0.2,0.3,0.4,0.05,0.05,0.05 \
 -GLB_CONTEXT $GLB_CONTEXT -FORB_CONTEXT $FORB_CONTEXT \
 -PDZ_OUT ${OUT_FPATH}
 
 # Convert the output to a .fits file, considering which output cols were requested:
 jystilts="java -jar /home/hslxrsrv3/p1wx150/jystilts.jar"
-$jystilts $LEPHARE/lephare_scripts/jystilts_scripts/rewrite_fits_header.py ${PARAPATH}outputpara.para $OUT_FPATH.dat
+$jystilts $LEPHARE/lephare_scripts/jystilts_scripts/rewrite_fits_header.py ${PARAPATH}outputpara.para $OUT_FPATH.out
 
+
+# Analyze the output:
+python3 $LEPHARE/lephare_scripts/assess_photoz_run.py $OUT_FPATH.fits pointlike -v

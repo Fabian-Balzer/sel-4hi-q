@@ -32,6 +32,7 @@ SWEEP_BANDS = ["g", "r", "z", "W1", "W2", "W3", "W4"]
 GALEX_BANDS = ["FUV", "NUV"]
 HSC_BANDS = ["i-hsc", "i2-hsc"]
 KIDS_BANDS = ["i-kids"]
+LS10_BANDS = ["i-ls10"]
 
 
 def generate_pretty_band_name(band, in_math_environ=False):
@@ -42,27 +43,25 @@ def generate_pretty_band_name(band, in_math_environ=False):
     return f"${new}$" if not in_math_environ else new
 
 
-BAND_DICT = {"vhs": VHS_BANDS, "sweep": SWEEP_BANDS,
-             "galex": GALEX_BANDS, "hsc": HSC_BANDS, "kids": KIDS_BANDS}
 BAND_LIST = GALEX_BANDS + SWEEP_BANDS[:3] + \
-    VHS_BANDS + SWEEP_BANDS[3:] + HSC_BANDS + KIDS_BANDS
+    VHS_BANDS + SWEEP_BANDS[3:] + HSC_BANDS + KIDS_BANDS + LS10_BANDS
 # Used for LaTeX axis labels
 BAND_LABEL_DICT = {band: generate_pretty_band_name(band) for band in BAND_LIST}
 BAND_LABEL_DICT["ZSPEC"] = "spec-$z$"
-ORDERED_BANDS = GALEX_BANDS + SWEEP_BANDS[:2] + HSC_BANDS + KIDS_BANDS\
+ORDERED_BANDS = GALEX_BANDS + SWEEP_BANDS[:2] + LS10_BANDS + HSC_BANDS + KIDS_BANDS\
     + SWEEP_BANDS[2:3] + VHS_BANDS + SWEEP_BANDS[3:]
 VHS_WL = [1020, 1250, 1650, 2220]
 SWEEP_WL = [472, 641.5, 926, 3400, 4600, 12000, 22000]
 HSC_WL = [806, 806]
 GALEX_WL = [150, 220]
 KIDS_WL = [806]
-BAND_DICT = {"galex": GALEX_BANDS, "vhs": VHS_BANDS,
-             "sweep": SWEEP_BANDS, "hsc": HSC_BANDS,
-             "kids": KIDS_BANDS}
+LS10_WL = [806]
+BAND_DICT = {"vhs": VHS_BANDS, "sweep": SWEEP_BANDS,
+             "galex": GALEX_BANDS, "hsc": HSC_BANDS, "kids": KIDS_BANDS, "ls10": LS10_BANDS}
 SURVEY_NAME_DICT = {"galex": "GALEX (GR6+7)",
-                    "vhs": "VHS (DR6)", "sweep": "LS (DR9)", "hsc": "HSC (DR3)", "kids": "KiDS (DR4)"}
+                    "vhs": "VHS (DR6)", "sweep": "LS (DR9)", "hsc": "HSC (DR3)", "kids": "KiDS (DR4)", "ls10": "LS (DR10)"}
 WL_LIST = GALEX_WL + SWEEP_WL[:3] + \
-    VHS_WL + SWEEP_WL[3:] + HSC_WL + KIDS_WL
+    VHS_WL + SWEEP_WL[3:] + HSC_WL + KIDS_WL + LS10_WL
 EFEDS_PERCENTAGE = 0.0145
 BAND_WL_DICT = {BAND_LIST[i]: WL_LIST[i]
                 for i in range(len(BAND_LIST))}
@@ -253,11 +252,14 @@ def add_filter_columns(df):
     df["nfilters"] = df["filter_list"].str.len()
     # rename capitalized mag columns
     cols = [col for col in df.columns if "MAG" in col]
-    newnames = [col.replace("MAG", "mag").replace(
-        "ERR_mag", "mag_err") for col in cols]
+    newnames = [col.replace("_", "-")
+                .replace("MAG-", "mag_")
+                .replace("ERR-mag-", "mag_err_") for col in cols]
     df = df.rename(columns=dict(zip(cols, newnames)))
-    df = df.rename(columns={
-                   f"mag_{band}": f"mag_{band.replace('_', '-')}" for band in ["i_hsc", "i2_hsc", "i_kids"]})
+    print(df["mag_i-ls10"].head())
+    for col in newnames:
+        df.loc[(df[col] <= 0) | (df[col] == 99.), col] = None
+    print(df["mag_i-ls10"].head())
     return add_outlier_information(df)
 
 

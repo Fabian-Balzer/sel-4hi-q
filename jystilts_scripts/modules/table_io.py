@@ -78,7 +78,7 @@ def pre_clean_table(name, table):
     any processing, only the selection of the relevant colums."""
     funcs = {"vhs": clean_vhs, "eros": clean_eros,
              "opt_agn": clean_opt_agn, "sweep": clean_sweep, "hsc": clean_hsc,
-             "kids": clean_kids, "xray_agn": clean_xray_agn
+             "kids": clean_kids, "xray_agn": clean_xray_agn,
              "ls10": clean_ls10}
     return funcs[name](table)
 
@@ -116,9 +116,17 @@ def clean_kids(table):
 
 def clean_ls10(table):
     """Cleans the legacy survey dr10 table."""
-    # Select primary sources
     table = change_colnames(
         table, ["ctp_ls8_ra", "ctp_ls8_dec", "LU_flux_i", "LU_flux_i_err"], ["ra", "dec", "c_flux_i_ls10", "c_flux_err_i_ls10"])
+    # oldcols = ["ctp_ls8_ra", "ctp_ls8_dec"]
+    # newcols = ["ra", "dec"]
+    # for band in ["i"]:  # +SWEEP_BANDS:
+    #     oldcols.append("LU_flux_" + band)
+    #     oldcols.append("LU_flux_" + band + "_err")
+    #     newcols.append("c_flux_" + band)
+    #     newcols.append("c_flux_err_" + band)
+    # table = change_colnames(table, oldcols, newcols)
+    # table = table.cmd_keepcols(" ".join(newcols))
     return table
 
 
@@ -322,7 +330,7 @@ def match_table_eros(table, eros, radius=1):
     """Skymatches the given tables and changes the columnames accordingly"""
     # Join with the eros data for spectroscopy
     table = stilts.tskymatch2(in1=table, in2=eros, dec1="dec", ra1="ra", error=radius,
-                              find="best", join="all1", ra1="ra", ra2="ra_eros", dec1="dec", dec2="dec_eros")
+                              find="best", join="all1", ra2="ra_eros", dec2="dec_eros")
     print_match_number(table, "eros")
     return table
 
@@ -601,6 +609,8 @@ def process_for_lephare(table, excluded_bands, used_cats):
         if table.cmd_keepcols(colname).cmd_meta().cmd_keepcols('Class')[0][0] == "Double":
             expr = 'NULL_' + colname + ' ? -99. : ' + colname
             table = table.cmd_replacecol(colname, expr)
+    print(newnames)
+    print(table.columns())
     return table
 
 

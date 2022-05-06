@@ -93,7 +93,7 @@ CAT_TYPE	LONG	  	 # Input Format    (LONG,SHORT-def)
 BD_SCALE	0		 # Bands used for scaling (Sum 2^n; n=0->nbd-1, 0->all bands) 
 GLB_CONTEXT	-1		 # Overwrite Context (Sum 2^n; n=0->nbd-1, 0->all bands, -1[-def] used context per object) 
 FORB_CONTEXT	-1		 # Not consider these filters in the fit  (Sum 2^n; n=0->nbd-1) 
-ERR_SCALE 0.02,0.02,0.05,0.05,0.05,0.1,0.1,0.1,0.1,0.2,0.2,0.2,0.2,0.05,0.05,02,0.02  # Systematic errors per band
+ERR_SCALE 0.02,0.02,0.05,0.05,0.05,0.1,0.1,0.1,0.1,0.2,0.2,0.2,0.2,0.05,0.05,0.2,0.02  # Systematic errors per band
 ERR_FACTOR      1.5
 #
 #------------------    Theoretical libraries           --------------------------------
@@ -132,7 +132,7 @@ EBV_RANGE      0,9               # E(B-V) MIN-MAX RANGE of E(B-V) used
 ZFIX		NO		# fixed z and search best model  [YES,NO-def]
 #
 #------------------  Parabolic interpolation for Zbest     ----------------------------
-PDZ_TYPE    MIN
+PDZ_TYPE    BAY
 Z_INTERP	YES		# redshift interpolation 
 #
 Z_METHOD	BEST		 # BEST/ML absolute magnitude, .spec, scaling will be given at this redshift 

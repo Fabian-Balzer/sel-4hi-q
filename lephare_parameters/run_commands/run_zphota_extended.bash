@@ -51,7 +51,7 @@ if [ -f "${OUT_FPATH}.fits" ]
 fi
 printf "\nLib-stem: $LIB_STEM\nInput-stem: $INPUT_STEM\nOutput-stem: $OUTPUT_STEM\nGlobal context: $GLB_CONTEXT, Forbidden context: $FORB_CONTEXT\n\n"
 
-## Code to run photometric redshifts (extended sample) -> Forb_context = 24576 to exclude the HSC bands
+# ## Code to run photometric redshifts (extended sample)
 $LEPHAREDIR/source/zphota -c ${PARAPATH}${PARANAME} \
 -CAT_IN ${INPUT_PATH}${INPUT_STEM}_extended.in \
 -CAT_OUT $OUT_FPATH.out \
@@ -60,7 +60,9 @@ $LEPHAREDIR/source/zphota -c ${PARAPATH}${PARANAME} \
 -MAG_REF 7 \
 -MAG_ABS -24,-8 \
 -GLB_CONTEXT $GLB_CONTEXT -FORB_CONTEXT $FORB_CONTEXT \
--PDZ_OUT ${OUT_FPATH}
+-PDZ_OUT ${OUT_FPATH} \
+
+
 
 # Convert the output to a .fits file, considering which output cols were requested:
 jystilts="java -jar /home/hslxrsrv3/p1wx150/jystilts.jar"

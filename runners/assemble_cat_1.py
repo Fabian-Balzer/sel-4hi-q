@@ -5,28 +5,8 @@ import os
 import shlex
 import subprocess
 
-WORKPATH = os.environ["LEPHARE"] + "/"  # Path for everything
-LEPHAREDIR = os.environ["LEPHAREDIR"] + "/"
-JYSTILTS = f"java -jar '{WORKPATH}static_files/programs/jystilts.jar'"
-
-
-def print_verbose(verbose, statement):
-    """Helper function to print only if verbose and separate the text from the rest"""
-    if verbose:
-        print("-*" * 40)
-        print(statement)
-        print("-*" * 40)
-
-
-def get_yes_no_input(question):
-    """Tries to get user input for a yes/no question."""
-    answer = input(question + "\n>>> ")
-    while True:
-        if answer.lower() in ["y", "yes", "yep"]:
-            return True
-        if answer.lower() in ["n", "no", "nope"]:
-            return False
-        answer = input("Please answer with 'yes' or 'no'\n>>> ")
+import util.my_tools as mt
+from util.my_logger import logger
 
 
 def read_args():
@@ -58,9 +38,32 @@ def read_args():
     return args
 
 
+def get_input_assembly_specifications(input_stem, lephare_stem):
+    """Prompts the user for several steps about using default or testing data."""
+    answer_dict = {"use_matched": False,
+                   "use_processed": False,
+                   "reduce_to_specz": False,
+                   "omit_lephare_input": False,
+                   "write_output_file": True}
+    matched_fpath = mt.DATAPATH + \
+        f"matches/{input_stem}_latest_match_backup.fits"
+    if os.path.isfile(matched_fpath):
+        answer_dict["use_matched"] = mt.get_yes_no_input(
+            f"Would you like to use the catalogue that has already been matched for {input_stem}?")
+    processed_fpath = mt.DATAPATH + \
+        f"matches/{input_stem}_pointlike_processed_table.fits"
+    if os.path.isfile(processed_fpath):
+        answer_dict["use_processed"] = mt.get_yes_no_input(
+            f"Would you like to use already processed data for {input_stem}?")
+    answer_dict["reduce_to_specz"] = mt.get_yes_no_input(
+        "Would you like your input catalogue to only contain sources with spec-z available?")
+    answer_dict["reduce_to_specz"] = mt.get_yes_no_input(
+        "Would you like to omit writing the LePhare input files?")
+
+
 def arrange_input_files(args):
     """Runs the jython script to match the input files."""
-    match_table_string = f"{JYSTILTS} '{WORKPATH}lephare_scripts/jystilts_scripts/match_tables.py' {args.stem_name} {args.lephare_stem} {args.use_matched} {args.use_processed} {args.reduce_to_specz} {args.write_info_file} {args.omit_lephare_input}"
+    match_table_string = f"{JYSTILTS} '{WORKPATH}lephare_scripts/jystilts/match_tables.py' {args.stem_name} {args.lephare_stem} {args.use_matched} {args.use_processed} {args.reduce_to_specz} {args.write_info_file} {args.omit_lephare_input}"
     subprocess.call(shlex.split(match_table_string))
     print_verbose(
         args.verbose, "Successfully ran the jython program to match and write the tables.")

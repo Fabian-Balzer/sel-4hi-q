@@ -5,14 +5,13 @@ from sys import path
 
 WORKPATH = os.environ["LEPHARE"] + "/"
 # This is needed to be able to import custom modules
-path.append(WORKPATH + "lephare_scripts/jystilts/modules")
+path.append(WORKPATH + "lephare_scripts/jystilts_scripts/modules")
 
 path.append("/home/hslxrsrv3/p1wx150")
 
 from sys import argv
 
 # import select_region as s_region
-import stilts
 from Table_Container import TableContainer
 
 args = ["stem", "lephare_stem", "use_matched", "use_processed", "test_only",
@@ -38,19 +37,20 @@ else:
 
 tables = TableContainer(arg_dict)
 
+cat_list = ["vhs", "galex", "hsc", "kids", "ls10"]
+
 if not arg_dict["use_matched"] and not arg_dict["use_processed"]:
-    tables.match_tables(cat_list=["vhs", "galex", "eros", "hsc", "kids"])
+    tables.match_tables(cat_list=cat_list + ["eros"])
 if not arg_dict["use_processed"]:
     tables.process_match()
 
 if not arg_dict["omit_lephare_input"]:
-    cats = ("galex", "sweep", "vhs", "hsc", "kids")
     excluded_extended = ()  # ("W3", "W4", "i_hsc", "i2_hsc")
     tables.process_for_lephare("extended", excluded_bands=excluded_extended,
-                               used_cats=cats, make_fits=False, stem_alt=None)
+                               used_cats=cat_list + ["sweep"], make_fits=False, stem_alt=None)
     excluded_pointlike = ()  # ("i_hsc", "i2_hsc")
     tables.process_for_lephare("pointlike", excluded_bands=excluded_pointlike,
-                               used_cats=cats, make_fits=False, stem_alt=None)
+                               used_cats=cat_list + ["sweep"], make_fits=False, stem_alt=None)
 
 
 # region_boundaries = s_region.get_region(eFEDS=True)  # Get the region as a minmaxlist
