@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 import util.my_tools as mt
-from util.my_logger import logger
 
 LATEXHEIGHT = 8.94046  # in inches
 LATEXWIDTH = 5.87614
@@ -63,7 +62,7 @@ def save_figure(fig, name="", directory="", stem="", format_="pdf"):
     stem = stem + "_" if stem != "" else stem
     fpath = f"{mt.PLOTPATH}{directory}{stem}{name}.{format_}"
     fig.savefig(fpath, format=format_, bbox_inches='tight')
-    logger.info(
+    mt.mt.LOGGER.info(
         f"Successfully saved the {stem}{name}.{format_} plot at {directory}.")
 
 
@@ -77,7 +76,7 @@ def save_current_figures(name, format_="pdf"):
         fig.savefig(pp, format=format_, bbox_inches='tight')
     pp.close()
     plt.close('all')
-    logger.info(f"Saved a joint figure to {path}")
+    mt.LOGGER.info(f"Saved a joint figure to {path}")
 
 
 font = {'family': 'sans',

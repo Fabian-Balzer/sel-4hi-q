@@ -3,54 +3,22 @@
 import os
 from sys import path
 
+from ConfigParser import ConfigParser
+
 WORKPATH = os.environ["LEPHARE"] + "/"
 # This is needed to be able to import custom modules
-path.append(WORKPATH + "lephare_scripts/jystilts_scripts/modules")
+path.append(WORKPATH + "lephare_scripts/jystilts_scripts")
 
 path.append("/home/hslxrsrv3/p1wx150")
 
-from sys import argv
 
-# import select_region as s_region
-from Table_Container import TableContainer
+from modules.Table_Container import TableContainer
 
-args = ["stem", "lephare_stem", "use_matched", "use_processed", "test_only",
-        "write_info", "omit_lephare_input"]
-arg_dict = {}
-for arg in args:
-    arg_dict[arg] = False
-
-try:
-    arg_dict["stem"] = argv[1]
-except IndexError:
-    raise(RuntimeError("Please provide at least a stem name."))
-
-if len(argv) - 1 == len(args):
-    arg_dict["lephare_stem"] = argv[2]
-    for i, arg in enumerate(args[2:]):
-        arg_dict[arg] = argv[i + 3].lower() == "true"
-else:
-    arg_dict["lephare_stem"] = arg_dict["stem"]
-    print("Defaulting to the following values:")
-    print(arg_dict)
-
-
-tables = TableContainer(arg_dict)
-
-cat_list = ["vhs", "galex", "hsc", "kids", "ls10"]
-
-if not arg_dict["use_matched"] and not arg_dict["use_processed"]:
-    tables.match_tables(cat_list=cat_list + ["eros"])
-if not arg_dict["use_processed"]:
-    tables.process_match()
-
-if not arg_dict["omit_lephare_input"]:
-    excluded_extended = ()  # ("W3", "W4", "i_hsc", "i2_hsc")
-    tables.process_for_lephare("extended", excluded_bands=excluded_extended,
-                               used_cats=cat_list + ["sweep"], make_fits=False, stem_alt=None)
-    excluded_pointlike = ()  # ("i_hsc", "i2_hsc")
-    tables.process_for_lephare("pointlike", excluded_bands=excluded_pointlike,
-                               used_cats=cat_list + ["sweep"], make_fits=False, stem_alt=None)
+tables = TableContainer()
+tables.match_tables()
+tables.process_match()
+tables.process_for_lephare("extended", make_fits=False)
+tables.process_for_lephare("pointlike", make_fits=False)
 
 
 # region_boundaries = s_region.get_region(eFEDS=True)  # Get the region as a minmaxlist

@@ -13,63 +13,29 @@ maybe needed:
 
 
 import argparse
-import os
+import shlex
+import subprocess
+from configparser import ConfigParser
 
-import input_scripts.availability_plots as av
-import input_scripts.filter_coverage_plot as fc
-import input_scripts.separation_plots as sep
-import output_scripts.specz_photz_plots as s_p
-import output_scripts.template_analysis_plots as ta
+import util.assert_config
 import util.my_tools as mt
-from util.my_logger import logger
 
 
-def read_args():
-    """Reads out the arguments given by the user."""
-    parser = argparse.ArgumentParser(
-        description="Assess a LePhare output file.")
-    parser.add_argument("-b", "--build_dirs", action="store_true",
-                        help="Builds the directories necessary for running the code.")
-    parser.add_argument("--context", type=int,
-                        help="The context for the LePhare run.", default=-99)
-    stem_defaults = {"input": "baseline_input",
-                     "Filter": "compiled_filters", "output": "test", "template": "baseline_templates"}
-    for argtype in ["input", "Filter", "output", "template"]:
-        # Introduce a boolean call on whether to produce any of the datasets:
-        short = f"-{argtype[0]}"  # i, s, F, o and t can be specified now.
-        long = f"--produce_{argtype}_data"
-        helpstring = f"Specify whether to run scripts producing the {argtype} data"
-        parser.add_argument(short, long, action="store_true",
-                            help=helpstring, default=True)
-        # Allow to specify the stem names:
-        argname = f"--{argtype}_stem"
-        default = stem_defaults[argtype]
-        helpstring = f"Specify the stem name of the {argtype} data."
-        parser.add_argument(argname, help=helpstring, default=default)
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Increase output verbosity.")
-    args, _ = parser.parse_known_args()
-    for argtype in [argtype.split('_')[1] for argtype, val in vars(args).items() if isinstance(val, bool) and val]:
-        print(f"{argtype}_stem: {vars(args)[f'{argtype}_stem']}")
-    if args.context != -99:
-        bands = mt.give_bands_for_context(args.context)
-        filters = mt.convert_context_to_band_indices(args.context)
-        logger.info(
-            f"Using GLB_CONTEXT = {args.context} for only using {bands} ({filters})")
-    else:
-        args.context = 8191
-        logger.info(
-            f"No context specified. Defaulting to the standard bands (GLB_CONTEXT set to {args.context})")
-    return args
+def assemble_catalog():
+    """Runs the jython script to match the input files."""
+    run_jystilts = f"java -jar {mt.GEN_CONFIG['PATHS']['JYSTILTS']}"
+    scriptpath = f"{mt.GEN_CONFIG['PATHS']['scripts']}jystilts_scripts/"
+    match_table_string = f"{run_jystilts} '{scriptpath}match_tables.py'"
+    subprocess.call(shlex.split(match_table_string))
+    mt.LOGGER.info(
+        "Successfully ran the jython program to match and write the tables.")
+    return
 
 
-args = read_args()
+if __name__ == "__main__":
+    if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
+        assemble_catalog()
 
-# %%
-if args.build_dirs:
-    mt.init_plot_directory()
-    mt.init_data_directory()
-    mt.init_other_directory()
 
 # %%
 # Construct the input dataframe:

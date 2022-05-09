@@ -1,16 +1,15 @@
 import table_io as t_io
+import jy_tools as jt
 
 
 class TableContainer(dict):
     """Custom table container with each of the tables stored in a dictionary."""
 
     def __init__(self, arg_dict):
-        self.arg_dict = arg_dict
-        self.stem = arg_dict["stem"]
         self.match = None
         self.required_tables = ["vhs", "sweep", "opt_agn",
                                 "eros", "hsc", "kids", "ls10"]  # , "xray_agn"]  # "assef_agn"
-        if not arg_dict["use_matched"]:
+        if not jt.CUR_CONFIG.get(""):
             self.load_tables()
             self.pre_clean_tables()
         else:

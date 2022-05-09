@@ -6,90 +6,86 @@ Created on Mon Jul 19 09:31:46 2021
 """
 
 
+import logging
 import os
+from configparser import ConfigParser
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from astropy.table import Table
 
-from util.my_logger import logger
-
-MYDIR = os.environ["LEPHARE"] + "/"
-DATAPATH = MYDIR + "data/"
-OUTPUTPATH = DATAPATH + "lephare_output/"
-MATCHPATH = DATAPATH + "matches/"
-PLOTPATH = MYDIR + "plots/"
-JYSTILTS = f"java -jar '{MYDIR}other/programs/jystilts.jar'"
-try:
-    LEPHAREDIR = os.environ["LEPHAREDIR"] + "/"
-except KeyError:
-    logger.warning("No installation of LePhare could be located.")
+CONFIGPATH = os.environ["LEPHARE"] + "/lephare_scripts/config/"
+GEN_CONFIG = ConfigParser()
+GEN_CONFIG.read(CONFIGPATH + "general.ini")
+CUR_CONFIG = ConfigParser()
+CUR_CONFIG.read(CONFIGPATH + GEN_CONFIG["PATHS"]["current_config"])
 
 
-VHS_BANDS = ["Y", "J", "H", "Ks"]
-SWEEP_BANDS = ["g", "r", "z", "W1", "W2", "W3", "W4"]
-GALEX_BANDS = ["FUV", "NUV"]
-HSC_BANDS = ["i-hsc", "i2-hsc"]
-KIDS_BANDS = ["i-kids"]
-LS10_BANDS = ["i-ls10"]
+def init_logger():
+    """Initializes a logger."""
+    # create logger
+    logger = logging.getLogger('simple_logger')
+    logger.setLevel(logging.DEBUG)
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(CUR_CONFIG.get("GENERAL", "logging_level"))
+    # create formatter
+    formatter = logging.Formatter('%(levelname)s: %(message)s')
+    # add formatter to ch
+    ch.setFormatter(formatter)
+    # add ch to logger
+    logger.addHandler(ch)
+    return logger
+
+
+LOGGER = init_logger()
 
 
 def generate_pretty_band_name(band, in_math_environ=False):
     """Generates a band name that can be used in LaTeX."""
+    if band == "ZSPEC":
+        return r"{\rm spec-}z" if in_math_environ else "spec-$z$"
     band = band.replace("-", "_")
     suffix = r"}" if "_" in band else ""
     new = band.replace('_', r'_{\rm ') + suffix
     return f"${new}$" if not in_math_environ else new
 
 
-BAND_LIST = GALEX_BANDS + SWEEP_BANDS[:3] + \
-    VHS_BANDS + SWEEP_BANDS[3:] + HSC_BANDS + KIDS_BANDS + LS10_BANDS
-# Used for LaTeX axis labels
-BAND_LABEL_DICT = {band: generate_pretty_band_name(band) for band in BAND_LIST}
-BAND_LABEL_DICT["ZSPEC"] = "spec-$z$"
-ORDERED_BANDS = GALEX_BANDS + SWEEP_BANDS[:2] + LS10_BANDS + HSC_BANDS + KIDS_BANDS\
-    + SWEEP_BANDS[2:3] + VHS_BANDS + SWEEP_BANDS[3:]
-VHS_WL = [1020, 1250, 1650, 2220]
-SWEEP_WL = [472, 641.5, 926, 3400, 4600, 12000, 22000]
-HSC_WL = [806, 806]
-GALEX_WL = [150, 220]
-KIDS_WL = [806]
-LS10_WL = [806]
-BAND_DICT = {"vhs": VHS_BANDS, "sweep": SWEEP_BANDS,
-             "galex": GALEX_BANDS, "hsc": HSC_BANDS, "kids": KIDS_BANDS, "ls10": LS10_BANDS}
-SURVEY_NAME_DICT = {"galex": "GALEX (GR6+7)",
-                    "vhs": "VHS (DR6)", "sweep": "LS (DR9)", "hsc": "HSC (DR3)", "kids": "KiDS (DR4)", "ls10": "LS (DR10)"}
-WL_LIST = GALEX_WL + SWEEP_WL[:3] + \
-    VHS_WL + SWEEP_WL[3:] + HSC_WL + KIDS_WL + LS10_WL
-EFEDS_PERCENTAGE = 0.0145
-BAND_WL_DICT = {BAND_LIST[i]: WL_LIST[i]
-                for i in range(len(BAND_LIST))}
+def give_survey_name(survey):
+    """Returns the survey name for the plots"""
+    name_dict = {"galex": "GALEX (GR6+7)",
+                 "vhs": "VHS (DR6)", "sweep": "LS (DR9)", "hsc": "HSC (DR3)", "kids": "KiDS (DR4)", "ls10": "LS (DR10)"}
+    return name_dict[survey]
 
 
-def init_plot_directory():
+def init_plot_directory(ppath):
     """Constructs a plot directory with the necessary subfolders if it is missing."""
     for dirs in ["output_analysis/templates", "input_analysis/separation"]:
-        path = MYDIR + "plots/" + dirs
+        path = ppath + dirs
         Path(path).mkdir(parents=True, exist_ok=True)
+    LOGGER.info(f"Successfully initialized the path for plots at '{ppath}'.")
 
 
-def init_data_directory():
+def init_data_directory(dpath):
     """Constructs a data directory with the necessary subfolders if it is missing"""
     for dirs in ["lephare_files/templates", "lephare_input", "lephare_output", "matches", "raw_catalogues"]:
-        path = MYDIR + "data/" + dirs
+        path = dpath + dirs
         Path(path).mkdir(parents=True, exist_ok=True)
+    LOGGER.info(f"Successfully initialized the path for data at '{dpath}'.")
 
 
-def init_other_directory():
+def init_other_directory(opath):
     """Constructs a data directory with the necessary subfolders if it is missing"""
     for dirs in ["latex", "programs"]:
-        path = MYDIR + "other/" + dirs
+        path = opath + dirs
         Path(path).mkdir(parents=True, exist_ok=True)
-    jystiltsfpath = f"{MYDIR}other/programs/jystilts.jar"
+    jystiltsfpath = f"{opath}programs/jystilts.jar"
     if not os.path.isfile(jystiltsfpath):
-        logger.warning(
+        LOGGER.warning(
             f"Jystilts couldn't be located. Please install it in {jystiltsfpath}")
+    LOGGER.info(
+        f"Successfully initialized the path for other stuff at '{opath}'.")
 
 
 def read_fits_as_dataframe(filename, saferead=False):
@@ -114,7 +110,7 @@ def save_dataframe_as_fits(df, filename, overwrite=False):
     table = Table.from_pandas(df)
     fpath = DATAPATH + filename
     table.write(fpath, overwrite=overwrite)
-    logger.info(f"Successfully saved the dataframe at {fpath}.")
+    LOGGER.info(f"Successfully saved the dataframe at {fpath}.")
 
 
 def read_plike_and_ext(prefix, suffix, fmt="fits"):
@@ -142,8 +138,8 @@ def read_glb_context(fname):
             if "GLB_CONTEXT" in line:
                 break
     context = int(line.split(":")[1].strip())
-    logger.info(context)
-    logger.info(give_bands_for_context(context))
+    LOGGER.info(context)
+    LOGGER.info(give_bands_for_context(context))
 
 
 def read_ascii_as_dataframe(filename):
@@ -207,9 +203,9 @@ def add_mag_columns(df, verbose=False):
             df["mag_" + band] = flux_to_AB(df[colname])
             df["mag_err_" + band] = flux_to_AB(df[errcolname])
         except KeyError:
-            logger.info(f"Could not find {colname} column in dataframe.")
+            LOGGER.info(f"Could not find {colname} column in dataframe.")
             if verbose:
-                logger.info(f"Available columns: {' '.join(list(df.columns))}")
+                LOGGER.info(f"Available columns: {' '.join(list(df.columns))}")
     return df
 
 
@@ -301,9 +297,9 @@ def give_output_statistics(df, filters_used=False):
         bads = [item for sublist in df_bad["filter_list"] for item in sublist]
         goods = [item for sublist in df_good["filter_list"]
                  for item in sublist]
-        logger.info("Filter\tgood photoz\tbad photoz")
+        LOGGER.info("Filter\tgood photoz\tbad photoz")
         for n, filt in enumerate(BAND_LIST):
-            logger.info(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
+            LOGGER.info(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
     return {"eta": eta, "sig_nmad": sig_nmad, "psi_pos": psi_pos, "psi_neg": psi_neg}
 
 
@@ -326,10 +322,10 @@ def give_row_statistics(df):
     """Takes a dataframe and computes the mean values for each band."""
     for column in BAND_LIST:
         try:
-            logger.info(f"{column}:\t{df[column].mean()*1e28:.4g}\t\pm \
+            LOGGER.info(f"{column}:\t{df[column].mean()*1e28:.4g}\t\pm \
               {df[column].std()*1e28:.4g}\t 10**(-28) ergs/cm**2/Hz/s")
         except KeyError as k:
-            logger.info(f"Could not find the column {column} in the dataframe."
+            LOGGER.info(f"Could not find the column {column} in the dataframe."
                         "\nMoving on to the next one.")
 
 
@@ -367,9 +363,9 @@ def give_input_statistics(df, sourcetype):
     """Takes an input dataframe and constructs input statistics, including the number of sources and the the number this would correspond to on the whole sky.
     """
     source_num = len(df)
-    logger.info(f"There are {source_num} sources in the {sourcetype} eFEDS dataset, \
+    LOGGER.info(f"There are {source_num} sources in the {sourcetype} eFEDS dataset, \
         corresponding to {int(source_num/EFEDS_PERCENTAGE)} sources in the whole sky.")
-    logger.info(
+    LOGGER.info(
         f"There are {len(find_good_indices(df))} sources with photometry in all bands.")
     bands = sorted(calculate_number_of_photometry(df))
     sources = [calculate_number_of_photometry(df)[band] for band in bands]
@@ -379,10 +375,10 @@ def give_input_statistics(df, sourcetype):
     tablestring += "# sources:" + \
         "|".join([f"{source:4}" for source in sources]) + "\n"
     tablestring += "_" * 80 + "\n"
-    logger.info(tablestring)
+    LOGGER.info(tablestring)
     for band_num, source_num in \
             sorted(calculate_number_of_photometry(df).items()):
-        logger.info(
+        LOGGER.info(
             f"There are {source_num} sources with {band_num} bands of photometry available.")
 
 
@@ -402,7 +398,7 @@ def find_lower_exponent(context):
         if 2**i > context:
             break
         i += 1
-#    logger.info(f"For a context of {context}, the lower exponent is {i-1}.")
+#    LOGGER.info(f"For a context of {context}, the lower exponent is {i-1}.")
     return i - 1
 
 
@@ -417,7 +413,7 @@ def convert_context_to_band_indices(context):
         context = int(context["used_context"])
     if type(context) is not int:
         context = int(context)
-        logger.info(f"Forcing context to become {context}")
+        LOGGER.info(f"Forcing context to become {context}")
     if context == -1:  # Return all bands if context is -1
         return list(range(1, len(BAND_LIST) + 1))
     filter_numbers = []
@@ -455,3 +451,10 @@ def get_yes_no_input(question):
         if answer.lower() in ["n", "no", "nope"]:
             return False
         answer = input("Please answer with 'yes' or 'no'\n>>> ")
+
+
+def assert_file_overwrite(fpath):
+    """Asks the user whether to really overwrite the given file."""
+    if os.path.isfile(fpath):
+        assert get_yes_no_input(
+            f"The file '{fpath}' already exists.\nContinue to overwrite it?")

@@ -20,8 +20,6 @@ import input_scripts.separation_plots as sep
 import output_scripts.specz_photz_plots as s_p
 import output_scripts.template_analysis_plots as ta
 import util.my_tools as mt
-from util.my_logger import logger
-
 
 def read_args():
     """Reads out the arguments given by the user."""
@@ -48,19 +46,19 @@ def read_args():
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Increase output verbosity.")
     args, _ = parser.parse_known_args()
-    logger.info("Starting the analysis script for the following subtypes:")
+    mt.LOGGER.info("Starting the analysis script for the following subtypes:")
     args.output_stem = "with_dr10"
     args.input_stem = "with_dr10"
     for argtype in [argtype.split('_')[1] for argtype, val in vars(args).items() if isinstance(val, bool) and val]:
         stemval = vars(args)[f'{argtype}_stem']
-        logger.info(f"{argtype}_stem: {stemval}")
+        mt.LOGGER.info(f"{argtype}_stem: {stemval}")
     args.output_stem = "with_dr10"
     return args
 
 
 args = read_args()
 
-logger.info(args.context)  # TODO
+mt.LOGGER.info(args.context)  # TODO
 # print(args.context)
 # %%
 # input dataframes:
