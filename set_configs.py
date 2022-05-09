@@ -12,24 +12,23 @@ import os
 from configparser import ConfigParser
 
 import util.my_tools as mt
-from util.my_logger import logger
 
 try:
     MYDIR = os.environ["LEPHARE"] + "/"
 except KeyError:
-    logger.error(
+    mt.LOGGER.error(
         "Please initialize the 'LEPHARE' directory before running any further code.")
     raise Exception
 
 try:
-    CATPATH = os.environ["CATPATH"]
+    CATPATH = os.environ["CATPATH"] + "/"
 except KeyError:
-    logger.error("No catalog path could be found.")
+    mt.LOGGER.error("No catalog path could be found.")
     CATPATH = ""
 try:
     LEPHAREDIR = os.environ["LEPHAREDIR"]
 except KeyError:
-    logger.error("No path for a LePhare installation could be found.")
+    mt.LOGGER.error("No path for a LePhare installation could be found.")
     LEPHAREDIR = ""
 
 DATAPATH = MYDIR + "data/"
@@ -115,7 +114,7 @@ config["FILTERS"] = {
 fpath = CONFIGPATH + 'general.ini'
 with open(fpath, 'w', encoding="utf8") as configfile:
     config.write(configfile)
-    logger.info(f"A general config file has been written to {fpath}")
+    mt.LOGGER.info(f"A general config file has been written to {fpath}")
 
 mt.init_plot_directory(PLOTPATH)
 mt.init_data_directory(DATAPATH)
@@ -166,4 +165,4 @@ config["PLOTTING"] = {
 fpath = CONFIGPATH + DEFAULTCONFIG
 with open(fpath, 'w', encoding="utf8") as configfile:
     config.write(configfile)
-    logger.info(f"A default config file has been written to {fpath}")
+    mt.LOGGER.info(f"A default config file has been written to {fpath}")

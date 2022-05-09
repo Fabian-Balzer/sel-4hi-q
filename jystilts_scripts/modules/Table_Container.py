@@ -1,31 +1,20 @@
-import table_io as t_io
 import jy_tools as jt
+import table_io as t_io
 
 
 class TableContainer(dict):
     """Custom table container with each of the tables stored in a dictionary."""
 
-    def __init__(self, arg_dict):
-        self.match = None
-        self.required_tables = ["vhs", "sweep", "opt_agn",
-                                "eros", "hsc", "kids", "ls10"]  # , "xray_agn"]  # "assef_agn"
-        if not jt.CUR_CONFIG.get(""):
-            self.load_tables()
-            self.pre_clean_tables()
-        else:
-            self.match, self.cats_used_for_matching = t_io.read_match_from_backup(
-                self.stem, self.required_tables + ["galex"])
-        if arg_dict["use_processed"]:
-            print("Loading the processed tables.")
-            for ttype in ["pointlike", "extended"]:
-                self[ttype] = t_io.read_processed_input_for_analysis(
-                    self.stem, ttype)
-                if arg_dict["test_only"]:  # In this case, select only a subset with SPECZ available
-                    self[ttype] = t_io.filter_for_testing(self[ttype])
-            if arg_dict["write_info"]:
-                t_io.write_info_file(
-                    self["pointlike"], self["extended"], self.stem, self.cats_used_for_matching)
+    def __init__(self):
         super(TableContainer, self).__init__()
+        self.match = None
+        self.stem = jt.CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
+        self.load_tables()
+        self.pre_clean_tables()
+        self.match_tables()
+        self.process_match()
+        for ttype in ["pointlike", "extended"]:
+            self.process_for_lephare(ttype)
 
     def __str__(self):
         text = ""
@@ -41,57 +30,48 @@ class TableContainer(dict):
 
     def load_tables(self):
         """Read the tables."""
-        for tablename in self.required_tables:
+        # , "xray_agn"]  # "assef_agn"
+        cats = ["vhs", "sweep", "opt_agn", "eros", "hsc", "kids", "ls10"]
+        for tablename in cats:
             self[tablename] = t_io.read_table(tablename)
+        jt.LOGGER.debug(
+            "Loaded tables from the following catalogs:\n%s", cats)
 
-    def match_tables(self, cat_list=None):
+    def match_tables(self):
         """Matches all tables in the given table_list, or simply all tables provided."""
-        cat_list = self.keys() if cat_list is None else cat_list
-        self.match = t_io.match_given_tables(self, cat_list)
-        t_io.write_match_as_backup(self.match, self.stem)
-        self.cats_used_for_matching = cat_list
+        if jt.CUR_CONFIG.getboolean("CAT_ASSEMBLY", "use_matched"):
+            self.match = jt.read_match_from_backup()
+        else:
+            self.match = t_io.match_given_tables(self)
+            jt.write_match_as_backup(self.match)
 
     def process_match(self):
         """Processes the matched table and writes pointlike and extended sub-tables."""
-        self.match = t_io.add_separation_columns(
-            self.match, self.cats_used_for_matching)
-        # Processing step to split the pointlike and extended part and convert all fluxes:
-        self["pointlike"], self["extended"] = t_io.process_table(
-            self.match, self.cats_used_for_matching)
+        if jt.CUR_CONFIG.getboolean("CAT_ASSEMBLY", "use_processed"):
+            for ttype in ["pointlike", "extended"]:
+                self[ttype] = jt.read_processed_table(ttype)
+        else:
+            with_sep = t_io.add_separation_columns(self.match)
+            # Processing step to split the pointlike and extended part and convert all fluxes:
+            self["pointlike"], self["extended"] = t_io.process_table(with_sep)
+            for ttype in ["pointlike", "extended"]:
+                # Get rid of possibly faultily-matched photometry:
+                self[ttype] = t_io.discard_problematic_matches(self[ttype])
+                jt.write_processed_table(self[ttype], ttype)
         for ttype in ["pointlike", "extended"]:
-            # Get rid of possibly faultily-matched photometry:
-            self[ttype] = t_io.discard_problematic_matches(self[ttype])
-            t_io.write_processed_input_for_analysis(
-                self[ttype], self.stem, ttype)
-            # In this case, select only a subset with SPECZ available
-            if self.arg_dict["test_only"]:
-                self[ttype] = t_io.filter_for_testing(self[ttype])
-        if self.arg_dict["write_info"]:
-            t_io.write_info_file(
-                self["pointlike"], self["extended"], self.stem, self.cats_used_for_matching)
+            self[ttype] = t_io.filter_for_testing(self[ttype])
+        jt.write_info_file(self["pointlike"], self["extended"])
 
-    def process_for_lephare(self, ttype, excluded_bands=(), used_cats=("sweep", "vhs", "galex"), make_fits=False, stem_alt=None):
+    def process_for_lephare(self, ttype):
         """Function to clean the tables and output them such that they can be used by LePhare.
         Parameters:
-            ttype: pointlike or extended (the subset of the general catalogue
-            context: the lephare context provided
-
-            used_cats: Tuple of catalogue names that you want to be included in LePhare (order doesn't matter as the order is forced anyways)
-
-            make_fits: Bool to determine wether to additionally write a fits output file
-
-            stem_alt: Alternative string name for the stem (handy if doing testing with different contexts)"""
+            ttype: pointlike or extended"""
         if not ttype in self.keys():
-            print("You did not initialize the " + ttype +
-                  " table. Maybe you'll need to call process_match() first.")
+            jt.LOGGER.warning("You did not initialize the %s table.", ttype)
             return
-        self[ttype + "_lephare"] = t_io.process_for_lephare(
-            self[ttype], excluded_bands, used_cats)
-        stem = stem_alt if stem_alt is not None else self.arg_dict["lephare_stem"]
-        t_io.write_lephare_input(self[ttype + "_lephare"], ttype, stem)
-        if make_fits:
-            t_io.write_lephare_input(
-                self[ttype + "_lephare"], ttype, stem, ofmt="fits")
+        if jt.CUR_CONFIG.getboolean("CAT_ASSEMBLY", "write_lephare_input"):
+            self[ttype + "_lephare"] = t_io.process_for_lephare(self[ttype])
+            jt.write_lephare_input(self[ttype + "_lephare"], ttype)
 
     # def write_ra_and_dec(self):
     #     ra_dec = self.tables["matches"].cmd_keepcols("ra dec")

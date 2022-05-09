@@ -29,7 +29,7 @@ def init_logger():
     logger.setLevel(logging.DEBUG)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(CUR_CONFIG.get("GENERAL", "logging_level"))
+    ch.setLevel(CUR_CONFIG.getint("GENERAL", "logging_level"))
     # create formatter
     formatter = logging.Formatter('%(levelname)s: %(message)s')
     # add formatter to ch
