@@ -12,13 +12,11 @@ maybe needed:
 # %%
 
 
-import argparse
 import shlex
 import subprocess
-from configparser import ConfigParser
 
-import util.assert_config
 import util.my_tools as mt
+from util.assert_config import assert_all
 
 
 def assemble_catalog():
@@ -33,7 +31,7 @@ def assemble_catalog():
 
 
 if __name__ == "__main__":
-    pass
+    assert_all()
 
     # if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
     #     assemble_catalog()

@@ -10,7 +10,8 @@ from sys import path
 
 path.append(os.environ["LEPHARE"] + "/lephare_scripts")
 
-from util.my_tools import CUR_CONFIG, GEN_CONFIG, LOGGER, assert_file_overwrite
+from util.my_tools import (BAND_LIST, CUR_CONFIG, GEN_CONFIG, LOGGER,
+                           assert_file_overwrite)
 
 use_plike = CUR_CONFIG["GENERAL"].getboolean("use_pointlike")
 use_ext = CUR_CONFIG["GENERAL"].getboolean("use_extended")
@@ -20,10 +21,12 @@ use_ext = CUR_CONFIG["GENERAL"].getboolean("use_extended")
 
 def assert_general():
     """General assertions (checking the fpath availability and context)"""
-    assert isfile(
-        GEN_CONFIG["PATHS"]["config"] + GEN_CONFIG["PATHS"]["current_config"])
-    assert -1 <= CUR_CONFIG["LEPHARE"].getint("context") <= (
-        len(GEN_CONFIG["BANDS"]["listed"]) + 1)**2
+    fpath = GEN_CONFIG["PATHS"]["config"] + \
+        GEN_CONFIG["PATHS"]["current_config"]
+    assert isfile(fpath), f"Unable to find config file at '{fpath}'"
+    context = CUR_CONFIG["LEPHARE"].getint("context")
+    assert (-1 <= context <= (len(BAND_LIST) + 1) **
+            2), f"Context {context} is not a viable context."
 
 
 # %% Assert catalog availability:
@@ -114,6 +117,9 @@ def assert_lephare_assembly():
 
 
 # %% Assert plotting:
+def assert_plots():
+    """Assertions needed before running the plotting functions"""
+    pass
 # TODO!
 # CUR_CONFIG["PLOTTING"].getboolean("input")
 # CUR_CONFIG["PLOTTING"].getboolean("sep")
@@ -121,4 +127,11 @@ def assert_lephare_assembly():
 # CUR_CONFIG["PLOTTING"].getboolean("output")
 # CUR_CONFIG["PLOTTING"].getboolean("template")
 
-LOGGER.info("All assertions have been successful.")
+
+def assert_all():
+    """Goes through all config assertion functions."""
+    assert_general()
+    assert_catalog_assembly()
+    assert_lephare_assembly()
+    assert_plots()
+    LOGGER.info("All assertions have been successful.")
