@@ -10,110 +10,92 @@ from sys import path
 
 path.append(os.environ["LEPHARE"] + "/lephare_scripts")
 
-from util.my_tools import (BAND_LIST, CUR_CONFIG, GEN_CONFIG, LOGGER,
-                           assert_file_overwrite)
+import util.my_tools as mt
 
-use_plike = CUR_CONFIG["GENERAL"].getboolean("use_pointlike")
-use_ext = CUR_CONFIG["GENERAL"].getboolean("use_extended")
+use_plike = mt.CUR_CONFIG["GENERAL"].getboolean("use_pointlike")
+use_ext = mt.CUR_CONFIG["GENERAL"].getboolean("use_extended")
 
 # %% General assertions
 
 
 def assert_general():
     """General assertions (checking the fpath availability and context)"""
-    fpath = GEN_CONFIG["PATHS"]["config"] + \
-        GEN_CONFIG["PATHS"]["current_config"]
+    fpath = mt.GEN_CONFIG["PATHS"]["config"] + \
+        mt.GEN_CONFIG["PATHS"]["current_config"]
     assert isfile(fpath), f"Unable to find config file at '{fpath}'"
-    context = CUR_CONFIG["LEPHARE"].getint("context")
-    assert (-1 <= context <= (len(BAND_LIST) + 1) **
+    context = mt.CUR_CONFIG["LEPHARE"].getint("context")
+    assert (-1 <= context <= (len(mt.BAND_LIST) + 1) **
             2), f"Context {context} is not a viable context."
 
 
 # %% Assert catalog availability:
 def assert_catalog_assembly():
     """Assertions needed for running the catalog assembly"""
-    cat_stem = CUR_CONFIG["CAT_ASSEMBLY"]["cat_stem"]
-    if CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
-        assert GEN_CONFIG["PATHS"]["cat"] != ""
-        available_cats = os.listdir(GEN_CONFIG["PATHS"]["cat"])
-        for survey in GEN_CONFIG["BAND_DICT"].keys():
+    cat_stem = mt.CUR_CONFIG["CAT_ASSEMBLY"]["cat_stem"]
+    if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
+        assert mt.GEN_CONFIG["PATHS"]["cat"] != ""
+        available_cats = os.listdir(mt.GEN_CONFIG["PATHS"]["cat"])
+        for survey in mt.GEN_CONFIG["BAND_DICT"].keys():
             if survey != "galex":
                 assert survey in available_cats
 
-        if CUR_CONFIG["CAT_ASSEMBLY"].getboolean("use_matched"):
+        if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("use_matched"):
             matchname = cat_stem + "_latest_match.fits"
-            assert isfile(GEN_CONFIG["PATHS"]["match"] + matchname)
+            assert isfile(mt.GEN_CONFIG["PATHS"]["match"] + matchname)
 
-        if CUR_CONFIG["CAT_ASSEMBLY"].getboolean("use_processed"):
+        if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("use_processed"):
             procname = cat_stem + "pointlike_processed.fits"
-            assert isfile(GEN_CONFIG["PATHS"]["match"] + procname)
+            assert isfile(mt.GEN_CONFIG["PATHS"]["match"] + procname)
             procname = cat_stem + "pointlike_extended.fits"
-            assert isfile(GEN_CONFIG["PATHS"]["match"] + procname)
+            assert isfile(mt.GEN_CONFIG["PATHS"]["match"] + procname)
 
-        input_stem = CUR_CONFIG["LEPHARE"]["input_stem"]
-        if CUR_CONFIG["CAT_ASSEMBLY"].getboolean("write_lephare_input"):
+        input_stem = mt.CUR_CONFIG["LEPHARE"]["input_stem"]
+        if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("write_lephare_input"):
             if use_plike:
                 inputname = input_stem + "_pointlike.in"
-                fpath = GEN_CONFIG["PATHS"]["data"] + \
+                fpath = mt.GEN_CONFIG["PATHS"]["data"] + \
                     "lephare_input/" + inputname
-                assert_file_overwrite(fpath)
+                mt.assert_file_overwrite(fpath)
             if use_ext:
                 inputname = input_stem + "_extended.in"
-                fpath = GEN_CONFIG["PATHS"]["data"] + \
+                fpath = mt.GEN_CONFIG["PATHS"]["data"] + \
                     "lephare_input/" + inputname
-                assert_file_overwrite(fpath)
+                mt.assert_file_overwrite(fpath)
 
 # %% Assert LePhare stuff
 
 
 def assert_lephare_assembly():
     """Assertions needed for running lephare"""
-    parampath = GEN_CONFIG["PATHS"]["params"]
-    filt = CUR_CONFIG["LEPHARE"].getboolean("run_filters")
-    temps = CUR_CONFIG["LEPHARE"].getboolean("run_templates")
-    zphot = CUR_CONFIG["LEPHARE"].getboolean("run_zphota")
+    filt = mt.CUR_CONFIG["LEPHARE"].getboolean("run_filters")
+    temps = mt.CUR_CONFIG["LEPHARE"].getboolean("run_templates")
+    zphot = mt.CUR_CONFIG["LEPHARE"].getboolean("run_zphota")
     if filt | temps | zphot:
-        assert isfile(
-            parampath + CUR_CONFIG["LEPHARE"]["para_stem"] + "_in.para")
-        assert isfile(
-            parampath + CUR_CONFIG["LEPHARE"]["para_stem"] + "_out.para")
+        assert isfile(mt.give_parafile_fpath())
 
     if filt:
-        fpath = GEN_CONFIG["PATHS"]["data"] + "lephare_files/" + \
-            CUR_CONFIG["LEPHARE"]["filter_stem"] + ".filt"
-        assert_file_overwrite(fpath)
+        mt.assert_file_overwrite(mt.give_filterfile_fpath())
 
     if temps:
         if use_plike:
-            fpath = GEN_CONFIG["PATHS"]["data"] + "lephare_files/templates/" + \
-                CUR_CONFIG["LEPHARE"]["para_stem"] + "_pointlike_mag_lib.fits"
-            assert_file_overwrite(fpath)
+            mt.assert_file_overwrite(mt.give_templib_fpath("pointlike"))
         if use_ext:
-            fpath = GEN_CONFIG["PATHS"]["data"] + "lephare_files/templates/" + \
-                CUR_CONFIG["LEPHARE"]["para_stem"] + "_extended_mag_lib.fits"
-            assert_file_overwrite(fpath)
-        fpath = GEN_CONFIG["PATHS"]["data"] + "lephare_files/templates/" + \
-            CUR_CONFIG["LEPHARE"]["para_stem"] + "_star_mag_lib.fits"
-        assert_file_overwrite(fpath)
+            mt.assert_file_overwrite(mt.give_templib_fpath("extended"))
+        mt.assert_file_overwrite(mt.give_templib_fpath("star"))
 
     if zphot:
-        input_stem = GEN_CONFIG["PATHS"]["data"] + \
-            "lephare_input/" + CUR_CONFIG["LEPHARE"]["input_stem"]
-        if not CUR_CONFIG["CAT_ASSEMBLY"].getboolean("write_lephare_input"):
+        assert isfile(mt.give_parafile_fpath(out=True))
+        if not mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("write_lephare_input"):
             if use_plike:
-                fpath = input_stem + "_pointlike.in"
-                assert isfile(fpath)
+                assert isfile(mt.give_lepharefile_fpath("pointlike"))
             if use_ext:
-                fpath = input_stem + "_extended.in"
-                assert isfile(fpath)
-        output_stem = GEN_CONFIG["PATHS"]["data"] + \
-            "lephare_output/" + CUR_CONFIG["LEPHARE"]["output_stem"]
+                assert isfile(mt.give_lepharefile_fpath("extended"))
         if use_plike:
-            fpath = output_stem + "_pointlike.out"
-            assert assert_file_overwrite(fpath)
+            assert mt.assert_file_overwrite(
+                mt.give_lepharefile_fpath("pointlike", out=True))
         if use_ext:
-            fpath = output_stem + "_extended.out"
-            assert assert_file_overwrite(fpath)
+            assert mt.assert_file_overwrite(
+                mt.give_lepharefile_fpath("extended", out=True))
 
 
 # %% Assert plotting:
@@ -121,11 +103,11 @@ def assert_plots():
     """Assertions needed before running the plotting functions"""
     pass
 # TODO!
-# CUR_CONFIG["PLOTTING"].getboolean("input")
-# CUR_CONFIG["PLOTTING"].getboolean("sep")
-# CUR_CONFIG["PLOTTING"].getboolean("filters")
-# CUR_CONFIG["PLOTTING"].getboolean("output")
-# CUR_CONFIG["PLOTTING"].getboolean("template")
+# mt.CUR_CONFIG["PLOTTING"].getboolean("input")
+# mt.CUR_CONFIG["PLOTTING"].getboolean("sep")
+# mt.CUR_CONFIG["PLOTTING"].getboolean("filters")
+# mt.CUR_CONFIG["PLOTTING"].getboolean("output")
+# mt.CUR_CONFIG["PLOTTING"].getboolean("template")
 
 
 def assert_all():
@@ -134,4 +116,4 @@ def assert_all():
     assert_catalog_assembly()
     assert_lephare_assembly()
     assert_plots()
-    LOGGER.info("All assertions have been successful.")
+    mt.LOGGER.info("All assertions have been successful.")

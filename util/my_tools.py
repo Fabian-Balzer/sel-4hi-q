@@ -93,12 +93,53 @@ def give_survey_name(survey):
     return name_dict[survey]
 
 
+def give_parafile_fpath(out=False):
+    """Provides the name of the currently set LePhare parameter file.
+    If out is True, the outputpara-name is used, else the inputparaname"""
+    path = GEN_CONFIG['PATHS']['params']
+    suffix = "out" if out else "in"
+    fname = f"{CUR_CONFIG['LEPHARE']['para_stem']}_{suffix}.para"
+    return path + fname
+
+
+def give_filterfile_fpath():
+    """Provides the name of the requested filter file"""
+    return GEN_CONFIG["PATHS"]["data"] + "lephare_files/" + \
+        CUR_CONFIG["LEPHARE"]["filter_stem"] + ".filt"
+
+
+def give_templib_fpath(ttype):
+    """Provides the name of the requested template file.
+    ttype: one of ["pointlike", "extended", "star"]
+    """
+    return GEN_CONFIG["PATHS"]["data"] + "lephare_files/templates/" + \
+        CUR_CONFIG["LEPHARE"]["para_stem"] + \
+        f"_{ttype}_mag_lib.fits"
+
+
+def give_lepharefile_fpath(ttype, out=False, suffix=None):
+    """Provides the name of the requested lephare input- or output file.
+    ttype: one of ["pointlike", "extended"]
+    out: True or False (whether to consider in- or output)
+    suffix: Custom name suffix
+    """
+    if out:
+        stem = GEN_CONFIG["PATHS"]["data"] + \
+            "lephare_input/" + CUR_CONFIG["LEPHARE"]["input_stem"]
+        suffix = "in" if suffix is None else suffix
+    else:
+        stem = GEN_CONFIG["PATHS"]["data"] + \
+            "lephare_output/" + CUR_CONFIG["LEPHARE"]["output_stem"]
+        suffix = "out" if suffix is None else suffix
+    return f"{stem}_{ttype}.{suffix}"
+
+
 def init_plot_directory(ppath):
     """Constructs a plot directory with the necessary subfolders if it is missing."""
     for dirs in ["output_analysis/templates", "input_analysis/separation"]:
         path = ppath + dirs
         Path(path).mkdir(parents=True, exist_ok=True)
-    LOGGER.info(f"Successfully initialized the path for plots at '{ppath}'.")
+    LOGGER.info(f"Successfully initialized the path for plots at '%s'.", ppath)
 
 
 def init_data_directory(dpath):
@@ -106,7 +147,7 @@ def init_data_directory(dpath):
     for dirs in ["lephare_files/templates", "lephare_input", "lephare_output", "matches", "raw_catalogues"]:
         path = dpath + dirs
         Path(path).mkdir(parents=True, exist_ok=True)
-    LOGGER.info(f"Successfully initialized the path for data at '{dpath}'.")
+    LOGGER.info(f"Successfully initialized the path for data at '%s'.", dpath)
 
 
 def init_other_directory(opath):

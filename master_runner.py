@@ -25,16 +25,48 @@ def assemble_catalog():
     scriptpath = f"{mt.GEN_CONFIG['PATHS']['scripts']}jystilts_scripts/"
     match_table_string = f"{run_jystilts} '{scriptpath}match_tables.py'"
     subprocess.call(shlex.split(match_table_string))
-    mt.LOGGER.info(
+    mt.LOGGER.debug(
         "Successfully ran the jython program to match and write the tables.")
-    return
+
+
+def run_lephare_command(command, arg_dict, additional=""):
+    """Runs a given LePhare command in the LePhare source file."""
+    main_command = f"{mt.GEN_CONFIG['PATHS']['lepharedir']}/source/" + command
+    run_string = main_command + \
+        " ".join([f"-{arg} {val}" for arg, val in arg_dict.items()]
+                 ) + " " + additional
+    command_line_input = shlex.split(run_string)
+    mt.LOGGER.info(command_line_input)
+    subprocess.call(command_line_input)
+
+
+def run_filters():
+    """Runs the LePhare filter routine with the requested settings"""
+    arg_dict = {"c": mt.give_parafile_fpath(),
+                "FILTER_REP": f"{mt.GEN_CONFIG['LEPHARE']['params']}filters"}
+    additional = ">" + mt.give_filterfile_fpath()
+    run_lephare_command("filter", arg_dict, additional)
+
+
+def run_templates():
+    """Runs the LePhare template routine with the requested settings"""
+    main_command = f"{mt.GEN_CONFIG['PATHS']['lepharedir']}/source/filter"
+    arg_dict = {"c": mt.give_parafile_fpath(),
+                "FILTER_REP": f"{mt.GEN_CONFIG['LEPHARE']['params']}filters"}
+    additional = ">" + mt.give_filterfile_fpath()
 
 
 if __name__ == "__main__":
     assert_all()
 
-    # if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
-    #     assemble_catalog()
+    if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
+        assemble_catalog()
+
+    if mt.CUR_CONFIG["LEPHARE"].getboolean("run_filters"):
+        run_filters()
+
+    if mt.CUR_CONFIG["LEPHARE"].getboolean("run_templates"):
+        run_filters()
 
 
 # %%
