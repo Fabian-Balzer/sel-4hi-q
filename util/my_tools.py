@@ -42,6 +42,40 @@ def init_logger():
 LOGGER = init_logger()
 
 
+def stringlist_to_list(stringlist):
+    """Transform a string that is in the "['a', 'b', 'c']" pattern into a list of strings ["a", "b", "c"].
+    Handy to read out lists from config files."""
+    string = stringlist.strip("[]")
+    singles = string.split(", ")
+    return [single.strip("'") for single in singles]
+
+
+def read_list_from_config(section, key):
+    """Returns a list of the values listed in a config file."""
+    stringlist = GEN_CONFIG.get(section, key)
+    return stringlist_to_list(stringlist)
+
+
+# Define the (hardcoded) path where the data sits in
+CATPATH = GEN_CONFIG.get("PATHS", "cat")
+# As we are adding these conversions in strings, they are stored as strings.
+# Y, H, Ks Taken from Mara, J mag conversion from Blanton et al., Astronomical Journal 129, 2562 (2005), Eqs. (5) (2005AJ....129.2562B).
+# OLD: {"Y": "0.938", "J": "0.91", "H": "1.379", "Ks": "1.85"}
+VEGA_AB_DICT = {"Y": "0.60", "J": "0.92", "H": "1.37", "Ks": "1.83"}
+GALEX_BANDS = read_list_from_config("BAND_DICT", "galex")
+SWEEP_BANDS = read_list_from_config("BAND_DICT", "sweep")
+VHS_BANDS = read_list_from_config("BAND_DICT", "vhs")
+HSC_BANDS = read_list_from_config("BAND_DICT", "hsc")
+KIDS_BANDS = read_list_from_config("BAND_DICT", "kids")
+LS10_BANDS = read_list_from_config("BAND_DICT", "ls10")
+BAND_LIST = read_list_from_config("BANDS", "listed")
+SURVEYS = [pair[0] for pair in GEN_CONFIG.items("BAND_DICT")]
+
+BAND_DICT = {}
+for pair in GEN_CONFIG.items("BAND_DICT"):
+    BAND_DICT[pair[0]] = stringlist_to_list(pair[1])
+
+
 def generate_pretty_band_name(band, in_math_environ=False):
     """Generates a band name that can be used in LaTeX."""
     if band == "ZSPEC":

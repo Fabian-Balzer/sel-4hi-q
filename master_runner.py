@@ -33,8 +33,10 @@ def assemble_catalog():
 
 
 if __name__ == "__main__":
-    if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
-        assemble_catalog()
+    pass
+
+    # if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
+    #     assemble_catalog()
 
 
 # %%
