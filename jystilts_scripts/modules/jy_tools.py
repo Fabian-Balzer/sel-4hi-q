@@ -59,7 +59,6 @@ HSC_BANDS = read_list_from_config("BAND_DICT", "hsc")
 KIDS_BANDS = read_list_from_config("BAND_DICT", "kids")
 LS10_BANDS = read_list_from_config("BAND_DICT", "ls10")
 BAND_LIST = read_list_from_config("BANDS", "listed")
-BAND_LIST = read_list_from_config("BANDS", "listed")
 SURVEYS = [pair[0] for pair in GEN_CONFIG.items("BAND_DICT")]
 
 BAND_DICT = {}

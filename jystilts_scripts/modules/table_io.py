@@ -75,8 +75,10 @@ def clean_kids(table):
 
 def clean_ls10(table):
     """Cleans the legacy survey dr10 table."""
-    table = jt.change_colnames(
-        table, ["ctp_ls8_ra", "ctp_ls8_dec", "LU_flux_i", "LU_flux_i_err"], ["ra", "dec", "c_flux_i_ls10", "c_flux_err_i_ls10"])
+    oldcols = ["ctp_ls8_ra", "ctp_ls8_dec", "LU_flux_i", "LU_flux_i_err"]
+    newcols = ["ra", "dec", "c_flux_i_ls10", "c_flux_err_i_ls10"]
+    table = jt.change_colnames(table, oldcols, newcols)
+    table = jt.keep_columns(table, newcols)
     # oldcols = ["ctp_ls8_ra", "ctp_ls8_dec"]
     # newcols = ["ra", "dec"]
     # for band in ["i"]:  # +SWEEP_BANDS:
@@ -345,6 +347,7 @@ def calculate_sweep_column(table, band):
     Errors are calculated by taking the inverse variance.
     Convert from nanomaggie to erg/cm**2/Hz/s by multiplying with 3631*10**(-23)*10**(-9).
     """
+    print([col.name for col in table.columns()])
     oldname, newname = "flux_" + band, "c_flux_" + band
     e_oldname, e_newname = "flux_ivar_" + band, "c_flux_err_" + band
     mwname = "MW_TRANSMISSION_" + band
