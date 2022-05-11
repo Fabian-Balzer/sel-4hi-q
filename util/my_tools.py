@@ -35,6 +35,8 @@ def init_logger():
     # add formatter to ch
     ch.setFormatter(formatter)
     # add ch to logger
+    while logger.hasHandlers():
+        logger.removeHandler(logger.handlers[0])
     logger.addHandler(ch)
     return logger
 
@@ -93,6 +95,22 @@ def give_survey_name(survey):
     return name_dict[survey]
 
 
+def generate_match_table_name():
+    """Generates a uniform table name for the matched table.
+    WARNING: Needs to be synced with jy_tools!"""
+    path = GEN_CONFIG.get("PATHS", "match")
+    stem = CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
+    return path + stem + "_raw_match.fits"
+
+
+def generate_processed_table_name(ttype):
+    """Generates a uniform table name for the matched table
+    WARNING: Needs to be synced with jy_tools!"""
+    path = GEN_CONFIG.get("PATHS", "match")
+    stem = CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
+    return path + stem + "_" + ttype + "_processed.fits"
+
+
 def give_parafile_fpath(out=False):
     """Provides the name of the currently set LePhare parameter file.
     If out is True, the outputpara-name is used, else the inputparaname"""
@@ -108,21 +126,18 @@ def give_filterfile_fpath():
         CUR_CONFIG["LEPHARE"]["filter_stem"] + ".filt"
 
 
-def give_lepharefile_fpath(ttype, out=False, suffix=None):
-    """Provides the name of the requested lephare input- or output file.
-    ttype: one of ["pointlike", "extended"]
-    out: True or False (whether to consider in- or output)
-    suffix: Custom name suffix
-    """
+def generate_lephare_filename(ttype, out=False, suffix=None):
+    """Generates a uniform table name for the LePhare table
+    WARNING: Needs to be synced with jy_tools!"""
     if out:
-        stem = GEN_CONFIG["PATHS"]["data"] + \
-            "lephare_input/" + CUR_CONFIG["LEPHARE"]["input_stem"]
-        suffix = "in" if suffix is None else suffix
-    else:
-        stem = GEN_CONFIG["PATHS"]["data"] + \
-            "lephare_output/" + CUR_CONFIG["LEPHARE"]["output_stem"]
+        path = GEN_CONFIG.get("PATHS", "data") + "lephare_output/"
+        stem = CUR_CONFIG.get("LEPHARE", "output_stem")
         suffix = "out" if suffix is None else suffix
-    return f"{stem}_{ttype}.{suffix}"
+    else:
+        path = GEN_CONFIG.get("PATHS", "data") + "lephare_input/"
+        stem = CUR_CONFIG.get("LEPHARE", "input_stem")
+        suffix = "in" if suffix is None else suffix
+    return path + stem + "_" + ttype + "." + "out"
 
 
 def give_temp_listname(ttype):
@@ -539,3 +554,10 @@ def assert_file_overwrite(fpath):
     if os.path.isfile(fpath):
         assert get_yes_no_input(
             f"The file '{fpath}' already exists.\nContinue to overwrite it?")
+
+
+def assert_file_exists(fpath, ftype):
+    """Asks the user whether to really overwrite the given file."""
+    fname = fpath.split("/")[-1]
+    assert os.path.isfile(
+        fpath), f"No {ftype} file with the name {fname} could be found, which is going to be needed in the process.\nFull path of the expected file:\n{fpath}"

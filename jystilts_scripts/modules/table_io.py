@@ -170,8 +170,8 @@ def clean_eros(table):
 
 # %% Matching
 
-def print_match_number(table, cat):
-    """Handy printer for showing the number of sources matched"""
+def log_match_number(table, cat):
+    """Handy loger for showing the number of sources matched"""
     match_num = table.cmd_select("!NULL_dec_" + cat).count_rows()
     jt.LOGGER.info(
         "There are %s sources in the eFEDS area matched to the %s data.", match_num, cat)
@@ -209,7 +209,7 @@ def match_opt_agn_sweep(opt_agn, sweep, radius=1):
                               error=radius, find="best")
     table = jt.change_colnames(table, ["ra_1", "ra_2", "dec_1", "dec_2"], [
         "ra_opt_agn", "ra", "dec_opt_agn", "dec"])
-    print_match_number(table, "opt_agn")
+    log_match_number(table, "opt_agn")
     return table
 
 
@@ -228,7 +228,7 @@ def match_table_galex(table, radius=3):
     table = jt.keep_columns(table, new_columns)
     table = jt.change_colnames(table, ["E(B-V)", "RAJ2000", "DEJ2000", "Prob"], [
                                "EBV_Galex", "ra_galex", "dec_galex", "galex_matchprob"])
-    print_match_number(table, "galex")
+    log_match_number(table, "galex")
     return table
 
 
@@ -238,7 +238,7 @@ def match_table_kids(table, kidstable, radius=3):
         in1=table, in2=kidstable, dec1="dec", ra1="ra", error=radius, find="best", join="all1")
     table = jt.change_colnames(table, ["ra_1", "ra_2", "dec_1", "dec_2"], [
         "ra", "ra_kids", "dec", "dec_kids"])
-    print_match_number(table, "kids")
+    log_match_number(table, "kids")
     # prev_columns = [column.name.upper() for column in table.columns()]
     # # inclusive join with the kids catalogue on the CDS servers
     # sourcetable = "II/347/kids_dr3"
@@ -260,7 +260,7 @@ def match_table_ls10(table, ls_table, radius=0.1):
                               error=radius, find="best", join="all1")
     table = jt.change_colnames(table, ["ra_1", "ra_2", "dec_1", "dec_2"], [
         "ra", "ra_ls10", "dec", "dec_ls10"])
-    print_match_number(table, "ls10")
+    log_match_number(table, "ls10")
     return table
 
 
@@ -271,7 +271,7 @@ def match_table_vhs(table, vhs, radius=0.5):
         in1=table, in2=vhs, dec1="dec", ra1="ra", error=radius, find="best", join="all1")
     table = jt.change_colnames(table, ["ra_1", "ra_2", "dec_1", "dec_2"], [
         "ra", "ra_vhs", "dec", "dec_vhs"])
-    print_match_number(table, "vhs")
+    log_match_number(table, "vhs")
     return table
 
 
@@ -284,7 +284,7 @@ def match_table_hsc(table, hsc, radius=1):
         in1=table, in2=hsc, dec1="dec", ra1="ra", error=radius, find="best", join="all1")
     table = jt.change_colnames(table, ["ra_1", "ra_2", "dec_1", "dec_2"], [
         "ra", "ra_hsc", "dec", "dec_hsc"])
-    print_match_number(table, "hsc")
+    log_match_number(table, "hsc")
     return table
 
 
@@ -293,7 +293,7 @@ def match_table_eros(table, eros, radius=1):
     # Join with the eros data for spectroscopy
     table = stilts.tskymatch2(in1=table, in2=eros, dec1="dec", ra1="ra", error=radius,
                               find="best", join="all1", ra2="ra_eros", dec2="dec_eros")
-    print_match_number(table, "eros")
+    log_match_number(table, "eros")
     return table
 
 
@@ -347,7 +347,6 @@ def calculate_sweep_column(table, band):
     Errors are calculated by taking the inverse variance.
     Convert from nanomaggie to erg/cm**2/Hz/s by multiplying with 3631*10**(-23)*10**(-9).
     """
-    print([col.name for col in table.columns()])
     oldname, newname = "flux_" + band, "c_flux_" + band
     e_oldname, e_newname = "flux_ivar_" + band, "c_flux_err_" + band
     mwname = "MW_TRANSMISSION_" + band
@@ -563,8 +562,6 @@ def process_for_lephare(table):
         if table.cmd_keepcols(colname).cmd_meta().cmd_keepcols('Class')[0][0] == "Double":
             expr = 'NULL_' + colname + ' ? -99. : ' + colname
             table = table.cmd_replacecol(colname, expr)
-    jt.LOGGER.debug(newnames)
-    jt.LOGGER.debug(table.columns())
     return table
 
 

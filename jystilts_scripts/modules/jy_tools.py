@@ -98,11 +98,18 @@ def generate_processed_table_name(ttype):
     return path + stem + "_" + ttype + "_processed.fits"
 
 
-def generate_lephare_input_name(ttype):
-    """Generates a uniform table name for the matched table"""
-    path = GEN_CONFIG.get("PATHS", "data") + "lephare_input/"
-    stem = CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
-    return path + stem + "_" + ttype + ".in"
+def generate_lephare_filename(ttype, out=False, suffix=None):
+    """Generates a uniform table name for the matched table
+    WARNING: Needs to be synced with jystilts!"""
+    if out:
+        path = GEN_CONFIG.get("PATHS", "data") + "lephare_output/"
+        stem = CUR_CONFIG.get("LEPHARE", "output_stem")
+        suffix = "out" if suffix is None else suffix
+    else:
+        path = GEN_CONFIG.get("PATHS", "data") + "lephare_input/"
+        stem = CUR_CONFIG.get("LEPHARE", "input_stem")
+        suffix = "in" if suffix is None else suffix
+    return path + stem + "_" + ttype + "." + suffix
 
 
 # %% Reading and writing files
@@ -136,10 +143,12 @@ def read_processed_table(ttype):
 
 def write_lephare_input(table, ttype):
     """Writes the table of type ttype to the test stempath"""
-    path = generate_lephare_input_name(ttype)
-    table.write(path)
+    path = generate_lephare_filename(ttype)
+    table.write(path, fmt="ASCII")
+    LOGGER.debug(
+        "Successfully wrote a matched and processed %s LePhare input table to '%s'.", ttype, path)
     LOGGER.info(
-        "Successfully wrote a matched and processed LePhare input table to %s", path)
+        "The %s LePhare input table contains %d sources.", ttype, table.count_rows())
 
 
 def generate_info_text(pointlike, extended, stem):
@@ -148,9 +157,9 @@ def generate_info_text(pointlike, extended, stem):
         stem + "'.\n" + "-" * 40 + "\n"
     text += "Catalogue:".ljust(15)
     info_dict = {}
-    cats_used = [column.name.lower()[4:]
-                 for column in pointlike.columns() if "dec" in column.name]
-    LOGGER.info(cats_used)
+    cats_used = [str(column.name.lower()[4:])
+                 for column in pointlike.columns() if column.name.lower().startswith("dec_")]
+    cats_used = [cat for cat in cats_used if "ivar" not in cat]
     for cat in cats_used:
         total = 0
         info_dict[cat] = {}
@@ -168,10 +177,16 @@ def generate_info_text(pointlike, extended, stem):
         total += num
         info_dict["spec-z"][ttype] = num
     info_dict["spec-z"]["total"] = total
+    info_dict["total"] = {}
+    for table, ttype in [(pointlike, "pointlike"), (extended, "extended")]:
+        num = table.cmd_select("!NULL_dec").count_rows()
+        total += num
+        info_dict["total"][ttype] = num
+    info_dict["total"]["total"] = total
     for ttype in ["pointlike", "extended", "total"]:
         row = ttype.capitalize().ljust(15) + " \t| " + \
             " \t| ".join([str(info_dict[cat][ttype]).ljust(6)
-                         for cat in cats_used + ["spec-z"]])
+                         for cat in cats_used + ["spec-z", "total"]])
         text += row + "\n"
     return text
 

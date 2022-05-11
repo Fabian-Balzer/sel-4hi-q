@@ -10,8 +10,6 @@ maybe needed:
 """
 
 # %%
-
-
 import shlex
 import subprocess
 
@@ -69,7 +67,7 @@ def run_templates(ttype):
 
 
 if __name__ == "__main__":
-    # assert_all()
+    assert_all()
 
     if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
         assemble_catalog()
