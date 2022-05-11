@@ -72,6 +72,7 @@ KIDS_BANDS = read_list_from_config("BAND_DICT", "kids")
 LS10_BANDS = read_list_from_config("BAND_DICT", "ls10")
 BAND_LIST = read_list_from_config("BANDS", "listed")
 SURVEYS = [pair[0] for pair in GEN_CONFIG.items("BAND_DICT")]
+CONTEXT = CUR_CONFIG["LEPHARE"].getint("glb_context")
 
 BAND_DICT = {}
 for pair in GEN_CONFIG.items("BAND_DICT"):
@@ -122,8 +123,9 @@ def give_parafile_fpath(out=False):
 
 def give_filterfile_fpath():
     """Provides the name of the requested filter file"""
-    return GEN_CONFIG["PATHS"]["data"] + "lephare_files/" + \
-        CUR_CONFIG["LEPHARE"]["filter_stem"] + ".filt"
+    filtfilepath = GEN_CONFIG['PATHS']['params']
+    fname = CUR_CONFIG["LEPHARE"]["filter_stem"] + ".filt"
+    return filtfilepath + fname
 
 
 def generate_lephare_filename(ttype, out=False, suffix=None):
@@ -526,7 +528,7 @@ def give_context(bands):
     return sum([2**i for i, band in enumerate(BAND_LIST) if band in bands])
 
 
-def give_bands_for_context(context):
+def give_bands_for_context(context: int):
     """Returns the context belonging to the set of bands provided."""
     band_indices = convert_context_to_band_indices(context)
     return [BAND_LIST[index - 1] for index in band_indices]

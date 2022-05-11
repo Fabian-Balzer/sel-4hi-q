@@ -3,6 +3,11 @@ export STEM=newtest
 assemble_cat -h
 
 
+$LEPHAREDIR/source/filter -c $LEPHARE/lephare_scripts/lephare_parameters/baseline_in.para \
+-FILTER_REP $LEPHARE/lephare_scripts/lephare_parameters/filters \
+>$LEPHARE/lephare_scripts/lephare_parameters/baseline_filters.filt
+
+
 # Create the extinction file:
 $LEPHAREDIR_200509/source/filter_extinc -f compiled_filter_file  >exctinction.filt
 

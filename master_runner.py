@@ -33,15 +33,19 @@ def run_lephare_command(command, arg_dict, additional=""):
     run_string = main_command + " " + \
         " ".join([f"-{arg} {val}" for arg, val in arg_dict.items()]
                  ) + " " + additional
-    command_line_input = shlex.split(run_string)
-    mt.LOGGER.info(command_line_input)
-    # subprocess.call(command_line_input)
+    mt.LOGGER.debug("Running the following shell command:\n%s", run_string)
+    try:
+        subprocess.run(run_string, check=True, shell=True)
+    except subprocess.CalledProcessError as err:
+        mt.LOGGER.error(
+            "The following error was thrown when running the last shell command:\n%s", err)
 
 
 def run_filters():
     """Runs the LePhare filter routine with the requested settings"""
     arg_dict = {"c": mt.give_parafile_fpath(),
-                "FILTER_REP": f"{mt.GEN_CONFIG['PATHS']['params']}filters"}
+                "FILTER_REP": f"{mt.GEN_CONFIG['PATHS']['params']}filters",
+                "FILTER_FILE": mt.CUR_CONFIG["LEPHARE"]["filter_stem"]}
     additional = ">" + mt.give_filterfile_fpath()
     run_lephare_command("filter", arg_dict, additional)
 
@@ -67,6 +71,32 @@ def run_templates(ttype):
 
 
 if __name__ == "__main__":
+
+    [LEPHARE]
+    glb_context = -1
+    input_stem = baseline_input
+    output_stem = baseline_output
+    give_stats = True
+    mt.LOGGER.info("Program started with the following requests:")
+    cat_config = mt.CUR_CONFIG["CAT_ASSEMBLY"]
+    if cat_config.getboolean("assemble_cat"):
+        mt.LOGGER.info("Catalogue assembly with '%s' as a stem:",
+                       cat_config["cat_stem"])
+        for boolkey in ["use_matched", "use_processed", "reduce_to_specz", "write_lephare_input", "write_info_file"]:
+            val = cat_config.getboolean(boolkey)
+            mt.LOGGER.info("%s:\n\t\t%s", boolkey, str(val))
+    lep_config = mt.CUR_CONFIG["LEPHARE"]
+    if lep_config.getboolean("run_filters"):
+        mt.LOGGER.info("LePhare filter run with '%s' as a stem.",
+                       lep_config["filter_stem"])
+    if lep_config.getboolean("run_templates"):
+        mt.LOGGER.info("LePhare template run with '%s' as a stem.",
+                       lep_config["template_stem"])
+    if lep_config.getboolean("run_zphota"):
+        mt.LOGGER.info("LePhare zphota run with '%s' as input and '%s' as output stem.",
+                       lep_config["input_stem"], lep_config["output_stem"])
+        mt.LOGGER.info("The provided global context is %s, corresponding to the following bands:\n%s",
+                       mt.CONTEXT, mt.give_bands_for_context(mt.CONTEXT))
     assert_all()
 
     if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):

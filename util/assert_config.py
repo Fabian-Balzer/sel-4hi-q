@@ -23,9 +23,8 @@ def assert_general():
     fpath = mt.GEN_CONFIG["PATHS"]["config"] + \
         mt.GEN_CONFIG["PATHS"]["current_config"]
     mt.assert_file_exists(fpath, "configuration")
-    context = mt.CUR_CONFIG["LEPHARE"].getint("glb_context")
-    assert (-1 <= context <= (len(mt.BAND_LIST) + 1) **
-            2), f"Context {context} is not a viable context."
+    assert (-1 <= mt.CONTEXT <= (len(mt.BAND_LIST) + 1) **
+            2), f"Context {mt.CONTEXT} is not a viable context."
 
 
 # %% Assert catalog availability:
