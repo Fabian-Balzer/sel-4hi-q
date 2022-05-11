@@ -108,15 +108,6 @@ def give_filterfile_fpath():
         CUR_CONFIG["LEPHARE"]["filter_stem"] + ".filt"
 
 
-def give_templib_fpath(ttype):
-    """Provides the name of the requested template file.
-    ttype: one of ["pointlike", "extended", "star"]
-    """
-    return GEN_CONFIG["PATHS"]["data"] + "lephare_files/templates/" + \
-        CUR_CONFIG["LEPHARE"]["para_stem"] + \
-        f"_{ttype}_mag_lib.fits"
-
-
 def give_lepharefile_fpath(ttype, out=False, suffix=None):
     """Provides the name of the requested lephare input- or output file.
     ttype: one of ["pointlike", "extended"]
@@ -134,12 +125,27 @@ def give_lepharefile_fpath(ttype, out=False, suffix=None):
     return f"{stem}_{ttype}.{suffix}"
 
 
+def give_temp_listname(ttype):
+    """Provides the name of the list file with the templates."""
+    listpath = GEN_CONFIG["PATHS"]["params"] + "template_lists/"
+    fname = f"{CUR_CONFIG['LEPHARE']['template_stem']}_{ttype}.list"
+    return listpath + fname
+
+
+def give_temp_libname(ttype, libtype="mag", suffix=""):
+    """Provides the name of the compiled template file or the name
+    of the mag_lib file."""
+    temppath = GEN_CONFIG["PATHS"]["data"] + "lephare_files/templates/"
+    fname = f"{CUR_CONFIG['LEPHARE']['para_stem']}_{ttype}_{libtype}_lib{suffix}"
+    return temppath + fname
+
+
 def init_plot_directory(ppath):
     """Constructs a plot directory with the necessary subfolders if it is missing."""
     for dirs in ["output_analysis/templates", "input_analysis/separation"]:
         path = ppath + dirs
         Path(path).mkdir(parents=True, exist_ok=True)
-    LOGGER.info(f"Successfully initialized the path for plots at '%s'.", ppath)
+    LOGGER.info("Successfully initialized the path for plots at '%s'.", ppath)
 
 
 def init_data_directory(dpath):
@@ -147,7 +153,7 @@ def init_data_directory(dpath):
     for dirs in ["lephare_files/templates", "lephare_input", "lephare_output", "matches", "raw_catalogues"]:
         path = dpath + dirs
         Path(path).mkdir(parents=True, exist_ok=True)
-    LOGGER.info(f"Successfully initialized the path for data at '%s'.", dpath)
+    LOGGER.info("Successfully initialized the path for data at '%s'.", dpath)
 
 
 def init_other_directory(opath):
@@ -158,9 +164,9 @@ def init_other_directory(opath):
     jystiltsfpath = f"{opath}programs/jystilts.jar"
     if not os.path.isfile(jystiltsfpath):
         LOGGER.warning(
-            f"Jystilts couldn't be located. Please install it in {jystiltsfpath}")
+            "Jystilts couldn't be located. Please install it in '%s'", jystiltsfpath)
     LOGGER.info(
-        f"Successfully initialized the path for other stuff at '{opath}'.")
+        "Successfully initialized the path for other stuff at '%s'.", opath)
 
 
 def read_fits_as_dataframe(filename, saferead=False):

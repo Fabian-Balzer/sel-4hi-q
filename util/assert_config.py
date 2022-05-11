@@ -78,18 +78,31 @@ def assert_lephare_assembly():
 
     if temps:
         if use_plike:
-            mt.assert_file_overwrite(mt.give_templib_fpath("pointlike"))
+            assert isfile(mt.give_temp_listname("pointlike"))
+            mt.assert_file_overwrite(mt.give_temp_libname("pointlike", "mag", "fits"))
         if use_ext:
-            mt.assert_file_overwrite(mt.give_templib_fpath("extended"))
-        mt.assert_file_overwrite(mt.give_templib_fpath("star"))
+            assert isfile(mt.give_temp_listname("extended"))
+            mt.assert_file_overwrite(mt.give_temp_libname("extended", "mag", "fits"))
+        assert isfile(mt.give_temp_listname("star"))
+        mt.assert_file_overwrite(mt.give_temp_libname("star", "mag", "fits"))
 
     if zphot:
         assert isfile(mt.give_parafile_fpath(out=True))
+        # If no input cat is produced, check if it's available:
         if not mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("write_lephare_input"):
             if use_plike:
                 assert isfile(mt.give_lepharefile_fpath("pointlike"))
             if use_ext:
                 assert isfile(mt.give_lepharefile_fpath("extended"))
+        # If no templates are generated, check if they are available:
+        if not temps:
+            if use_plike:
+                assert isfile(mt.give_lepharefile_fpath("pointlike"))
+                assert isfile(mt.give_temp_libname("pointlike", "mag", "fits"))
+            if use_ext:
+                assert isfile(mt.give_lepharefile_fpath("extended"))
+                assert isfile(mt.give_temp_libname("extended", "mag", "fits"))
+            assert isfile(mt.give_temp_libname("star", "mag", "fits"))
         if use_plike:
             assert mt.assert_file_overwrite(
                 mt.give_lepharefile_fpath("pointlike", out=True))

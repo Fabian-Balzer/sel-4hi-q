@@ -32,32 +32,44 @@ def assemble_catalog():
 def run_lephare_command(command, arg_dict, additional=""):
     """Runs a given LePhare command in the LePhare source file."""
     main_command = f"{mt.GEN_CONFIG['PATHS']['lepharedir']}/source/" + command
-    run_string = main_command + \
+    run_string = main_command + " " + \
         " ".join([f"-{arg} {val}" for arg, val in arg_dict.items()]
                  ) + " " + additional
     command_line_input = shlex.split(run_string)
     mt.LOGGER.info(command_line_input)
-    subprocess.call(command_line_input)
+    # subprocess.call(command_line_input)
 
 
 def run_filters():
     """Runs the LePhare filter routine with the requested settings"""
     arg_dict = {"c": mt.give_parafile_fpath(),
-                "FILTER_REP": f"{mt.GEN_CONFIG['LEPHARE']['params']}filters"}
+                "FILTER_REP": f"{mt.GEN_CONFIG['PATHS']['params']}filters"}
     additional = ">" + mt.give_filterfile_fpath()
     run_lephare_command("filter", arg_dict, additional)
 
 
-def run_templates():
+def run_templates(ttype):
     """Runs the LePhare template routine with the requested settings"""
-    main_command = f"{mt.GEN_CONFIG['PATHS']['lepharedir']}/source/filter"
-    arg_dict = {"c": mt.give_parafile_fpath(),
-                "FILTER_REP": f"{mt.GEN_CONFIG['LEPHARE']['params']}filters"}
-    additional = ">" + mt.give_filterfile_fpath()
+    arg_dict_sed = {"c": mt.give_parafile_fpath(),
+                    "GAL_SED": mt.give_temp_listname(ttype),
+                    "GAL_LIB": mt.give_temp_libname(ttype, "sed")}
+    arg_dict_sed["t"] = "S" if ttype == "star" else "G"
+    run_lephare_command("sedtolib", arg_dict_sed)
+    arg_dict_mag = {"c": mt.give_parafile_fpath(),
+                    "GAL_LIB_IN": mt.give_temp_libname(ttype, "sed"),
+                    "GAL_LIB_OUT": mt.give_temp_libname(ttype, "mag"),
+                    "EM_LINES": "NO",
+                    "LIB_ASCII": "YES"}
+    arg_dict_mag["t"] = "S" if ttype == "star" else "G"
+    if ttype == "pointlike":
+        arg_dict_mag["EXTINC_LAW"] = "SMC_prevot.dat"
+        arg_dict_mag["MOD_EXTINC"] = "11,23"
+        arg_dict_mag["EB_V"] = "0.,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4"
+    run_lephare_command("mag_gal", arg_dict_sed)
 
 
 if __name__ == "__main__":
-    assert_all()
+    # assert_all()
 
     if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
         assemble_catalog()
@@ -66,7 +78,11 @@ if __name__ == "__main__":
         run_filters()
 
     if mt.CUR_CONFIG["LEPHARE"].getboolean("run_templates"):
-        run_filters()
+        if mt.CUR_CONFIG["GENERAL"].getboolean("use_pointlike"):
+            run_templates("pointlike")
+        if mt.CUR_CONFIG["GENERAL"].getboolean("use_extended"):
+            run_templates("extended")
+        run_templates("star")
 
 
 # %%
