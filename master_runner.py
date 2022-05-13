@@ -10,35 +10,16 @@ maybe needed:
 """
 
 # %%
-import shlex
-import subprocess
-
 import util.my_tools as mt
 from util.assert_config import assert_all
+from input_scripts.filter_coverage_plot import read_filter_overview_file
 
 
 def assemble_catalog():
     """Runs the jython script to match the input files."""
-    run_jystilts = f"java -jar {mt.GEN_CONFIG['PATHS']['JYSTILTS']}"
-    scriptpath = f"{mt.GEN_CONFIG['PATHS']['scripts']}jystilts_scripts/"
-    match_table_string = f"{run_jystilts} '{scriptpath}match_tables.py'"
-    subprocess.call(shlex.split(match_table_string))
+    mt.run_jystilts_program("match_tables.py")
     mt.LOGGER.debug(
         "Successfully ran the jython program to match and write the tables.")
-
-
-def run_lephare_command(command, arg_dict, additional=""):
-    """Runs a given LePhare command in the LePhare source file."""
-    main_command = f"{mt.GEN_CONFIG['PATHS']['lepharedir']}/source/" + command
-    run_string = main_command + " " + \
-        " ".join([f"-{arg} {val}" for arg, val in arg_dict.items()]
-                 ) + " " + additional
-    mt.LOGGER.debug("Running the following shell command:\n%s", run_string)
-    try:
-        subprocess.run(run_string, check=True, shell=True)
-    except subprocess.CalledProcessError as err:
-        mt.LOGGER.error(
-            "The following error was thrown when running the last shell command:\n%s", err)
 
 
 def run_filters():
@@ -47,7 +28,9 @@ def run_filters():
                 "FILTER_REP": f"{mt.GEN_CONFIG['PATHS']['params']}filters",
                 "FILTER_FILE": mt.CUR_CONFIG["LEPHARE"]["filter_stem"]}
     additional = ">" + mt.give_filterfile_fpath()
-    run_lephare_command("filter", arg_dict, additional)
+    mt.run_lephare_command("filter", arg_dict, additional)
+    info_df = fc.read_filter_overview_file()
+    fc.save_filter_info(info_df)
 
 
 def run_templates(ttype):
@@ -56,7 +39,7 @@ def run_templates(ttype):
                     "GAL_SED": mt.give_temp_listname(ttype),
                     "GAL_LIB": mt.give_temp_libname(ttype, "sed")}
     arg_dict_sed["t"] = "S" if ttype == "star" else "G"
-    run_lephare_command("sedtolib", arg_dict_sed)
+    mt.run_lephare_command("sedtolib", arg_dict_sed)
     arg_dict_mag = {"c": mt.give_parafile_fpath(),
                     "GAL_LIB_IN": mt.give_temp_libname(ttype, "sed"),
                     "GAL_LIB_OUT": mt.give_temp_libname(ttype, "mag"),
@@ -67,16 +50,27 @@ def run_templates(ttype):
         arg_dict_mag["EXTINC_LAW"] = "SMC_prevot.dat"
         arg_dict_mag["MOD_EXTINC"] = "11,23"
         arg_dict_mag["EB_V"] = "0.,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4"
-    run_lephare_command("mag_gal", arg_dict_sed)
+    mt.run_lephare_command("mag_gal", arg_dict_sed)
+    mt.run_jystilts_program("rewrite_fits_header", args=[ttype, "MAG"])
+
+
+def run_zphota(ttype):
+    """Runs the LePhare zphota routine with the requested settings"""
+    arg_dict_sed = {"c": mt.give_parafile_fpath(),
+                    "ZPHOTLIB": f"{mt.give_temp_libname(ttype, include_path=False)},{mt.give_temp_libname('star', include_path=False)}",
+                    "CAT_IN": mt.give_lephare_filename(ttype),
+                    "CAT_OUT": mt.give_lephare_filename(ttype, out=True),
+                    "PARA_OUT": mt.give_parafile_fpath(out=True),
+                    "GLB_CONTEXT": mt.CONTEXT,
+                    "PDZ_OUT": mt.give_lephare_filename(ttype, suffix="")}
+    if ttype == "pointlike":
+        arg_dict_sed["MAG_REF"] = "7"
+        arg_dict_sed["MAG_ABS"] = "-30,-20"
+    mt.run_lephare_command("zphota", arg_dict_sed)
+    mt.run_jystilts_program("rewrite_fits_header", args=[ttype, "OUT"])
 
 
 if __name__ == "__main__":
-
-    [LEPHARE]
-    glb_context = -1
-    input_stem = baseline_input
-    output_stem = baseline_output
-    give_stats = True
     mt.LOGGER.info("Program started with the following requests:")
     cat_config = mt.CUR_CONFIG["CAT_ASSEMBLY"]
     if cat_config.getboolean("assemble_cat"):
@@ -97,6 +91,10 @@ if __name__ == "__main__":
                        lep_config["input_stem"], lep_config["output_stem"])
         mt.LOGGER.info("The provided global context is %s, corresponding to the following bands:\n%s",
                        mt.CONTEXT, mt.give_bands_for_context(mt.CONTEXT))
+        if lep_config.getboolean("give_stats"):
+            # TODO Stats file?
+            mt.LOGGER.info(
+                "Statistics about the LePhare run are going to be provided.")
     assert_all()
 
     if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
@@ -126,19 +124,3 @@ filter_df = fc.read_filter_info_file()
 fc.produce_filter_plot(filter_df)
 info_df = fc.read_filter_overview_file()
 fc.save_filter_info(info_df)
-
-# %% Separation plots:
-# sep.plot_all_separations(input_df, verbose=True)
-
-
-# %%
-
-# output dataframes:
-STEM_OUT = "without_i_suraj"
-output_df = mt.read_plike_and_ext(
-    prefix=f"lephare_output/{STEM_OUT}_", suffix=".fits")
-output_df = mt.add_filter_columns(output_df)
-
-for ttype in ["pointlike", "extended"]:
-    # ta.plot_problematic_templates(output_df, ttype)
-    s_p.plot_photoz_vs_specz(output_df, ttype, STEM_OUT, comparison=True)

@@ -66,6 +66,12 @@ for pair in GEN_CONFIG.items("BAND_DICT"):
     BAND_DICT[pair[0]] = stringlist_to_list(pair[1])
 
 
+def give_nice_band_name(band, fluxtype="mag", err=False):
+    """Helper function to unify band naming [SYNC with my_tools!]"""
+    errstring = "err_" if err else ""
+    return fluxtype + "_" + errstring + band
+
+
 def change_colnames(table, oldnames, newnames):
     """Changes all column names of a table from oldnames (list) to newnames (list)."""
     for oname, nname in zip(oldnames, newnames):
@@ -84,21 +90,21 @@ def keep_columns(table, columnlist):
 
 
 # %% Uniform name generation
-def generate_match_table_name():
+def give_match_table_name():
     """Generates a uniform table name for the matched table"""
     path = GEN_CONFIG.get("PATHS", "match")
     stem = CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
     return path + stem + "_raw_match.fits"
 
 
-def generate_processed_table_name(ttype):
+def give_processed_table_name(ttype):
     """Generates a uniform table name for the matched table"""
     path = GEN_CONFIG.get("PATHS", "match")
     stem = CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
     return path + stem + "_" + ttype + "_processed.fits"
 
 
-def generate_lephare_filename(ttype, out=False, suffix=None):
+def give_lephare_filename(ttype, out=False, suffix=None):
     """Generates a uniform table name for the matched table
     WARNING: Needs to be synced with jystilts!"""
     if out:
@@ -112,38 +118,58 @@ def generate_lephare_filename(ttype, out=False, suffix=None):
     return path + stem + "_" + ttype + "." + suffix
 
 
+def give_parafile_fpath(out=False):
+    """Provides the name of the currently set LePhare parameter file.
+    If out is True, the outputpara-name is used, else the inputparaname"""
+    path = GEN_CONFIG.get('PATHS', 'params')
+    suffix = "out" if out else "in"
+    fname = CUR_CONFIG.get('LEPHARE', 'para_stem') + "_" + suffix + ".para"
+    return path + fname
+
+
+def give_temp_libname(ttype, libtype="mag", suffix="", include_path=True):
+    """Provides the name of the compiled template file or the name
+    of the mag_lib file.
+    WARNING: Needs to be synced with jy_tools!"""
+    temppath = GEN_CONFIG.get("PATHS", "data") + \
+        "lephare_files/templates/" if include_path else ""
+    fname = CUR_CONFIG.get('LEPHARE', 'para_stem') + \
+        "_" + ttype + "_" + libtype + "_lib" + suffix
+    return temppath + fname
+
+
 # %% Reading and writing files
 def write_match_as_backup(table):
     """Writes a table that includes matching to the given path."""
-    path = generate_match_table_name()
+    path = give_match_table_name()
     table.write(path, fmt="fits")
     LOGGER.info("Successfully wrote a matched table to %s", path)
 
 
 def read_match_from_backup():
     """Reads a matched table and returns it and the names of the tables that have been used for the matching process."""
-    path = generate_match_table_name()
+    path = give_match_table_name()
     table = stilts.tread(path, fmt="fits")
     return table
 
 
 def write_processed_table(table, ttype):
     """Writes a collated version of the matched table with the columns already processed."""
-    path = generate_processed_table_name(ttype)
+    path = give_processed_table_name(ttype)
     table.write(path, fmt="fits")
     LOGGER.info("Successfully wrote a matched and processed table to %s", path)
 
 
 def read_processed_table(ttype):
     """Reads the processed versions of the table and returns the expected table."""
-    path = generate_processed_table_name(ttype)
+    path = give_processed_table_name(ttype)
     table = stilts.tread(path, fmt="fits")
     return table
 
 
 def write_lephare_input(table, ttype):
     """Writes the table of type ttype to the test stempath"""
-    path = generate_lephare_filename(ttype)
+    path = give_lephare_filename(ttype)
     table.write(path, fmt="ASCII")
     LOGGER.debug(
         "Successfully wrote a matched and processed %s LePhare input table to '%s'.", ttype, path)

@@ -8,6 +8,7 @@ Created on Mon Jul 19 09:31:46 2021
 
 import logging
 import os
+import subprocess
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -79,6 +80,12 @@ for pair in GEN_CONFIG.items("BAND_DICT"):
     BAND_DICT[pair[0]] = stringlist_to_list(pair[1])
 
 
+def give_nice_band_name(band, fluxtype="mag", err=False):
+    """Helper function to unify band naming [SYNC with jy_tools!]"""
+    errstring = "err_" if err else ""
+    return fluxtype + "_" + errstring + band
+
+
 def generate_pretty_band_name(band, in_math_environ=False):
     """Generates a band name that can be used in LaTeX."""
     if band == "ZSPEC":
@@ -96,7 +103,7 @@ def give_survey_name(survey):
     return name_dict[survey]
 
 
-def generate_match_table_name():
+def give_match_table_name():
     """Generates a uniform table name for the matched table.
     WARNING: Needs to be synced with jy_tools!"""
     path = GEN_CONFIG.get("PATHS", "match")
@@ -104,7 +111,7 @@ def generate_match_table_name():
     return path + stem + "_raw_match.fits"
 
 
-def generate_processed_table_name(ttype):
+def give_processed_table_name(ttype):
     """Generates a uniform table name for the matched table
     WARNING: Needs to be synced with jy_tools!"""
     path = GEN_CONFIG.get("PATHS", "match")
@@ -115,20 +122,21 @@ def generate_processed_table_name(ttype):
 def give_parafile_fpath(out=False):
     """Provides the name of the currently set LePhare parameter file.
     If out is True, the outputpara-name is used, else the inputparaname"""
-    path = GEN_CONFIG['PATHS']['params']
+    path = GEN_CONFIG.get('PATHS', 'params')
     suffix = "out" if out else "in"
-    fname = f"{CUR_CONFIG['LEPHARE']['para_stem']}_{suffix}.para"
+    fname = CUR_CONFIG.get('LEPHARE', 'para_stem') + "_" + suffix + ".para"
     return path + fname
 
 
-def give_filterfile_fpath():
+def give_filterfile_fpath(overview=True):
     """Provides the name of the requested filter file"""
     filtfilepath = GEN_CONFIG['PATHS']['params']
-    fname = CUR_CONFIG["LEPHARE"]["filter_stem"] + ".filt"
+    filtstem = CUR_CONFIG["LEPHARE"]["filter_stem"]
+    fname = filtstem + "_overview.filt" if overview else filtstem + "transmission.filt"
     return filtfilepath + fname
 
 
-def generate_lephare_filename(ttype, out=False, suffix=None):
+def give_lephare_filename(ttype, out=False, suffix=None):
     """Generates a uniform table name for the LePhare table
     WARNING: Needs to be synced with jy_tools!"""
     if out:
@@ -149,11 +157,14 @@ def give_temp_listname(ttype):
     return listpath + fname
 
 
-def give_temp_libname(ttype, libtype="mag", suffix=""):
+def give_temp_libname(ttype, libtype="mag", suffix="", include_path=True):
     """Provides the name of the compiled template file or the name
-    of the mag_lib file."""
-    temppath = GEN_CONFIG["PATHS"]["data"] + "lephare_files/templates/"
-    fname = f"{CUR_CONFIG['LEPHARE']['para_stem']}_{ttype}_{libtype}_lib{suffix}"
+    of the mag_lib file.
+    WARNING: Needs to be synced with jy_tools!"""
+    temppath = GEN_CONFIG.get("PATHS", "data") + \
+        "lephare_files/templates/" if include_path else ""
+    fname = CUR_CONFIG.get('LEPHARE', 'para_stem') + \
+        "_" + ttype + "_" + libtype + "_lib" + suffix
     return temppath + fname
 
 
@@ -563,3 +574,30 @@ def assert_file_exists(fpath, ftype):
     fname = fpath.split("/")[-1]
     assert os.path.isfile(
         fpath), f"No {ftype} file with the name {fname} could be found, which is going to be needed in the process.\nFull path of the expected file:\n{fpath}"
+
+
+def run_jystilts_program(filename, *args, with_path=False):
+    """Runs a .py file using the java jystilts implementation,
+    assuming the file is located in the 'jystilts_scripts' directory."""
+    run_jystilts = f"java -jar {GEN_CONFIG['PATHS']['JYSTILTS']}"
+    scriptpath = "" if with_path else f"{GEN_CONFIG['PATHS']['scripts']}jystilts_scripts/"
+    match_table_string = f"{run_jystilts} '{scriptpath}{filename}' {' '.join(args)}"
+    try:
+        subprocess.run(match_table_string, check=True, shell=True)
+    except subprocess.CalledProcessError as err:
+        LOGGER.error(
+            "The following error was thrown when trying to run the jystilts code:\n%s", err)
+
+
+def run_lephare_command(command, arg_dict, additional=""):
+    """Runs a given LePhare command in the LePhare source file."""
+    main_command = f"{GEN_CONFIG['PATHS']['lepharedir']}/source/" + command
+    run_string = main_command + " " + \
+        " ".join([f"-{arg} {val}" for arg, val in arg_dict.items()]
+                 ) + " " + additional
+    LOGGER.debug("Running the following shell command:\n%s", run_string)
+    try:
+        subprocess.run(run_string, check=True, shell=True)
+    except subprocess.CalledProcessError as err:
+        LOGGER.error(
+            "The following error was thrown when running the last shell command:\n%s", err)

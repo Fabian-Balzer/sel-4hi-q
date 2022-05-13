@@ -98,10 +98,10 @@ def assert_lephare_assembly():
         # If no input cat is produced, check if it's available:
         if not mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("write_lephare_input"):
             if use_plike:
-                mt.assert_file_exists(mt.generate_lephare_filename(
+                mt.assert_file_exists(mt.give_lephare_filename(
                     "pointlike"), "pointlike LePhare input")
             if use_ext:
-                mt.assert_file_exists(mt.generate_lephare_filename(
+                mt.assert_file_exists(mt.give_lephare_filename(
                     "extended"), "extended LePhare input")
         # If no templates are generated, check if they are available:
         if not temps:
@@ -115,10 +115,10 @@ def assert_lephare_assembly():
                 "star", "mag", "fits"), "star template")
         if use_plike:
             mt.assert_file_overwrite(
-                mt.generate_lephare_filename("pointlike", out=True))
+                mt.give_lephare_filename("pointlike", out=True))
         if use_ext:
             mt.assert_file_overwrite(
-                mt.generate_lephare_filename("extended", out=True))
+                mt.give_lephare_filename("extended", out=True))
 
 
 # %% Assert plotting:
