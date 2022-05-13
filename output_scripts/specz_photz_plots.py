@@ -6,14 +6,29 @@ import util.my_tools as mt
 from matplotlib.offsetbox import AnchoredText
 
 
+def give_photoz_performance_label(df):
+    """Produces a label that can be displayed in a spec-z-phot-z plot."""
+    stat_dict = mt.give_output_statistics(df)
+    etalabel = "$\eta = " + f"{stat_dict['eta']:.3f}$\n"
+    sig_nmadlabel = r"$\sigma_{\rm NMAD} = " + f"{stat_dict['sig_nmad']:.3f}$"
+    fpos = df['IsFalsePositive'].sum()
+    fposlabel = "\n" + r"$\psi_{\rm Pos} = " + \
+        f"{stat_dict['psi_pos']:.3f}$ ({fpos})"
+    fneg = df['IsFalseNegative'].sum()
+    fneglabel = "\n" + r"$\psi_{\rm Neg} = " + \
+        f"{stat_dict['psi_neg']:.3f}$ ({fneg})"
+    label = f"{len(df)} sources\n{etalabel}{sig_nmadlabel}"
+    return label + fposlabel + fneglabel
+
+
 def make_scatter_plots(df, main_ax, secondary_ax, color="k"):
     """Makes a scatter plot of the ZSPEC vs the ZBEST column on the given ax.
     Distinguishes the i and non-i-band."""
     markerstyle = "."
     size = 1
-    df[~df["ISOUTLIER"]].plot.scatter("ZSPEC", "ZBEST", s=size,  # label=label,
+    df[~df["IsOutlier"]].plot.scatter("ZSPEC", "ZBEST", s=size,  # label=label,
                                       color=color, ax=main_ax, marker=markerstyle)
-    df[df["ISOUTLIER"]].plot.scatter(
+    df[df["IsOutlier"]].plot.scatter(
         "ZSPEC", "ZBEST", s=size, color=color, ax=main_ax, marker=markerstyle, alpha=0.7)
     df.plot.scatter("ZSPEC", "ZMeasure", s=size,
                     color=color, ax=secondary_ax, marker=markerstyle)
@@ -72,9 +87,9 @@ def set_subplot_positions(main, secondary):
     secondary.set_position(rect_secondary)
 
 
-def plot_photoz_vs_specz(df, ttype, stem=""):
+def plot_photoz_vs_specz(df, ttype):
     """Makes a scatter plot of photo z vs spectro-z."""
-    df = df[df["HASGOODZ"]]
+    df = df[df["HasGoodz"]]
     df = df[df["Type"] == ttype]
     fig, (main, secondary) = plt.subplots(
         2, 1, figsize=cm.set_figsize(width=0.5 * cm.LATEXWIDTH, height=0.5 * cm.LATEXWIDTH, fraction=1), sharex=True)
@@ -84,13 +99,12 @@ def plot_photoz_vs_specz(df, ttype, stem=""):
     main.set_title(f"{ttype.capitalize()} sources")
     max_z = 5 if ttype == "pointlike" else 2
     plot_auxiliary_lines(main, secondary, max_z,
-                         label=mt.give_photoz_performance_label(df))
+                         label=give_photoz_performance_label(df))
     # fig.legend(loc=2, bbox_to_anchor=(0.77, 0.9), shadow=False,
     #            fancybox=False)
     # main.get_legend().remove()
-
-    cm.save_figure(
-        fig, f"{ttype}_spec_z_phot_z", "output_analysis", stem)
+    stem = mt.CUR_CONFIG["LEPHARE"]["output_stem"]
+    cm.save_figure(fig, f"{ttype}_spec_z_phot_z", "output_analysis", stem)
 
 
 if __name__ == "__main__":

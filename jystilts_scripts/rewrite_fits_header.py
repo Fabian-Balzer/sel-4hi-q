@@ -2,16 +2,17 @@
 import os
 from sys import argv, path
 
-path.append("/home/hslxrsrv3/p1wx150/GitRepo/4hi-q_master/Skripte/Jython/modules")
+WORKPATH = os.environ["LEPHARE"] + "/"
+# This is needed to be able to import custom modules
+path.append(WORKPATH + "lephare_scripts/jystilts_scripts/modules")
 path.append("/home/hslxrsrv3/p1wx150")
+import jy_tools as jt
 import stilts
-
-import modules.jy_tools as jt
 
 try:
     TTYPE = argv[1]  # pointlike, extended, or star
     MAG_OR_OUT = argv[2]
-except IndexError as err:
+except IndexError:
     raise IndexError(
         1, "Two arguments expected for rewriting the header: The ttype, and whether a mag lib file or an output file is expected to be rewritten.")
 

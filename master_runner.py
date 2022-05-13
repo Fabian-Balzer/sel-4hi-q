@@ -8,11 +8,18 @@ maybe needed:
 
 @author: fabian_balzer
 """
-
 # %%
+
+from shutil import move
+
+import input_scripts.availability_plots as av
+import input_scripts.filter_coverage_plot as fc
+import input_scripts.separation_plots as sep
+import output_scripts.specz_photz_plots as s_p
+import output_scripts.template_analysis_plots as ta
 import util.my_tools as mt
-from util.assert_config import assert_all
 from input_scripts.filter_coverage_plot import read_filter_overview_file
+from util.assert_config import assert_all
 
 
 def assemble_catalog():
@@ -29,33 +36,42 @@ def run_filters():
                 "FILTER_FILE": mt.CUR_CONFIG["LEPHARE"]["filter_stem"]}
     additional = ">" + mt.give_filterfile_fpath()
     mt.run_lephare_command("filter", arg_dict, additional)
-    info_df = fc.read_filter_overview_file()
-    fc.save_filter_info(info_df)
 
 
 def run_templates(ttype):
     """Runs the LePhare template routine with the requested settings"""
+    if not mt.assert_file_overwrite(mt.give_temp_libname(ttype, "mag", suffix=".dat")):
+        mt.LOGGER.info("Skipping the template run for %s.", ttype)
+        return
+    prefix = "STAR" if ttype == "star" else "GAL"
     arg_dict_sed = {"c": mt.give_parafile_fpath(),
-                    "GAL_SED": mt.give_temp_listname(ttype),
-                    "GAL_LIB": mt.give_temp_libname(ttype, "sed")}
+                    f"{prefix}_SED": mt.give_temp_listname(ttype),
+                    f"{prefix}_LIB": mt.give_temp_libname(ttype, "sed", include_path=False)}
     arg_dict_sed["t"] = "S" if ttype == "star" else "G"
     mt.run_lephare_command("sedtolib", arg_dict_sed)
     arg_dict_mag = {"c": mt.give_parafile_fpath(),
-                    "GAL_LIB_IN": mt.give_temp_libname(ttype, "sed"),
-                    "GAL_LIB_OUT": mt.give_temp_libname(ttype, "mag"),
+                    f"{prefix}_LIB_IN": mt.give_temp_libname(ttype, "sed", include_path=False),
+                    f"{prefix}_LIB_OUT": mt.give_temp_libname(ttype, "mag", include_path=False),
                     "EM_LINES": "NO",
-                    "LIB_ASCII": "YES"}
+                    "LIB_ASCII": "YES",
+                    "FILTER_FILE": mt.CUR_CONFIG["LEPHARE"]["filter_stem"]}
     arg_dict_mag["t"] = "S" if ttype == "star" else "G"
     if ttype == "pointlike":
         arg_dict_mag["EXTINC_LAW"] = "SMC_prevot.dat"
         arg_dict_mag["MOD_EXTINC"] = "11,23"
         arg_dict_mag["EB_V"] = "0.,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4"
-    mt.run_lephare_command("mag_gal", arg_dict_sed)
-    mt.run_jystilts_program("rewrite_fits_header", args=[ttype, "MAG"])
+    mt.run_lephare_command("mag_gal", arg_dict_mag)
+    # LePhare writes the output file in the same directory, so we need to move it:
+    move(mt.give_temp_libname(ttype, "mag", include_path=False, suffix=".dat"),
+         mt.give_temp_libname(ttype, "mag", suffix=".dat"))
+    mt.run_jystilts_program("rewrite_fits_header.py", ttype, "MAG")
 
 
 def run_zphota(ttype):
     """Runs the LePhare zphota routine with the requested settings"""
+    if not mt.assert_file_overwrite(mt.give_lephare_filename(ttype, out=True)):
+        mt.LOGGER.info("Skipping the zphota run for %s.", ttype)
+        return
     arg_dict_sed = {"c": mt.give_parafile_fpath(),
                     "ZPHOTLIB": f"{mt.give_temp_libname(ttype, include_path=False)},{mt.give_temp_libname('star', include_path=False)}",
                     "CAT_IN": mt.give_lephare_filename(ttype),
@@ -67,60 +83,55 @@ def run_zphota(ttype):
         arg_dict_sed["MAG_REF"] = "7"
         arg_dict_sed["MAG_ABS"] = "-30,-20"
     mt.run_lephare_command("zphota", arg_dict_sed)
-    mt.run_jystilts_program("rewrite_fits_header", args=[ttype, "OUT"])
+    mt.run_jystilts_program("rewrite_fits_header.py", ttype, "OUT")
+
+
+def run_lephare_commands():
+    """Runs the requested LePhare commands specified in the current config file."""
+    lep_con, use_plike, use_ext = mt.CUR_CONFIG["LEPHARE"], mt.CUR_CONFIG["GENERAL"].getboolean(
+        "use_pointlike"), mt.CUR_CONFIG["GENERAL"].getboolean("use_ext")
+    if lep_con.getboolean("run_filters"):
+        run_filters()
+
+    if lep_con.getboolean("run_templates"):
+        if use_plike:
+            run_templates("pointlike")
+        if use_ext:
+            run_templates("extended")
+        run_templates("star")
+
+    if lep_con.getboolean("run_zphota"):
+        if use_plike:
+            run_zphota("pointlike")
+        if use_ext:
+            run_zphota("extended")
 
 
 if __name__ == "__main__":
-    mt.LOGGER.info("Program started with the following requests:")
-    cat_config = mt.CUR_CONFIG["CAT_ASSEMBLY"]
-    if cat_config.getboolean("assemble_cat"):
-        mt.LOGGER.info("Catalogue assembly with '%s' as a stem:",
-                       cat_config["cat_stem"])
-        for boolkey in ["use_matched", "use_processed", "reduce_to_specz", "write_lephare_input", "write_info_file"]:
-            val = cat_config.getboolean(boolkey)
-            mt.LOGGER.info("%s:\n\t\t%s", boolkey, str(val))
-    lep_config = mt.CUR_CONFIG["LEPHARE"]
-    if lep_config.getboolean("run_filters"):
-        mt.LOGGER.info("LePhare filter run with '%s' as a stem.",
-                       lep_config["filter_stem"])
-    if lep_config.getboolean("run_templates"):
-        mt.LOGGER.info("LePhare template run with '%s' as a stem.",
-                       lep_config["template_stem"])
-    if lep_config.getboolean("run_zphota"):
-        mt.LOGGER.info("LePhare zphota run with '%s' as input and '%s' as output stem.",
-                       lep_config["input_stem"], lep_config["output_stem"])
-        mt.LOGGER.info("The provided global context is %s, corresponding to the following bands:\n%s",
-                       mt.CONTEXT, mt.give_bands_for_context(mt.CONTEXT))
-        if lep_config.getboolean("give_stats"):
-            # TODO Stats file?
-            mt.LOGGER.info(
-                "Statistics about the LePhare run are going to be provided.")
-    assert_all()
+    # mt.log_run_info()
+    # assert_all()
 
     if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
         assemble_catalog()
 
-    if mt.CUR_CONFIG["LEPHARE"].getboolean("run_filters"):
-        run_filters()
+    # run_lephare_commands()
 
-    if mt.CUR_CONFIG["LEPHARE"].getboolean("run_templates"):
-        if mt.CUR_CONFIG["GENERAL"].getboolean("use_pointlike"):
-            run_templates("pointlike")
-        if mt.CUR_CONFIG["GENERAL"].getboolean("use_extended"):
-            run_templates("extended")
-        run_templates("star")
+    if mt.CUR_CONFIG["PLOTTING"].getboolean("output"):
+        output_df = mt.read_output_df()
+        for ttype in ["pointlike", "extended"]:
+            # ta.plot_problematic_templates(output_df, ttype)
+            s_p.plot_photoz_vs_specz(output_df, ttype)
 
+        # # %%
+        # # Construct the input dataframe:
+        # input_df = mt.read_plike_and_ext(prefix="matches/test2_",
+        #                                  suffix="_processed_table.fits")
+        # input_df = mt.add_mag_columns(input_df)
+        # # av.plot_r_band_magnitude(df)
+        # av.plot_input_distribution(input_df)
 
-# %%
-# Construct the input dataframe:
-input_df = mt.read_plike_and_ext(prefix="matches/test2_",
-                                 suffix="_processed_table.fits")
-input_df = mt.add_mag_columns(input_df)
-# av.plot_r_band_magnitude(df)
-av.plot_input_distribution(input_df)
-
-# %% Filter analysis:
-filter_df = fc.read_filter_info_file()
-fc.produce_filter_plot(filter_df)
-info_df = fc.read_filter_overview_file()
-fc.save_filter_info(info_df)
+        # # %% Filter analysis:
+        # filter_df = fc.read_filter_info_file()
+        # fc.produce_filter_plot(filter_df)
+        # info_df = fc.read_filter_overview_file()
+        # fc.save_filter_info(info_df)

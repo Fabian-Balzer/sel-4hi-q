@@ -11,6 +11,7 @@ import os
 import subprocess
 from configparser import ConfigParser
 from pathlib import Path
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -76,6 +77,14 @@ SURVEYS = [pair[0] for pair in GEN_CONFIG.items("BAND_DICT")]
 CONTEXT = CUR_CONFIG["LEPHARE"].getint("glb_context")
 
 BAND_DICT = {}
+
+USED_TTYPES = []
+if CUR_CONFIG["GENERAL"]["use_pointlike"]:
+    USED_TTYPES.append("pointlike")
+if CUR_CONFIG["GENERAL"]["use_extended"]:
+    USED_TTYPES.append("extended")
+USED_TTYPES = tuple(USED_TTYPES)  # Just to ensure they're not altered
+
 for pair in GEN_CONFIG.items("BAND_DICT"):
     BAND_DICT[pair[0]] = stringlist_to_list(pair[1])
 
@@ -94,6 +103,20 @@ def generate_pretty_band_name(band, in_math_environ=False):
     suffix = r"}" if "_" in band else ""
     new = band.replace('_', r'_{\rm ') + suffix
     return f"${new}$" if not in_math_environ else new
+
+
+def give_match_table_name():
+    """Generates a uniform table name for the matched table"""
+    path = GEN_CONFIG.get("PATHS", "match")
+    stem = CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
+    return path + stem + "_raw_match.fits"
+
+
+def give_processed_table_name(ttype):
+    """Generates a uniform table name for the matched table"""
+    path = GEN_CONFIG.get("PATHS", "match")
+    stem = CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
+    return path + stem + "_" + ttype + "_processed.fits"
 
 
 def give_survey_name(survey):
@@ -136,7 +159,7 @@ def give_filterfile_fpath(overview=True):
     return filtfilepath + fname
 
 
-def give_lephare_filename(ttype, out=False, suffix=None):
+def give_lephare_filename(ttype, out=False, suffix=None, include_path=True):
     """Generates a uniform table name for the LePhare table
     WARNING: Needs to be synced with jy_tools!"""
     if out:
@@ -147,7 +170,8 @@ def give_lephare_filename(ttype, out=False, suffix=None):
         path = GEN_CONFIG.get("PATHS", "data") + "lephare_input/"
         stem = CUR_CONFIG.get("LEPHARE", "input_stem")
         suffix = "in" if suffix is None else suffix
-    return path + stem + "_" + ttype + "." + "out"
+    path = path if include_path else ""
+    return path + stem + "_" + ttype + "." + suffix
 
 
 def give_temp_listname(ttype):
@@ -157,12 +181,16 @@ def give_temp_listname(ttype):
     return listpath + fname
 
 
-def give_temp_libname(ttype, libtype="mag", suffix="", include_path=True):
+def give_temp_libname(ttype, libtype="mag", suffix="", include_path=True, use_workpath=False):
     """Provides the name of the compiled template file or the name
     of the mag_lib file.
     WARNING: Needs to be synced with jy_tools!"""
     temppath = GEN_CONFIG.get("PATHS", "data") + \
-        "lephare_files/templates/" if include_path else ""
+        "lephare_files/templates/"
+    if use_workpath:
+        temppath = GEN_CONFIG.get(
+            "PATHS", "lepharework") + "lib_" + libtype + "/"
+    temppath = temppath if include_path else ""
     fname = CUR_CONFIG.get('LEPHARE', 'para_stem') + \
         "_" + ttype + "_" + libtype + "_lib" + suffix
     return temppath + fname
@@ -219,23 +247,21 @@ def save_dataframe_as_fits(df, filename, overwrite=False):
     table = Table.from_pandas(df)
     fpath = DATAPATH + filename
     table.write(fpath, overwrite=overwrite)
-    LOGGER.info(f"Successfully saved the dataframe at {fpath}.")
+    LOGGER.info("Successfully saved the dataframe at %s.", fpath)
 
 
-def read_plike_and_ext(prefix, suffix, fmt="fits"):
-    """Reads a pointlike and extended fits file conforming to the prefix-ttype-suffix notation and merges them into a single pandas dataframe.
-    Adds the 'Type' column set to either 'pointlike' or 'extended' and returns the df."""
-    if fmt == "fits":
-        df1 = read_fits_as_dataframe(f"{DATAPATH}{prefix}pointlike{suffix}")
-        df2 = read_fits_as_dataframe(f"{DATAPATH}{prefix}extended{suffix}")
-    else:
-        df1 = read_ascii_as_dataframe(f"{DATAPATH}{prefix}pointlike{suffix}")
-        df2 = read_ascii_as_dataframe(f"{DATAPATH}{prefix}extended{suffix}")
+def read_output_df():
+    """Reads a pointlike and extended fits."""
     # Add type columns for distinction
-    df1["Type"] = "pointlike"
-    df2["Type"] = "extended"
-    df = pd.concat([df1, df2])
-    return df
+    df_list = []
+    for ttype in USED_TTYPES:
+        fpath = give_lephare_filename(ttype, out=True, suffix="fits")
+        df = read_fits_as_dataframe(fpath)
+        df["Type"] = ttype
+        df_list.append(df)
+    joined = pd.concat(df_list)
+    joined = add_filter_columns(joined)
+    return joined
 
 
 def read_glb_context(fname):
@@ -361,10 +387,8 @@ def add_filter_columns(df):
                 .replace("MAG-", "mag_")
                 .replace("ERR-mag-", "mag_err_") for col in cols]
     df = df.rename(columns=dict(zip(cols, newnames)))
-    print(df["mag_i-ls10"].head())
     for col in newnames:
         df.loc[(df[col] <= 0) | (df[col] == 99.), col] = None
-    print(df["mag_i-ls10"].head())
     return add_outlier_information(df)
 
 
@@ -374,8 +398,8 @@ def add_outlier_information(df):
     if "Z_BEST" in df.columns:
         df = df.rename(columns={"Z_BEST": "ZBEST"})
     df["ZMeasure"] = (df["ZBEST"] - df["ZSPEC"]) / (1 + df["ZSPEC"])
-    df["ISOUTLIER"] = abs(df["ZMeasure"]) > 0.15
-    df["HASGOODZ"] = ((df["ZSPEC"] > 0) & (df["ZBEST"] > 0))
+    df["IsOutlier"] = abs(df["ZMeasure"]) > 0.15
+    df["HasGoodz"] = ((df["ZSPEC"] > 0) & (df["ZBEST"] > 0))
     df["IsFalsePositive"] = ((df["ZSPEC"] > 0.5) & (df["ZBEST"] < 0.5))
     df["IsFalseNegative"] = ((df["ZSPEC"] < 0.5) & (df["ZBEST"] > 0.5))
     return df
@@ -393,16 +417,16 @@ def give_output_statistics(df, filters_used=False):
     returns:
         Dictionary with 'eta', 'sig_nmad', 'psi_pos' and 'psi_neg' as keys.
     """
-    df = df[df["HASGOODZ"]]
+    df = df[df["HasGoodz"]]
     source_num = len(df)
-    outliers = df['ISOUTLIER'].sum()
+    outliers = df['IsOutlier'].sum()
     eta = outliers / source_num
     sig_nmad = 1.45 * (abs(df["ZMeasure"])).median()
     psi_pos = df['IsFalsePositive'].sum() / source_num
     psi_neg = df['IsFalseNegative'].sum() / source_num
     if filters_used:
-        df_good = df[~df["ISOUTLIER"]]
-        df_bad = df[df["ISOUTLIER"]]
+        df_good = df[~df["IsOutlier"]]
+        df_bad = df[df["IsOutlier"]]
         bads = [item for sublist in df_bad["filter_list"] for item in sublist]
         goods = [item for sublist in df_good["filter_list"]
                  for item in sublist]
@@ -410,21 +434,6 @@ def give_output_statistics(df, filters_used=False):
         for n, filt in enumerate(BAND_LIST):
             LOGGER.info(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
     return {"eta": eta, "sig_nmad": sig_nmad, "psi_pos": psi_pos, "psi_neg": psi_neg}
-
-
-def give_photoz_performance_label(df):
-    """Produces a label that can be displayed in a spec-z-phot-z plot."""
-    stat_dict = give_output_statistics(df)
-    etalabel = "$\eta = " + f"{stat_dict['eta']:.3f}$\n"
-    sig_nmadlabel = r"$\sigma_{\rm NMAD} = " + f"{stat_dict['sig_nmad']:.3f}$"
-    fpos = df['IsFalsePositive'].sum()
-    fposlabel = "\n" + r"$\psi_{\rm Pos} = " + \
-        f"{stat_dict['psi_pos']:.3f}$ ({fpos})"
-    fneg = df['IsFalseNegative'].sum()
-    fneglabel = "\n" + r"$\psi_{\rm Neg} = " + \
-        f"{stat_dict['psi_neg']:.3f}$ ({fneg})"
-    label = f"{len(df)} sources\n{etalabel}{sig_nmadlabel}"
-    return label + fposlabel + fneglabel
 
 
 def give_row_statistics(df):
@@ -469,7 +478,9 @@ def calculate_number_of_photometry(df):
 
 
 def give_input_statistics(df, sourcetype):
-    """Takes an input dataframe and constructs input statistics, including the number of sources and the the number this would correspond to on the whole sky.
+    """Takes an input dataframe and constructs input statistics,
+    including the number of sources and the the number this would
+    correspond to on the whole sky.
     """
     source_num = len(df)
     LOGGER.info(f"There are {source_num} sources in the {sourcetype} eFEDS dataset, \
@@ -565,8 +576,9 @@ def get_yes_no_input(question):
 def assert_file_overwrite(fpath):
     """Asks the user whether to really overwrite the given file."""
     if os.path.isfile(fpath):
-        assert get_yes_no_input(
+        return get_yes_no_input(
             f"The file '{fpath}' already exists.\nContinue to overwrite it?")
+    return True
 
 
 def assert_file_exists(fpath, ftype):
@@ -601,3 +613,31 @@ def run_lephare_command(command, arg_dict, additional=""):
     except subprocess.CalledProcessError as err:
         LOGGER.error(
             "The following error was thrown when running the last shell command:\n%s", err)
+
+
+def log_run_info():
+    """Function to log the input parameters"""
+    LOGGER.info("Program started with the following requests:")
+    cat_config = CUR_CONFIG["CAT_ASSEMBLY"]
+    if cat_config.getboolean("assemble_cat"):
+        LOGGER.info("Catalogue assembly with '%s' as a stem:",
+                    cat_config["cat_stem"])
+        for boolkey in ["use_matched", "use_processed", "reduce_to_specz", "write_lephare_input", "write_info_file"]:
+            val = cat_config.getboolean(boolkey)
+            LOGGER.info("%s:\t%s", boolkey, str(val))
+    lep_config = CUR_CONFIG["LEPHARE"]
+    if lep_config.getboolean("run_filters"):
+        LOGGER.info("LePhare filter run with '%s' as a stem.",
+                    lep_config["filter_stem"])
+    if lep_config.getboolean("run_templates"):
+        LOGGER.info("LePhare template run with '%s' as a stem.",
+                    lep_config["template_stem"])
+    if lep_config.getboolean("run_zphota"):
+        LOGGER.info("LePhare zphota run with '%s' as input and '%s' as output stem.",
+                    lep_config["input_stem"], lep_config["output_stem"])
+        LOGGER.info("The provided global context is %s, corresponding to the following bands:\n%s",
+                    CONTEXT, give_bands_for_context(CONTEXT))
+        if lep_config.getboolean("give_stats"):
+            # TODO Stats file?
+            LOGGER.info(
+                "Statistics about the LePhare run are going to be provided.")

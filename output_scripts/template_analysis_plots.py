@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import util.configure_matplotlib as cm
 import util.my_tools as mt
-from util.my_logger import logger
 
 
 def plot_single_against_redshift(df, ttype, stem, ax, template_dict, c1, c2):

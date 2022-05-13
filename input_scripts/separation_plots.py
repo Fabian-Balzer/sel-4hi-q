@@ -13,7 +13,6 @@ import util.configure_matplotlib as cm
 import util.my_tools as mt
 from matplotlib.offsetbox import AnchoredText
 from scipy.stats import gaussian_kde, rayleigh
-from util.my_logger import logger
 
 NBINS = 40
 
@@ -216,4 +215,5 @@ if __name__ == "__main__":
     input_df = mt.read_plike_and_ext(prefix="matches/baseline_input_",
                                      suffix="_processed_table.fits")
     input_df = mt.add_mag_columns(input_df)
-    plot_all_separations(input_df, "baseline_input", context=8191)  # Exclude Kids and hsc
+    plot_all_separations(input_df, "baseline_input",
+                         context=8191)  # Exclude Kids and hsc

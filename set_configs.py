@@ -26,10 +26,11 @@ except KeyError:
     mt.LOGGER.error("No catalog path could be found.")
     CATPATH = ""
 try:
-    LEPHAREDIR = os.environ["LEPHAREDIR"]
+    LEPHAREDIR = os.environ["LEPHAREDIR"] + "/"
+    LEPHAREWORK = os.environ["LEPHAREWORK"] + "/"
 except KeyError:
     mt.LOGGER.error("No path for a LePhare installation could be found.")
-    LEPHAREDIR = ""
+    LEPHAREDIR, LEPHAREWORK = "", ""
 
 DATAPATH = MYDIR + "data/"
 OUTPUTPATH = DATAPATH + "lephare_output/"
@@ -63,6 +64,7 @@ config["PATHS"] = {
     "params": PARAPATH,
     "config": CONFIGPATH,
     "lepharedir": LEPHAREDIR,
+    "lepharework": LEPHAREWORK,
     "jystilts": JYPATH,
     "current_config": DEFAULTCONFIG,
 }
@@ -114,7 +116,7 @@ config["FILTERS"] = {
 fpath = CONFIGPATH + 'general.ini'
 with open(fpath, 'w', encoding="utf8") as configfile:
     config.write(configfile)
-    mt.LOGGER.info(f"A general config file has been written to {fpath}")
+    mt.LOGGER.info("A general config file has been written to %s", fpath)
 
 mt.init_plot_directory(PLOTPATH)
 mt.init_data_directory(DATAPATH)
@@ -124,7 +126,7 @@ mt.init_other_directory(OTHERPATH)
 config = ConfigParser()
 
 config["GENERAL"] = {
-    "logging_level": 1,
+    "logging_level": 20,  # 10 would be for DEBUG
     "use_pointlike": True,
     "use_extended": True,
 }
