@@ -189,13 +189,13 @@ def give_lephare_filename(ttype, out=False, suffix=None, include_path=True):
     if out:
         path = GEN_CONFIG.get("PATHS", "data") + "lephare_output/"
         stem = CUR_CONFIG.get("LEPHARE", "output_stem")
-        suffix = "out" if suffix is None else suffix
+        suffix = ".out" if suffix is None else suffix
     else:
         path = GEN_CONFIG.get("PATHS", "data") + "lephare_input/"
         stem = CUR_CONFIG.get("LEPHARE", "input_stem")
-        suffix = "in" if suffix is None else suffix
+        suffix = ".in" if suffix is None else suffix
     path = path if include_path else ""
-    return path + stem + "_" + ttype + "." + suffix
+    return path + stem + "_" + ttype + suffix
 
 
 def give_temp_listname(ttype):
@@ -279,7 +279,7 @@ def read_output_df():
     # Add type columns for distinction
     df_list = []
     for ttype in USED_TTYPES:
-        fpath = give_lephare_filename(ttype, out=True, suffix="fits")
+        fpath = give_lephare_filename(ttype, out=True, suffix=".fits")
         df = read_fits_as_dataframe(fpath)
         df["Type"] = ttype
         df_list.append(df)

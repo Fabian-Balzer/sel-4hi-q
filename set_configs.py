@@ -72,9 +72,9 @@ band_dict = {
     "galex": ["FUV", "NUV"],
     "sweep": ["g", "r", "z", "W1", "W2", "W3", "W4"],
     "vhs": ["Y", "J", "H", "Ks"],
-    "hsc": ["i-hsc", "i2-hsc"],
-    "kids": ["i-kids"],
-    "ls10": ["i-ls10"],
+    "hsc": ["i_hsc", "i2_hsc"],
+    "kids": ["i_kids"],
+    "ls10": ["i_ls10"],
 }
 
 config["BAND_DICT"] = band_dict
@@ -149,7 +149,7 @@ config["LEPHARE"] = {
     "run_templates": False,
     "template_stem": "baseline_templates",
     "run_zphota": LEPHAREDIR != "",
-    "glb_context": -1,
+    "forbidden_bands": ['i_hsc', 'i2_hsc', 'i_kids', 'i_ls10'],
     "input_stem": "baseline_input",
     "output_stem": "baseline_output",
     "give_stats": True,
@@ -167,4 +167,4 @@ config["PLOTTING"] = {
 fpath = CONFIGPATH + DEFAULTCONFIG
 with open(fpath, 'w', encoding="utf8") as configfile:
     config.write(configfile)
-    mt.LOGGER.info(f"A default config file has been written to {fpath}")
+    mt.LOGGER.info("A default config file has been written to %s", fpath)

@@ -80,7 +80,7 @@ def run_zphota(ttype):
                     "CAT_OUT": mt.give_lephare_filename(ttype, out=True),
                     "PARA_OUT": mt.give_parafile_fpath(out=True),
                     "GLB_CONTEXT": mt.CONTEXT,
-                    "PDZ_OUT": mt.give_lephare_filename(ttype, suffix="")}
+                    "PDZ_OUT": mt.give_lephare_filename(ttype, out=True, suffix="")}
     if ttype == "pointlike":
         arg_dict_sed["MAG_REF"] = "7"
         arg_dict_sed["MAG_ABS"] = "-30,-20"
@@ -110,7 +110,7 @@ def run_lephare_commands():
 
 
 if __name__ == "__main__":
-    # mt.log_run_info()
+    mt.log_run_info()
     assert_all()
 
     if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):

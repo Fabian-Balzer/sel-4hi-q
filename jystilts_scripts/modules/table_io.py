@@ -22,8 +22,6 @@ def read_table(name):
         table = tables[0]
         for t in tables[1:]:
             table += t
-    elif name == "vhs":
-        table = stilts.tread(jt.CATPATH + "vhs/vhs_efeds_4.fits", fmt="fits")
     else:  # Just take the first file of each directory
         filename = os.listdir(jt.CATPATH + name)[0]
         table = stilts.tread(jt.CATPATH + name + "/" + filename, fmt="fits")
@@ -57,14 +55,15 @@ def clean_vhs(table):
 
 
 def clean_kids(table):
-    """Cleans the kids table by removing any flagged i band sources primary sources and renaming the relevant columns."""
+    """Cleans the kids table by removing any flagged i band sources
+    primary sources and renaming the relevant columns."""
     # Select primary sources
     table = jt.change_colnames(
-        table, ["raj2000", "decj2000", "class_star", "Z_B", "ODDS", "MAG_GAAP_i", "MAGERR_GAAP_i", "EXTINCTION_i", "FLAG_GAAP_i"], ["ra", "dec", "kids_class", "z_best_kids", "z_qual_kids", "mag_i", "mag_err_i", "ext_i", "flag_i"])
-    discard_num = table.cmd_select("flag_i != 0").count_rows()
-    jt.LOGGER.info(
-        "Discarding %s  unreliable sources from the kids catalogue.", discard_num)
-    table = table.cmd_select("flag_i == 0")
+        table,
+        ["raj2000", "decj2000", "class_star", "Z_B", "ODDS",
+         "MAG_GAAP_i", "MAGERR_GAAP_i", "EXTINCTION_i"],
+        ["ra", "dec", "kids_class", "z_best_kids", "z_qual_kids",
+         "mag_i_kids", "mag_err_i_kids", "ext_i", "flag_i"])
     return table
 
 
@@ -392,11 +391,11 @@ def correct_kids_fluxes(table):
     c_flux = "c_flux_i_kids"
     c_flux_err = "c_flux_err_i_kids"
     # Expression for calculating the conversion
-    flux_corr_expr = "mag_i > 0 ? pow(10, -0.4*(mag_i + 48.6)) : -99."
-    flux_err_corr_expr = "mag_i > 0 ? pow(10, -0.4*(mag_err_i + 48.6))*mag_i*ln(10)*0.4 : -99."
+    flux_corr_expr = "mag_i_kids > 0 ? pow(10, -0.4*(mag_i_kids + 48.6)) : -99."
+    flux_err_corr_expr = "mag_i_kids > 0 ? pow(10, -0.4*(mag_err_i_kids + 48.6))*mag_i_kids*ln(10)*0.4 : -99."
 
     table = table.cmd_addcol(c_flux, flux_corr_expr, "-after " +
-                             "mag_err_i" + " -units ergs/(cm**2*Hz*s)")  # Add corrected flux
+                             "mag_err_i_kids" + " -units ergs/(cm**2*Hz*s)")  # Add corrected flux
     table = table.cmd_addcol(c_flux_err, flux_err_corr_expr, "-after " +
                              c_flux + " -units ergs/(cm**2*Hz*s)")  # Corrected flux
     return table
@@ -414,7 +413,7 @@ def split_by_type(table):
 
 
 def correct_hsc_flux(pointlike, extended):
-    """Correct the hsc flux: Take cmodel for pointlike and kron for extended sources.
+    """Correct the hsc flux: Take psf for pointlike and cmodel for extended sources.
     Also, split the i band data into two relevant categories i and i2.
     Also also, convert from nJy to cgs (1 nJy = 10**(-9) Jy = 10**(-9-23) ergs/s/Hz/cm**2)"""
     for colname in ["i_psfflux_flux", "i_psfflux_fluxerr", "i_cmodel_flux", "i_cmodel_fluxerr"]:

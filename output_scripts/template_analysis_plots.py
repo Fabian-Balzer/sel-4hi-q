@@ -106,8 +106,8 @@ def plot_problematic_templates(df, ttype):
     """Plots a histogram with the available templates and the percentage of usage for LePhare"""
     fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.8))
     subset = df[df["Type"] == ttype]
-    good = subset[~subset["ISOUTLIER"]]
-    bad = subset[subset["ISOUTLIER"]]
+    good = subset[~subset["IsOutlier"]]
+    bad = subset[subset["IsOutlier"]]
     df1 = good["MOD_BEST"].value_counts().rename("Good")
     df2 = bad["MOD_BEST"].value_counts().rename("Bad")
     both = pd.concat([df1, df2], axis=1).drop(labels=[-99])
