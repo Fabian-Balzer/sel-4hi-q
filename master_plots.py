@@ -21,6 +21,7 @@ import output_scripts.specz_photz_plots as s_p
 import output_scripts.template_analysis_plots as ta
 import util.my_tools as mt
 
+
 def read_args():
     """Reads out the arguments given by the user."""
     parser = argparse.ArgumentParser(

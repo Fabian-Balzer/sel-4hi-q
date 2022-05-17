@@ -39,29 +39,19 @@ def assert_catalog_assembly():
                 assert survey in available_cats
 
         if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("use_matched"):
-            matchname = cat_stem + "_latest_match.fits"
-            mt.assert_file_exists(
-                mt.GEN_CONFIG["PATHS"]["match"] + matchname, "matched")
+            mt.assert_file_exists(mt.give_match_table_name(), "matched")
 
         if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("use_processed"):
-            procname = cat_stem + "pointlike_processed.fits"
-            mt.assert_file_exists(
-                mt.GEN_CONFIG["PATHS"]["match"] + procname, "processed extended")
-            procname = cat_stem + "extended_pr.fits"
-            mt.assert_file_exists(mt.GEN_CONFIG["PATHS"]["match"] + procname)
+            mt.assert_file_exists(mt.give_processed_table_name(
+                "pointlike"), "processed pointlike")
+            mt.assert_file_exists(mt.give_processed_table_name(
+                "extended"), "processed extended")
 
-        input_stem = mt.CUR_CONFIG["LEPHARE"]["input_stem"]
         if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("write_lephare_input"):
             if use_plike:
-                inputname = input_stem + "_pointlike.in"
-                fpath = mt.GEN_CONFIG["PATHS"]["data"] + \
-                    "lephare_input/" + inputname
-                mt.assert_file_overwrite(fpath)
+                mt.assert_file_overwrite(mt.give_lephare_filename("pointlike"))
             if use_ext:
-                inputname = input_stem + "_extended.in"
-                fpath = mt.GEN_CONFIG["PATHS"]["data"] + \
-                    "lephare_input/" + inputname
-                mt.assert_file_overwrite(fpath)
+                mt.assert_file_overwrite(mt.give_lephare_filename("extended"))
 
 # %% Assert LePhare stuff
 
@@ -103,16 +93,19 @@ def assert_lephare_assembly():
             if use_ext:
                 mt.assert_file_exists(mt.give_lephare_filename(
                     "extended"), "extended LePhare input")
+        if not filt:
+            # TODO: Look in LePhare instead
+            mt.assert_file_exists(mt.give_filterfile_fpath(), "filter")
         # If no templates are generated, check if they are available:
         if not temps:
             if use_plike:
                 mt.assert_file_exists(mt.give_temp_libname(
-                    "pointlike", "mag", "fits"), "pointlike template")
+                    "pointlike", "mag", suffix=".doc", use_workpath=True), "pointlike template")
             if use_ext:
                 mt.assert_file_exists(mt.give_temp_libname(
-                    "extended", "mag", "fits"), "extended template")
+                    "extended", "mag", suffix=".doc", use_workpath=True), "extended template")
             mt.assert_file_exists(mt.give_temp_libname(
-                "star", "mag", "fits"), "star template")
+                "star", "mag", suffix=".doc", use_workpath=True), "star template")
         if use_plike:
             mt.assert_file_overwrite(
                 mt.give_lephare_filename("pointlike", out=True))

@@ -60,10 +60,13 @@ def save_figure(fig, name="", directory="", stem="", format_="pdf"):
     """Save a given figure while removing excess whitespace"""
     directory = directory + "/" if directory != "" else directory
     stem = stem + "_" if stem != "" else stem
-    fpath = f"{mt.PLOTPATH}{directory}{stem}{name}.{format_}"
-    fig.savefig(fpath, format=format_, bbox_inches='tight')
-    mt.mt.LOGGER.info(
-        f"Successfully saved the {stem}{name}.{format_} plot at {directory}.")
+    fpath = f"{mt.GEN_CONFIG['PATHS']['plot']}{directory}{stem}{name}.{format_}"
+    if mt.assert_file_overwrite(fpath):
+        fig.savefig(fpath, format=format_, bbox_inches='tight')
+        mt.LOGGER.info(
+            f"Successfully saved the {stem}{name}.{format_} plot at {directory}.")
+    else:
+        mt.LOGGER.info(f"Skipped writing the {stem}{name} plot.")
 
 
 def save_current_figures(name, format_="pdf"):
