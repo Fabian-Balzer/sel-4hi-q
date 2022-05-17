@@ -43,11 +43,6 @@ def pre_clean_table(name, table):
 # %% Table-specific cleaning functions
 def clean_vhs(table):
     """Cleans the vhs table by selecting primary sources and the relevant columns."""
-    # Select primary sources
-    discard_num = table.cmd_select("priOrSec != 0").count_rows()
-    jt.LOGGER.info(
-        "Discarding %s secondary sources from the VHS catalogue.", discard_num)
-    table = table.cmd_select("priOrSec == 0")
     columnlist = ["ra", "dec", "pstar", "pgalaxy", "psf", "ebv"]
     for band in jt.VHS_BANDS:
         columnlist.append(band + "petromag")
@@ -146,10 +141,10 @@ def clean_assef(table):
 def clean_hsc(table):
     """Cleans the hsc table by renaming the relevant columns."""
     table = table.cmd_select(
-        "!i_kronflux_flux_isnull && !i_cmodel_flux_isnull")
+        "!i_cmodel_flux_isnull && !i_psfflux_flux_isnull")
     # We are discarding any flags for now.
-    columnlist = ["ra", "dec", "i_kronflux_flux", "i_kronflux_fluxerr",
-                  "i_cmodel_flux", "i_cmodel_fluxerr", "i_filterfraction_weighted"]
+    columnlist = ["ra", "dec", "i_psfflux_flux", "i_psfflux_fluxerr",
+                  "i_cmodel_flux", "i_cmodel_fluxerr", "i_filterfraction_weighted", "a_i"]
     table = jt.keep_columns(table, columnlist)
     return table
 
@@ -183,7 +178,7 @@ def match_given_tables(table_dict):
     Also filters irrelevant columns from the tables and puts them in a nice order"""
     funcs = {"vhs": [match_table_vhs, 0.5],
              "eros": [match_table_eros, 0.1],
-             "hsc": [match_table_hsc, 1],
+             "hsc": [match_table_hsc, 0.25],
              "galex": [match_table_galex, 3.5],
              "kids": [match_table_kids, 1.5],
              "ls10": [match_table_ls10, 0.1]}
@@ -394,12 +389,11 @@ def correct_galex_fluxes(table):
 
 def correct_kids_fluxes(table):
     """Converts the KiDS magnitudes to fluxes and corrects for extinction"""
-    # TODO: Question for Mara on wether the extinction correction has already been applied to the KiDS DR4.1 (https://kids.strw.leidenuniv.nl/DR4/release-description-KiDS-ESO-DR4.1.pdf)
     c_flux = "c_flux_i_kids"
     c_flux_err = "c_flux_err_i_kids"
     # Expression for calculating the conversion
-    flux_corr_expr = "mag_i > 0 ? pow(10, -0.4*(mag_i + 48.6 + ext_i)) : -99."
-    flux_err_corr_expr = "mag_i > 0 ? pow(10, -0.4*(mag_err_i + 48.6 + ext_i))*mag_i*ln(10)*0.4 : -99."
+    flux_corr_expr = "mag_i > 0 ? pow(10, -0.4*(mag_i + 48.6)) : -99."
+    flux_err_corr_expr = "mag_i > 0 ? pow(10, -0.4*(mag_err_i + 48.6))*mag_i*ln(10)*0.4 : -99."
 
     table = table.cmd_addcol(c_flux, flux_corr_expr, "-after " +
                              "mag_err_i" + " -units ergs/(cm**2*Hz*s)")  # Add corrected flux
@@ -423,16 +417,18 @@ def correct_hsc_flux(pointlike, extended):
     """Correct the hsc flux: Take cmodel for pointlike and kron for extended sources.
     Also, split the i band data into two relevant categories i and i2.
     Also also, convert from nJy to cgs (1 nJy = 10**(-9) Jy = 10**(-9-23) ergs/s/Hz/cm**2)"""
-    for colname in ["i_kronflux_flux", "i_kronflux_fluxerr", "i_cmodel_flux", "i_cmodel_fluxerr"]:
+    for colname in ["i_psfflux_flux", "i_psfflux_fluxerr", "i_cmodel_flux", "i_cmodel_fluxerr"]:
         pointlike = pointlike.cmd_replacecol(
             colname, colname + "*pow(10, -32)")
         extended = extended.cmd_replacecol(colname, colname + "*pow(10, -32)")
-    pointlike = pointlike.cmd_delcols("i_kronflux_flux i_kronflux_fluxerr")
-    pointlike = jt.change_colnames(pointlike, ["i_cmodel_flux", "i_cmodel_fluxerr"], [
+
+    pointlike = pointlike.cmd_delcols("i_cmodel_flux i_cmodel_fluxerr")
+    pointlike = jt.change_colnames(pointlike, ["i_psfflux_flux", "i_psfflux_fluxerr"], [
         "c_flux_i_hsc", "c_flux_err_i_hsc"])
     pointlike = introduce_filter_weights(pointlike)
-    extended = extended.cmd_delcols("i_cmodel_flux i_cmodel_fluxerr")
-    extended = jt.change_colnames(extended, ["i_kronflux_flux", "i_kronflux_fluxerr"], [
+
+    extended = extended.cmd_delcols("i_psfflux_flux i_psfflux_fluxerr")
+    extended = jt.change_colnames(extended, ["i_cmodel_flux", "i_cmodel_fluxerr"], [
         "c_flux_i_hsc", "c_flux_err_i_hsc"])
     extended = introduce_filter_weights(extended)
     return pointlike, extended
@@ -441,13 +437,13 @@ def correct_hsc_flux(pointlike, extended):
 def introduce_filter_weights(hsctable):
     """Adds columns for i and i2 depending on the filterfraction provided."""
     hsctable = hsctable.cmd_addcol(
-        "c_flux_i2_hsc", "i_filterfraction_weighted >= 0.5 ? c_flux_i_hsc : -99.")
+        "c_flux_i2_hsc", "i_filterfraction_weighted >= 0.75 ? c_flux_i_hsc : -99.")
     hsctable = hsctable.cmd_addcol(
-        "c_flux_err_i2_hsc", "i_filterfraction_weighted >= 0.5 ? c_flux_err_i_hsc : -99.")
+        "c_flux_err_i2_hsc", "i_filterfraction_weighted >= 0.75 ? c_flux_err_i_hsc : -99.")
     hsctable = hsctable.cmd_replacecol(
-        "c_flux_i_hsc", "i_filterfraction_weighted < 0.5 ? c_flux_i_hsc : -99.")
+        "c_flux_i_hsc", "i_filterfraction_weighted <= 0.25 ? c_flux_i_hsc : -99.")
     hsctable = hsctable.cmd_replacecol(
-        "c_flux_err_i_hsc", "i_filterfraction_weighted < 0.5 ? c_flux_err_i_hsc : -99.")
+        "c_flux_err_i_hsc", "i_filterfraction_weighted <= 0.25 ? c_flux_err_i_hsc : -99.")
     return hsctable
 
 
