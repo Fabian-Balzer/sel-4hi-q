@@ -11,7 +11,6 @@ import os
 import subprocess
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -55,9 +54,32 @@ def stringlist_to_list(stringlist):
 
 
 def read_list_from_config(section, key):
-    """Returns a list of the values listed in a config file."""
+    """Returns a list of the values listed in the general config file."""
     stringlist = GEN_CONFIG.get(section, key)
     return stringlist_to_list(stringlist)
+
+
+def give_context(bands, inverted=False):
+    """Returns the context belonging to the set of bands provided."""
+    unknown_bands = [band for band in bands if band not in BAND_LIST]
+    if len(unknown_bands) > 0:
+        LOGGER.warning(
+            "You are trying to calculate the context of bands that haven't been specified:\n%s", unknown_bands)
+    if inverted:
+        bands = [band for band in BAND_LIST if band not in bands]
+    return sum([2**i for i, band in enumerate(BAND_LIST) if band in bands])
+
+
+def give_bands_for_context(context: int):
+    """Returns the context belonging to the set of bands provided."""
+    band_indices = convert_context_to_band_indices(context)
+    return [BAND_LIST[index - 1] for index in band_indices]
+
+
+def give_survey_for_band(band):
+    """Returns the survey that the band appeared in."""
+    surveys = [key for key in BAND_DICT if band in BAND_DICT[key]]
+    return surveys[0] if len(surveys) > 0 else "unknown"
 
 
 # Define the (hardcoded) path where the data sits in
@@ -74,7 +96,9 @@ KIDS_BANDS = read_list_from_config("BAND_DICT", "kids")
 LS10_BANDS = read_list_from_config("BAND_DICT", "ls10")
 BAND_LIST = read_list_from_config("BANDS", "listed")
 SURVEYS = [pair[0] for pair in GEN_CONFIG.items("BAND_DICT")]
-CONTEXT = CUR_CONFIG["LEPHARE"].getint("glb_context")
+forbidden_bands = stringlist_to_list(
+    CUR_CONFIG.get("LEPHARE", "forbidden_bands"))
+CONTEXT = give_context(forbidden_bands, inverted=True)
 
 BAND_DICT = {}
 
@@ -545,23 +569,6 @@ def convert_context_to_band_indices(context):
     return filter_numbers[::-1]  # lastly, we reverse the list
 
 
-def give_context(bands):
-    """Returns the context belonging to the set of bands provided."""
-    return sum([2**i for i, band in enumerate(BAND_LIST) if band in bands])
-
-
-def give_bands_for_context(context: int):
-    """Returns the context belonging to the set of bands provided."""
-    band_indices = convert_context_to_band_indices(context)
-    return [BAND_LIST[index - 1] for index in band_indices]
-
-
-def give_survey_for_band(band):
-    """Returns the survey that the band appeared in."""
-    surveys = [key for key in BAND_DICT if band in BAND_DICT[key]]
-    return surveys[0] if len(surveys) > 0 else "unknown"
-
-
 def get_yes_no_input(question):
     """Tries to get user input for a yes/no question."""
     answer = input(question + "\n>>> ")
@@ -641,3 +648,21 @@ def log_run_info():
             # TODO Stats file?
             LOGGER.info(
                 "Statistics about the LePhare run are going to be provided.")
+
+
+def assess_lephare_run(ttype):
+    """Directly assess the quality of a photo-z run."""
+    df = read_fits_as_dataframe(
+        give_lephare_filename(ttype, out=True, suffix=".fits"))
+    df = add_filter_columns(df)
+    stat_dict = give_output_statistics(df)
+    fpos = df['IsFalsePositive'].sum()
+    fneg = df['IsFalseNegative'].sum()
+    LOGGER.info("The outlier fraction for %s is eta = %.4f.",
+                ttype, stat_dict['eta'])
+    LOGGER.info("The accuracy for %s is sig_NMAD = %.4f",
+                ttype, stat_dict['sig_nmad'])
+    LOGGER.info(
+        "The false pos fraction is psi_pos = %.4f (%d)", stat_dict['psi_pos'], fpos)
+    LOGGER.info(
+        "The false neg fraction is psi_neg = %.4f (%d)", stat_dict['psi_neg'], fneg)

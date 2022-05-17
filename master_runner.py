@@ -21,6 +21,8 @@ import util.my_tools as mt
 from input_scripts.filter_coverage_plot import read_filter_overview_file
 from util.assert_config import assert_all
 
+# %%
+
 
 def assemble_catalog():
     """Runs the jython script to match the input files."""
@@ -82,45 +84,50 @@ def run_zphota(ttype):
     if ttype == "pointlike":
         arg_dict_sed["MAG_REF"] = "7"
         arg_dict_sed["MAG_ABS"] = "-30,-20"
+    if ttype == "extended":
+        arg_dict_sed["MAG_REF"] = "7"
+        arg_dict_sed["MAG_ABS"] = "-24,-8"
     mt.run_lephare_command("zphota", arg_dict_sed)
     mt.run_jystilts_program("rewrite_fits_header.py", ttype, "OUT")
+    mt.assess_lephare_run(ttype)
 
 
 def run_lephare_commands():
     """Runs the requested LePhare commands specified in the current config file."""
-    lep_con, use_plike, use_ext = mt.CUR_CONFIG["LEPHARE"], mt.CUR_CONFIG["GENERAL"].getboolean(
-        "use_pointlike"), mt.CUR_CONFIG["GENERAL"].getboolean("use_ext")
+    lep_con = mt.CUR_CONFIG["LEPHARE"]
     if lep_con.getboolean("run_filters"):
         run_filters()
 
     if lep_con.getboolean("run_templates"):
-        if use_plike:
-            run_templates("pointlike")
-        if use_ext:
-            run_templates("extended")
+        for ttype in mt.USED_TTYPES:
+            run_templates(ttype)
         run_templates("star")
 
     if lep_con.getboolean("run_zphota"):
-        if use_plike:
-            run_zphota("pointlike")
-        if use_ext:
-            run_zphota("extended")
+        for ttype in mt.USED_TTYPES:
+            run_zphota(ttype)
+    mt.LOGGER.debug("Finished the LePhare commands")
 
 
 if __name__ == "__main__":
     # mt.log_run_info()
-    # assert_all()
+    assert_all()
 
     if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
         assemble_catalog()
 
-    # run_lephare_commands()
+    run_lephare_commands()
 
     if mt.CUR_CONFIG["PLOTTING"].getboolean("output"):
         output_df = mt.read_output_df()
         for ttype in ["pointlike", "extended"]:
-            # ta.plot_problematic_templates(output_df, ttype)
+            ta.plot_problematic_templates(output_df, ttype)
             s_p.plot_photoz_vs_specz(output_df, ttype)
+    if mt.CUR_CONFIG["PLOTTING"].getboolean("template"):
+        output_df = mt.read_output_df()
+        for ttype in ["pointlike", "extended"]:
+            template_df = mt.read_template_library(
+                mt.give_temp_libname(ttype, suffix=".dat"))
 
         # # %%
         # # Construct the input dataframe:

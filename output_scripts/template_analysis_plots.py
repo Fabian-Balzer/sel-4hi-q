@@ -102,7 +102,7 @@ def plot_multiple_against_redshift(source_df, template_df, ttype, stem, bands=("
         cm.save_current_figures(filename)
 
 
-def plot_problematic_templates(df, ttype, stem=""):
+def plot_problematic_templates(df, ttype):
     """Plots a histogram with the available templates and the percentage of usage for LePhare"""
     fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.8))
     subset = df[df["Type"] == ttype]
@@ -115,7 +115,7 @@ def plot_problematic_templates(df, ttype, stem=""):
     both = both.sort_values(by="Total", ascending=False)
 
     threshold = max(1, max(both["Total"]) * 0.07)
-    logger.info(
+    mt.LOGGER.info(
         f"Adopting threshold (number of most occurences for models to be combined in 'other') of {threshold:.0f} for {ttype}.")
     other_dict = {"Good": {"Other": 0}, "Bad": {
         "Other": 0}, "Total": {"Other": 0}}
@@ -147,6 +147,7 @@ def plot_problematic_templates(df, ttype, stem=""):
     axes.set_xticklabels(list(labels), minor=False, rotation=90, )
     axes.legend(loc="upper right")
     fig.set_facecolor("white")
+    stem = mt.CUR_CONFIG["LEPHARE"]["output_stem"]
     cm.save_figure(fig, f"{ttype}_used_templates", "output_analysis", stem)
     return both
 

@@ -23,8 +23,8 @@ def assert_general():
     fpath = mt.GEN_CONFIG["PATHS"]["config"] + \
         mt.GEN_CONFIG["PATHS"]["current_config"]
     mt.assert_file_exists(fpath, "configuration")
-    assert (-1 <= mt.CONTEXT <= (len(mt.BAND_LIST) + 1) **
-            2), f"Context {mt.CONTEXT} is not a viable context."
+    assert (-1 <= mt.CONTEXT <= 2**(len(mt.BAND_LIST) + 1)
+            ), f"Context {mt.CONTEXT} is not a viable context."
 
 
 # %% Assert catalog availability:
@@ -64,23 +64,15 @@ def assert_lephare_assembly():
     if filt | temps | zphot:
         mt.assert_file_exists(mt.give_parafile_fpath(), "input parameter")
 
-    if filt:
-        mt.assert_file_overwrite(mt.give_filterfile_fpath())
-
     if temps:
         if use_plike:
             mt.assert_file_exists(mt.give_temp_listname(
                 "pointlike"), "pointlike template list")
-            mt.assert_file_overwrite(
-                mt.give_temp_libname("pointlike", "mag", "fits"))
         if use_ext:
             mt.assert_file_exists(mt.give_temp_listname(
                 "extended"), "extended template list")
-            mt.assert_file_overwrite(
-                mt.give_temp_libname("extended", "mag", "fits"))
         mt.assert_file_exists(mt.give_temp_listname(
             "star"), "star template list")
-        mt.assert_file_overwrite(mt.give_temp_libname("star", "mag", "fits"))
 
     if zphot:
         mt.assert_file_exists(mt.give_parafile_fpath(
@@ -106,12 +98,6 @@ def assert_lephare_assembly():
                     "extended", "mag", suffix=".doc", use_workpath=True), "extended template")
             mt.assert_file_exists(mt.give_temp_libname(
                 "star", "mag", suffix=".doc", use_workpath=True), "star template")
-        if use_plike:
-            mt.assert_file_overwrite(
-                mt.give_lephare_filename("pointlike", out=True))
-        if use_ext:
-            mt.assert_file_overwrite(
-                mt.give_lephare_filename("extended", out=True))
 
 
 # %% Assert plotting:
