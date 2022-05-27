@@ -10,26 +10,27 @@ Script to be run to set a configfile (important for datapaths)
 
 import os
 from configparser import ConfigParser
+from pathlib import Path
 
-import util.my_tools as mt
+from util.my_logger import LOGGER
 
 try:
     MYDIR = os.environ["LEPHARE"] + "/"
 except KeyError:
-    mt.LOGGER.error(
+    LOGGER.error(
         "Please initialize the 'LEPHARE' directory before running any further code.")
     raise Exception
 
 try:
     CATPATH = os.environ["CATPATH"] + "/"
 except KeyError:
-    mt.LOGGER.error("No catalog path could be found.")
+    LOGGER.error("No catalog path could be found.")
     CATPATH = ""
 try:
     LEPHAREDIR = os.environ["LEPHAREDIR"] + "/"
     LEPHAREWORK = os.environ["LEPHAREWORK"] + "/"
 except KeyError:
-    mt.LOGGER.error("No path for a LePhare installation could be found.")
+    LOGGER.error("No path for a LePhare installation could be found.")
     LEPHAREDIR, LEPHAREWORK = "", ""
 
 DATAPATH = MYDIR + "data/"
@@ -116,11 +117,41 @@ config["FILTERS"] = {
 fpath = CONFIGPATH + 'general.ini'
 with open(fpath, 'w', encoding="utf8") as configfile:
     config.write(configfile)
-    mt.LOGGER.info("A general config file has been written to %s", fpath)
+    LOGGER.info("A general config file has been written to %s", fpath)
 
-mt.init_plot_directory(PLOTPATH)
-mt.init_data_directory(DATAPATH)
-mt.init_other_directory(OTHERPATH)
+
+def init_plot_directory(ppath):
+    """Constructs a plot directory with the necessary subfolders if it is missing."""
+    for dirs in ["output_analysis/templates", "input_analysis/separation"]:
+        path = ppath + dirs
+        Path(path).mkdir(parents=True, exist_ok=True)
+    LOGGER.info("Successfully initialized the path for plots at '%s'.", ppath)
+
+
+def init_data_directory(dpath):
+    """Constructs a data directory with the necessary subfolders if it is missing"""
+    for dirs in ["lephare_files/templates", "lephare_input", "lephare_output", "matches", "raw_catalogues"]:
+        path = dpath + dirs
+        Path(path).mkdir(parents=True, exist_ok=True)
+    LOGGER.info("Successfully initialized the path for data at '%s'.", dpath)
+
+
+def init_other_directory(opath):
+    """Constructs a data directory with the necessary subfolders if it is missing"""
+    for dirs in ["latex", "programs"]:
+        path = opath + dirs
+        Path(path).mkdir(parents=True, exist_ok=True)
+    jystiltsfpath = f"{opath}programs/jystilts.jar"
+    if not os.path.isfile(jystiltsfpath):
+        LOGGER.warning(
+            "Jystilts couldn't be located. Please install it in '%s'", jystiltsfpath)
+    LOGGER.info(
+        "Successfully initialized the path for other stuff at '%s'.", opath)
+
+
+init_plot_directory(PLOTPATH)
+init_data_directory(DATAPATH)
+init_other_directory(OTHERPATH)
 
 # %% Individual configurations changing from run to run
 config = ConfigParser()
@@ -167,4 +198,4 @@ config["PLOTTING"] = {
 fpath = CONFIGPATH + DEFAULTCONFIG
 with open(fpath, 'w', encoding="utf8") as configfile:
     config.write(configfile)
-    mt.LOGGER.info("A default config file has been written to %s", fpath)
+    LOGGER.info("A default config file has been written to %s", fpath)

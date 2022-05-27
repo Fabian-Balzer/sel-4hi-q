@@ -6,15 +6,15 @@ Created on Mon Jul 19 09:31:46 2021
 """
 
 
-import logging
 import os
 import subprocess
 from configparser import ConfigParser
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from astropy.table import Table
+
+from util.my_logger import LOGGER
 
 
 def get_yes_no_input(question):
@@ -49,28 +49,7 @@ assert_file_exists(CONFIGPATH + "general.ini", "config")
 GEN_CONFIG.read(CONFIGPATH + "general.ini")
 CUR_CONFIG = ConfigParser()
 CUR_CONFIG.read(CONFIGPATH + GEN_CONFIG["PATHS"]["current_config"])
-
-
-def init_logger():
-    """Initializes a logger."""
-    # create logger
-    logger = logging.getLogger('simple_logger')
-    logger.setLevel(logging.DEBUG)
-    # create console handler and set level to debug
-    ch = logging.StreamHandler()
-    ch.setLevel(CUR_CONFIG.getint("GENERAL", "logging_level"))
-    # create formatter
-    formatter = logging.Formatter('%(levelname)s: %(message)s')
-    # add formatter to ch
-    ch.setFormatter(formatter)
-    # add ch to logger
-    while logger.hasHandlers():
-        logger.removeHandler(logger.handlers[0])
-    logger.addHandler(ch)
-    return logger
-
-
-LOGGER = init_logger()
+LOGGER.setLevel(CUR_CONFIG.getint("GENERAL", "logging_level"))
 
 
 def stringlist_to_list(stringlist):
@@ -248,35 +227,6 @@ def give_temp_libname(ttype, libtype="mag", suffix="", include_path=True, use_wo
     fname = CUR_CONFIG.get('LEPHARE', 'para_stem') + \
         "_" + ttype + "_" + libtype + "_lib" + suffix
     return temppath + fname
-
-
-def init_plot_directory(ppath):
-    """Constructs a plot directory with the necessary subfolders if it is missing."""
-    for dirs in ["output_analysis/templates", "input_analysis/separation"]:
-        path = ppath + dirs
-        Path(path).mkdir(parents=True, exist_ok=True)
-    LOGGER.info("Successfully initialized the path for plots at '%s'.", ppath)
-
-
-def init_data_directory(dpath):
-    """Constructs a data directory with the necessary subfolders if it is missing"""
-    for dirs in ["lephare_files/templates", "lephare_input", "lephare_output", "matches", "raw_catalogues"]:
-        path = dpath + dirs
-        Path(path).mkdir(parents=True, exist_ok=True)
-    LOGGER.info("Successfully initialized the path for data at '%s'.", dpath)
-
-
-def init_other_directory(opath):
-    """Constructs a data directory with the necessary subfolders if it is missing"""
-    for dirs in ["latex", "programs"]:
-        path = opath + dirs
-        Path(path).mkdir(parents=True, exist_ok=True)
-    jystiltsfpath = f"{opath}programs/jystilts.jar"
-    if not os.path.isfile(jystiltsfpath):
-        LOGGER.warning(
-            "Jystilts couldn't be located. Please install it in '%s'", jystiltsfpath)
-    LOGGER.info(
-        "Successfully initialized the path for other stuff at '%s'.", opath)
 
 
 def read_fits_as_dataframe(filename, saferead=False):
