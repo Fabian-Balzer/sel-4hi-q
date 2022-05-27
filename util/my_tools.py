@@ -16,8 +16,36 @@ import numpy as np
 import pandas as pd
 from astropy.table import Table
 
+
+def get_yes_no_input(question):
+    """Tries to get user input for a yes/no question."""
+    answer = input(question + "\n>>> ")
+    while True:
+        if answer.lower() in ["y", "yes", "yep"]:
+            return True
+        if answer.lower() in ["n", "no", "nope"]:
+            return False
+        answer = input("Please answer with 'yes' or 'no'\n>>> ")
+
+
+def assert_file_overwrite(fpath):
+    """Asks the user whether to really overwrite the given file."""
+    if os.path.isfile(fpath):
+        return get_yes_no_input(
+            f"The file '{fpath}' already exists.\nContinue to overwrite it?")
+    return True
+
+
+def assert_file_exists(fpath, ftype):
+    """Asks the user whether to really overwrite the given file."""
+    fname = fpath.split("/")[-1]
+    assert os.path.isfile(
+        fpath), f"No {ftype} file with the name {fname} could be found, which is going to be needed in the process.\nFull path of the expected file:\n{fpath}"
+
+
 CONFIGPATH = os.environ["LEPHARE"] + "/lephare_scripts/config/"
 GEN_CONFIG = ConfigParser()
+assert_file_exists(CONFIGPATH + "general.ini", "config")
 GEN_CONFIG.read(CONFIGPATH + "general.ini")
 CUR_CONFIG = ConfigParser()
 CUR_CONFIG.read(CONFIGPATH + GEN_CONFIG["PATHS"]["current_config"])
@@ -199,10 +227,11 @@ def give_lephare_filename(ttype, out=False, suffix=None, include_path=True):
     return path + stem + "_" + ttype + suffix
 
 
-def give_temp_listname(ttype):
+def give_temp_listname(ttype, altstem=None):
     """Provides the name of the list file with the templates."""
     listpath = GEN_CONFIG["PATHS"]["params"] + "template_lists/"
-    fname = f"{CUR_CONFIG['LEPHARE']['template_stem']}_{ttype}.list"
+    stem = CUR_CONFIG['LEPHARE']['template_stem'] if altstem is None else altstem
+    fname = f"{stem}_{ttype}.list"
     return listpath + fname
 
 
@@ -407,13 +436,14 @@ def add_filter_columns(df):
     # this way, for each list the length is taken
     df["nfilters"] = df["filter_list"].str.len()
     # rename capitalized mag columns
-    cols = [col for col in df.columns if "MAG" in col]
+    cols = [col for col in df.columns if "mag" in col]
     newnames = [col.replace("_", "-")
-                .replace("MAG-", "mag_")
-                .replace("ERR-mag-", "mag_err_") for col in cols]
+                .replace("mag-", "mag_")
+                .replace("err-mag-", "mag_err_") for col in cols]
     df = df.rename(columns=dict(zip(cols, newnames)))
+    cols = [col for col in df.columns if "mag" in col]
     for col in newnames:
-        df.loc[(df[col] <= 0) | (df[col] == 99.), col] = None
+        df.loc[(df[col] <= 0) | (df[col] > 98.0), col] = None
     return add_outlier_information(df)
 
 
@@ -570,32 +600,6 @@ def convert_context_to_band_indices(context):
     return filter_numbers[::-1]  # lastly, we reverse the list
 
 
-def get_yes_no_input(question):
-    """Tries to get user input for a yes/no question."""
-    answer = input(question + "\n>>> ")
-    while True:
-        if answer.lower() in ["y", "yes", "yep"]:
-            return True
-        if answer.lower() in ["n", "no", "nope"]:
-            return False
-        answer = input("Please answer with 'yes' or 'no'\n>>> ")
-
-
-def assert_file_overwrite(fpath):
-    """Asks the user whether to really overwrite the given file."""
-    if os.path.isfile(fpath):
-        return get_yes_no_input(
-            f"The file '{fpath}' already exists.\nContinue to overwrite it?")
-    return True
-
-
-def assert_file_exists(fpath, ftype):
-    """Asks the user whether to really overwrite the given file."""
-    fname = fpath.split("/")[-1]
-    assert os.path.isfile(
-        fpath), f"No {ftype} file with the name {fname} could be found, which is going to be needed in the process.\nFull path of the expected file:\n{fpath}"
-
-
 def run_jystilts_program(filename, *args, with_path=False):
     """Runs a .py file using the java jystilts implementation,
     assuming the file is located in the 'jystilts_scripts' directory."""
@@ -621,6 +625,22 @@ def run_lephare_command(command, arg_dict, additional=""):
     except subprocess.CalledProcessError as err:
         LOGGER.error(
             "The following error was thrown when running the last shell command:\n%s", err)
+
+
+def give_photoz_performance_label(df):
+    """Produces a label that can be displayed in a spec-z-phot-z plot.
+    Returns a text"""
+    stat_dict = give_output_statistics(df)
+    etalabel = r"$\eta_{\rm out} = " + f"{stat_dict['eta']:.3f}$\n"
+    sig_nmadlabel = r"$\sigma_{\rm NMAD} = " + f"{stat_dict['sig_nmad']:.3f}$"
+    fpos = df['IsFalsePositive'].sum()
+    fposlabel = "\n" + r"$\psi_{\rm Pos} = " + \
+        f"{stat_dict['psi_pos']:.3f}$ ({fpos})"
+    fneg = df['IsFalseNegative'].sum()
+    fneglabel = "\n" + r"$\psi_{\rm Neg} = " + \
+        f"{stat_dict['psi_neg']:.3f}$ ({fneg})"
+    label = f"{len(df)} sources\n{etalabel}{sig_nmadlabel}"
+    return label + fposlabel + fneglabel
 
 
 def log_run_info():
@@ -667,3 +687,12 @@ def assess_lephare_run(ttype):
         "The false pos fraction is psi_pos = %.4f (%d)", stat_dict['psi_pos'], fpos)
     LOGGER.info(
         "The false neg fraction is psi_neg = %.4f (%d)", stat_dict['psi_neg'], fneg)
+
+
+def save_tex_file(fname, text):
+    """Writes a file into the 'other' folder"""
+    fpath = GEN_CONFIG["PATHS"]["other"] + "latex/" + fname
+    with open(fpath, "w", encoding="utf8") as f:
+        f.write(text)
+        print(
+            f"The LaTeX input text has been written to {fname}")

@@ -6,21 +6,6 @@ import util.my_tools as mt
 from matplotlib.offsetbox import AnchoredText
 
 
-def give_photoz_performance_label(df):
-    """Produces a label that can be displayed in a spec-z-phot-z plot."""
-    stat_dict = mt.give_output_statistics(df)
-    etalabel = "$\eta = " + f"{stat_dict['eta']:.3f}$\n"
-    sig_nmadlabel = r"$\sigma_{\rm NMAD} = " + f"{stat_dict['sig_nmad']:.3f}$"
-    fpos = df['IsFalsePositive'].sum()
-    fposlabel = "\n" + r"$\psi_{\rm Pos} = " + \
-        f"{stat_dict['psi_pos']:.3f}$ ({fpos})"
-    fneg = df['IsFalseNegative'].sum()
-    fneglabel = "\n" + r"$\psi_{\rm Neg} = " + \
-        f"{stat_dict['psi_neg']:.3f}$ ({fneg})"
-    label = f"{len(df)} sources\n{etalabel}{sig_nmadlabel}"
-    return label + fposlabel + fneglabel
-
-
 def make_scatter_plots(df, main_ax, secondary_ax, color="k"):
     """Makes a scatter plot of the ZSPEC vs the ZBEST column on the given ax.
     Distinguishes the i and non-i-band."""
@@ -48,6 +33,7 @@ def plot_auxiliary_lines(main_ax, secondary_ax, max_z=5, bounds=True, label=""):
     main_ax.set_ylabel("Best photometric redshift")
     main_ax.set_xlim(0, max_z)
     main_ax.set_ylim(0, max_z)
+    main_ax.set_xticks([])
     if bounds:
         main_ax.axhspan(0, 0.5, xmin=0.5 / max_z, color="red", alpha=0.2,
                         label=r"False negative")
@@ -56,6 +42,7 @@ def plot_auxiliary_lines(main_ax, secondary_ax, max_z=5, bounds=True, label=""):
     secondary_ax.set_ylabel("$\Delta z/(1+z)$")
     secondary_ax.set_xlabel("Spectroscopic redshift")
     secondary_ax.set_ylim(-0.3, 0.3)
+    secondary_ax.set_xlim(0, max_z)
     secondary_ax.axhline(0, linestyle="-", color="k", lw=lwidth)
     secondary_ax.axhline(0.05, linestyle="-", color="r", lw=lwidth)
     secondary_ax.axhline(-0.05, linestyle="-", color="r", lw=lwidth)
@@ -74,11 +61,17 @@ def plot_auxiliary_lines(main_ax, secondary_ax, max_z=5, bounds=True, label=""):
     legend.legendPatch.set_alpha(0.8)
 
 
-def set_subplot_positions(main, secondary):
+def set_subplot_positions(main, secondary, is_left=False, is_right=False):
     """Sets the dimensions for the two subplots on top of each other"""
     # width and height have to be equal for the fig as well to preserve aspect ratio
     left, width, = 0.05, 0.8
     bottom, height = 0.23, 0.8
+    if is_left:
+        width = 0.4
+        height = 0.8
+    if is_right:
+        left, width, = 0.55, 0.4
+        height = 0.8
     spacing, secondheight = 0.000, 0.18
     rect_main = [left, bottom, width, height]
     rect_secondary = [left, bottom -
@@ -87,19 +80,37 @@ def set_subplot_positions(main, secondary):
     secondary.set_position(rect_secondary)
 
 
-def plot_photoz_vs_specz(df, ttype):
-    """Makes a scatter plot of photo z vs spectro-z."""
-    df = df[df["HasGoodz"]]
+def plot_ttype(df, ttype, main, secondary):
+    """Wrapper function to filter the df for the ttype and plot it on the given axes"""
     df = df[df["Type"] == ttype]
-    fig, (main, secondary) = plt.subplots(
-        2, 1, figsize=cm.set_figsize(width=0.5 * cm.LATEXWIDTH, height=0.5 * cm.LATEXWIDTH, fraction=1), sharex=True)
-    set_subplot_positions(main, secondary)
-
     make_scatter_plots(df, main, secondary)
     main.set_title(f"{ttype.capitalize()} sources")
     max_z = 5 if ttype == "pointlike" else 2
     plot_auxiliary_lines(main, secondary, max_z,
                          label=give_photoz_performance_label(df))
+
+
+def plot_photoz_vs_specz(df, ttype="both"):
+    """Makes a scatter plot of photo z vs spectro-z."""
+    df = df[df["HasGoodz"]]
+    if ttype == "both":
+        fig, axes = plt.subplots(2, 2, figsize=cm.set_figsize(
+            width=cm.LATEXWIDTH, height=0.5 * cm.LATEXWIDTH, fraction=1))
+        main_plike, secondary_plike = axes[0]
+        main_ext, secondary_ext = axes[1]
+        set_subplot_positions(main_plike, secondary_plike, is_left=True)
+        set_subplot_positions(main_ext, secondary_ext, is_right=True)
+        plot_ttype(df, "pointlike", main_plike, secondary_plike)
+        plot_ttype(df, "extended", main_ext, secondary_ext)
+    elif ttype is not None:
+        fig, (main, secondary) = plt.subplots(
+            2, 1, figsize=cm.set_figsize(width=0.5 * cm.LATEXWIDTH, height=0.5 * cm.LATEXWIDTH, fraction=1))
+        set_subplot_positions(main, secondary)
+        plot_ttype(df, ttype, main, secondary)
+    else:
+        mt.LOGGER.error(
+            "Please specify a valid ttype [pointlike, extended or both] to plot the specz-photoz-plot.")
+
     # fig.legend(loc=2, bbox_to_anchor=(0.77, 0.9), shadow=False,
     #            fancybox=False)
     # main.get_legend().remove()

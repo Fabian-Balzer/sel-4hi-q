@@ -113,35 +113,35 @@ def run_lephare_commands():
 
 
 if __name__ == "__main__":
-    mt.log_run_info()
-    assert_all()
+    # mt.log_run_info()
+    # assert_all()
 
-    if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
-        assemble_catalog()
+    # if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
+    #     assemble_catalog()
 
-    run_lephare_commands()
+    # run_lephare_commands()
 
     if mt.CUR_CONFIG["PLOTTING"].getboolean("output"):
         output_df = mt.read_output_df()
-        for ttype in ["pointlike", "extended"]:
-            # ta.plot_problematic_templates(output_df, ttype)
-            s_p.plot_photoz_vs_specz(output_df, ttype)
+        s_p.plot_photoz_vs_specz(output_df, "both")
+        # for ttype in ["pointlike", "extended"]:
+        # ta.plot_problematic_templates(output_df, ttype)
     if mt.CUR_CONFIG["PLOTTING"].getboolean("template"):
         output_df = mt.read_output_df()
         for ttype in ["pointlike", "extended"]:
             template_df = mt.read_template_library(
                 mt.give_temp_libname(ttype, suffix=".dat"))
 
-        # # %%
-        # # Construct the input dataframe:
-        # input_df = mt.read_plike_and_ext(prefix="matches/test2_",
-        #                                  suffix="_processed_table.fits")
-        # input_df = mt.add_mag_columns(input_df)
-        # # av.plot_r_band_magnitude(df)
-        # av.plot_input_distribution(input_df)
+    # # %%
+    # # Construct the input dataframe:
+    # input_df = mt.read_plike_and_ext(prefix="matches/test2_",
+    #                                  suffix="_processed_table.fits")
+    # input_df = mt.add_mag_columns(input_df)
+    # # av.plot_r_band_magnitude(df)
+    # av.plot_input_distribution(input_df)
 
-        # # %% Filter analysis:
-        # filter_df = fc.read_filter_info_file()
-        # fc.produce_filter_plot(filter_df)
-        # info_df = fc.read_filter_overview_file()
-        # fc.save_filter_info(info_df)
+    # # %% Filter analysis:
+    # filter_df = fc.read_filter_info_file()
+    # fc.produce_filter_plot(filter_df)
+    # info_df = fc.read_filter_overview_file()
+    # fc.save_filter_info(info_df)

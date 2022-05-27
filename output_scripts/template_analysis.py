@@ -3,12 +3,11 @@ import pandas as pd
 import util.my_tools as mt
 
 
-def generate_template_list_info(ttype, stem=""):
+def generate_template_list_info(ttype):
     """Read the template list file and store the information in an output file."""
-    fname = mt.DATAPATH + \
-        f"lephare_files/templates/lists/{ttype}_{stem}.list"
+    fpath = mt.give_temp_listname(ttype)
     templates = {}
-    with open(fname, "r") as f:
+    with open(fpath, "r") as f:
         for line in f.readlines():
             if not line.startswith("#"):
                 tempname = line.split("/")[-1]  # Remove filepath
@@ -51,14 +50,11 @@ def generate_template_list_info(ttype, stem=""):
             f"REF{i}", f"$^{letter}$")
     table_text = table_text.replace(
         r"\bottomrule", r"\bottomrule" + notes + r"}}")
-    fname = mt.MYDIR + f"other/{ttype}_templates.tex"
-    with open(fname, "w", encoding="utf8") as f:
-        f.write(table_text)
-        print(
-            f"The LaTeX input text for the {ttype} template library has been written to {fname}")
+    stem = mt.CUR_CONFIG['LEPHARE']['template_stem']
+    mt.save_tex_file(f"{stem}_{ttype}_template_info.tex", table_text)
 
 
 if __name__ == "__main__":
-    generate_template_list_info("pointlike", "baseline_templates")
-    generate_template_list_info("extended", "baseline_templates")
-    generate_template_list_info("star", "baseline_templates")
+    generate_template_list_info("pointlike")
+    generate_template_list_info("extended")
+    generate_template_list_info("star")
