@@ -48,7 +48,7 @@ LOGGER = init_logger()
 def stringlist_to_list(stringlist):
     """Transform a string that is in the "['a', 'b', 'c']" pattern into a list of strings ["a", "b", "c"].
     Handy to read out lists from config files."""
-    string = stringlist.strip("[]")
+    string = stringlist.strip("[] ")
     singles = string.split(", ")
     return [single.strip("'") for single in singles]
 
@@ -67,6 +67,7 @@ def give_context(bands, inverted=False):
             "You are trying to calculate the context of bands that haven't been specified:\n%s", unknown_bands)
     if inverted:
         bands = [band for band in BAND_LIST if band not in bands]
+        print(bands)
     return sum([2**i for i, band in enumerate(BAND_LIST) if band in bands])
 
 
@@ -103,9 +104,9 @@ CONTEXT = give_context(forbidden_bands, inverted=True)
 BAND_DICT = {}
 
 USED_TTYPES = []
-if CUR_CONFIG["GENERAL"]["use_pointlike"]:
+if CUR_CONFIG["GENERAL"].getboolean("use_pointlike"):
     USED_TTYPES.append("pointlike")
-if CUR_CONFIG["GENERAL"]["use_extended"]:
+if CUR_CONFIG["GENERAL"].getboolean("use_extended"):
     USED_TTYPES.append("extended")
 USED_TTYPES = tuple(USED_TTYPES)  # Just to ensure they're not altered
 

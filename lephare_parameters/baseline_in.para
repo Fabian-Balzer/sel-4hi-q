@@ -124,7 +124,7 @@ MAG_ABS 	0,0  	# Mabs_min , Mabs_max [0,0-def]
 MAG_ABS_AGN 	0,0  	# Mabs_min , Mabs_max for AGN [0,0-def]
 MAG_REF 	7		# Reference number for band used by Mag_abs
 #ZFORM_MIN	1,5,5,5,5,5,3,1	# Min. Zformation per SED -> Age constraint
-Z_RANGE        0.02,8          # Z min-max used for the Galaxy library 
+Z_RANGE        0.02,6.          # Z min-max used for the Galaxy library 
 EBV_RANGE      0,9               # E(B-V) MIN-MAX RANGE of E(B-V) used  
 #NZ_PRIOR       4,5                # I Band for prior on N(z), the second number is the band to be used if the first is missing.
 #
@@ -132,13 +132,13 @@ EBV_RANGE      0,9               # E(B-V) MIN-MAX RANGE of E(B-V) used
 ZFIX		NO		# fixed z and search best model  [YES,NO-def]
 #
 #------------------  Parabolic interpolation for Zbest     ----------------------------
-PDZ_TYPE    BAY
+PDZ_TYPE    MIN   # MIN or BAY
 Z_INTERP	YES		# redshift interpolation 
 #
 Z_METHOD	BEST		 # BEST/ML absolute magnitude, .spec, scaling will be given at this redshift 
 #------------------  Normalized ML(exp-(0.5*Chi^2)) curve analysis  -------------------
 #-------               Secondary peak analysis 
-DZ_WIN          0.025             # Window search for 2nd peaks   [0->5; 0.25-def]
+DZ_WIN          0.25             # Window search for 2nd peaks   [0->5; 0.25-def]
 MIN_THRES       0.05            # Lower theshold for 2nd peaks  [0->1; 0.1-def]
 #
 #-------             Probability (in %) per redshift intervals     -------------------- 
@@ -171,7 +171,7 @@ LIMITS_MAPP_CUT  90              #  Magnitude cut used in each redshift bin. Nee
 #
 #########   OUTPUT SPECTRA                     ###########
 #
-SPEC_OUT	NO	 	 # spectrum for each object?  [YES,NO-def]
+SPEC_OUT	   YES	 	 # spectrum for each object?  [YES,NO-def]
 CHI2_OUT        NO               # output file with all values : z,mod,chi2,E(B-V),... 
                                  # BE CAREFUL can take a lot of space !!              
 #########  OUTPUT PDZ ANALYSIS  
@@ -196,8 +196,8 @@ COL_SEL		AND		 # Combination between used colors [AND/OR-def]
 #########   ADAPTIVE METHOD using Z spectro sample     ###
 #
 AUTO_ADAPT	NO		 # Adapting method with spectro [NO-def]
-ADAPT_BAND 	13,12,14		 # Reference band, band1, band2 for color 
-ADAPT_LIM       1.5,20.5         # Mag limits for spectro in Ref band [18,21.5-def]
+ADAPT_BAND 	7		 # Reference band, band1, band2 for color 
+ADAPT_LIM       18.,24.         # Mag limits for spectro in Ref band [18,21.5-def]
 ADAPT_CONTEXT  -1                # Context for bands used for training
                                  # -1[-def] used context per object
 ADAPT_ZBIN     0.01,6            # Redshift's interval used for training

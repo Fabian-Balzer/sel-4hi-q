@@ -80,13 +80,16 @@ def run_zphota(ttype):
                     "CAT_OUT": mt.give_lephare_filename(ttype, out=True),
                     "PARA_OUT": mt.give_parafile_fpath(out=True),
                     "GLB_CONTEXT": mt.CONTEXT,
-                    "PDZ_OUT": mt.give_lephare_filename(ttype, out=True, suffix="")}
+                    "PDZ_OUT": mt.give_lephare_filename(ttype, out=True, suffix="")
+                    }
     if ttype == "pointlike":
         arg_dict_sed["MAG_REF"] = "7"
         arg_dict_sed["MAG_ABS"] = "-30,-20"
+        # arg_dict_sed["APPLY_SYSSHIFT"] = "-0.2837,-0.1676,-0.0306,-0.0604,-0.0427,-0.0000,0.0304,0.0801,0.0240,-0.0225,0.0626,0.2107,-0.3830,0.0786,0.0394,-0.0746,-0.0785"
     if ttype == "extended":
         arg_dict_sed["MAG_REF"] = "7"
         arg_dict_sed["MAG_ABS"] = "-24,-8"
+        # arg_dict_sed["APPLY_SYSSHIFT"] = "-0.2099,-0.1264,0.0228,-0.1534,-0.1234,-0.1437,-0.1797,-0.5375,-0.3046,-0.2395,-0.2261,-0.0718,0.0000,0.0000,-0.0294,-0.0755,-0.1896"
     mt.run_lephare_command("zphota", arg_dict_sed)
     mt.run_jystilts_program("rewrite_fits_header.py", ttype, "OUT")
     mt.assess_lephare_run(ttype)
@@ -121,7 +124,7 @@ if __name__ == "__main__":
     if mt.CUR_CONFIG["PLOTTING"].getboolean("output"):
         output_df = mt.read_output_df()
         for ttype in ["pointlike", "extended"]:
-            ta.plot_problematic_templates(output_df, ttype)
+            # ta.plot_problematic_templates(output_df, ttype)
             s_p.plot_photoz_vs_specz(output_df, ttype)
     if mt.CUR_CONFIG["PLOTTING"].getboolean("template"):
         output_df = mt.read_output_df()
