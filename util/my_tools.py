@@ -40,7 +40,9 @@ def assert_file_exists(fpath, ftype):
     """Asks the user whether to really overwrite the given file."""
     fname = fpath.split("/")[-1]
     assert os.path.isfile(
-        fpath), f"No {ftype} file with the name {fname} could be found, which is going to be needed in the process.\nFull path of the expected file:\n{fpath}"
+        fpath), f"No {ftype} file with the name {fname} could be \
+found, which is going to be needed in the process.\nFull path of \
+the expected file:\n{fpath}"
 
 
 CONFIGPATH = os.environ["LEPHARE"] + "/lephare_scripts/config/"
@@ -53,7 +55,8 @@ LOGGER.setLevel(CUR_CONFIG.getint("GENERAL", "logging_level"))
 
 
 def stringlist_to_list(stringlist):
-    """Transform a string that is in the "['a', 'b', 'c']" pattern into a list of strings ["a", "b", "c"].
+    """Transform a string that is in the "['a', 'b', 'c']" pattern into a list of
+    strings ["a", "b", "c"].
     Handy to read out lists from config files."""
     string = stringlist.strip("[] ")
     singles = string.split(", ")
@@ -71,7 +74,8 @@ def give_context(bands, inverted=False):
     unknown_bands = [band for band in bands if band not in BAND_LIST]
     if len(unknown_bands) > 0:
         LOGGER.warning(
-            "You are trying to calculate the context of bands that haven't been specified:\n%s", unknown_bands)
+            "You are trying to calculate the context of bands " +
+            "that haven't been specified:\n%s", unknown_bands)
     if inverted:
         bands = [band for band in BAND_LIST if band not in bands]
         print(bands)
@@ -86,14 +90,15 @@ def give_bands_for_context(context: int):
 
 def give_survey_for_band(band):
     """Returns the survey that the band appeared in."""
-    surveys = [key for key in BAND_DICT if band in BAND_DICT[key]]
+    surveys = [survey for survey, bands in BAND_DICT.items() if band in bands]
     return surveys[0] if len(surveys) > 0 else "unknown"
 
 
 # Define the (hardcoded) path where the data sits in
 CATPATH = GEN_CONFIG.get("PATHS", "cat")
 # As we are adding these conversions in strings, they are stored as strings.
-# Y, H, Ks Taken from Mara, J mag conversion from Blanton et al., Astronomical Journal 129, 2562 (2005), Eqs. (5) (2005AJ....129.2562B).
+# Y, H, Ks Taken from Mara, J mag conversion from
+# Blanton et al., Astronomical Journal 129, 2562 (2005), Eqs. (5) (2005AJ....129.2562B).
 # OLD: {"Y": "0.938", "J": "0.91", "H": "1.379", "Ks": "1.85"}
 VEGA_AB_DICT = {"Y": "0.60", "J": "0.92", "H": "1.37", "Ks": "1.83"}
 GALEX_BANDS = read_list_from_config("BAND_DICT", "galex")
@@ -138,27 +143,6 @@ def generate_pretty_band_name(band, in_math_environ=False):
 
 
 def give_match_table_name():
-    """Generates a uniform table name for the matched table"""
-    path = GEN_CONFIG.get("PATHS", "match")
-    stem = CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
-    return path + stem + "_raw_match.fits"
-
-
-def give_processed_table_name(ttype):
-    """Generates a uniform table name for the matched table"""
-    path = GEN_CONFIG.get("PATHS", "match")
-    stem = CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
-    return path + stem + "_" + ttype + "_processed.fits"
-
-
-def give_survey_name(survey):
-    """Returns the survey name for the plots"""
-    name_dict = {"galex": "GALEX (GR6+7)",
-                 "vhs": "VHS (DR6)", "sweep": "LS (DR9)", "hsc": "HSC (DR3)", "kids": "KiDS (DR4)", "ls10": "LS (DR10)"}
-    return name_dict[survey]
-
-
-def give_match_table_name():
     """Generates a uniform table name for the matched table.
     WARNING: Needs to be synced with jy_tools!"""
     path = GEN_CONFIG.get("PATHS", "match")
@@ -172,6 +156,15 @@ def give_processed_table_name(ttype):
     path = GEN_CONFIG.get("PATHS", "match")
     stem = CUR_CONFIG.get("CAT_ASSEMBLY", "cat_stem")
     return path + stem + "_" + ttype + "_processed.fits"
+
+
+def give_survey_name(survey):
+    """Returns the survey name for the plots"""
+    name_dict = {"galex": "GALEX (GR6+7)",
+                 "vhs": "VHS (DR6)", "sweep": "LS (DR9)",
+                 "hsc": "HSC (DR3)", "kids": "KiDS (DR4)",
+                 "ls10": "LS (DR10)"}
+    return name_dict[survey]
 
 
 def give_parafile_fpath(out=False):
@@ -249,7 +242,7 @@ def read_fits_as_dataframe(filename, saferead=False):
 def save_dataframe_as_fits(df, filename, overwrite=False):
     """Store the given dataframe df as a fits file in 'filename'"""
     table = Table.from_pandas(df)
-    fpath = DATAPATH + filename
+    fpath = GEN_CONFIG["PATHS"]["data"] + filename
     table.write(fpath, overwrite=overwrite)
     LOGGER.info("Successfully saved the dataframe at %s.", fpath)
 
@@ -270,8 +263,8 @@ def read_output_df():
 
 def read_glb_context(fname):
     """Scans the given .fits file for the GLB_CONTEXT keyword"""
-    path = f"{DATAPATH}{fname}"
-    with open(path, "r") as f:
+    fpath = GEN_CONFIG["PATHS"]["data"] + fname
+    with open(fpath, "r") as f:
         while True:
             line = f.readline()
             if "GLB_CONTEXT" in line:
@@ -291,25 +284,27 @@ def read_ascii_as_dataframe(filename):
 
 def read_template_library(fname):
     """Reads a template library .dat file"""
-    path = DATAPATH + "lephare_files/" + fname
+    fpath = GEN_CONFIG["PATHS"]["data"] + "lephare_files/" + fname
 
-    with open(path, "r") as f:
+    with open(fpath, "r") as f:
         coltext = f.readline()
     cols = coltext.split()[1:]
     cols = cols[:-3] + [f"mag_{band}"for band in BAND_LIST]
     cols = cols + [f"mag_err_{band}"for band in BAND_LIST]
-    df = pd.read_csv(path, delim_whitespace=True,
+    df = pd.read_csv(fpath, delim_whitespace=True,
                      header=None, skiprows=1, names=cols)
     df = df.rename(columns={"redshift": "ZSPEC"})
     return df
 
 
 def construct_template_dict(temp_df, templates_to_plot):
-    """Construct a dict with dataframes for each of the models requested, removing templates at E(B-V) != 0."""
+    """Construct a dict with dataframes for each of the models
+    requested, removing templates at E(B-V) != 0."""
     temp_dict = {}
     available_templates = set(temp_df["model"])
-    templates_to_plot = available_templates if templates_to_plot is None else available_templates.intersection(
-        set(templates_to_plot))
+    templates_to_plot = available_templates if templates_to_plot is None \
+        else available_templates.intersection(
+            set(templates_to_plot))
     for temp_number in templates_to_plot:
         subset = temp_df[temp_df["model"] == temp_number].sort_values(by=[
                                                                       "ZSPEC"])
@@ -319,7 +314,8 @@ def construct_template_dict(temp_df, templates_to_plot):
 
 
 def provide_template_info(fname):
-    path = MYDIR + "lephare_scripts/lephare_parameters/template_lists/" + fname
+    """Provides a dictionary linking the ID of a template to its name."""
+    path = GEN_CONFIG["PATHS"]["params"] + "template_lists/" + fname
     with open(path, "r") as f:
         number_to_name = {}
         for i, line in enumerate(f.readlines(), start=1):
@@ -349,7 +345,8 @@ def add_mag_columns(df, verbose=False):
 
 
 def convert_cols_to_deg(df):
-    """Converts the ra and dec values for the VHS data to degrees as they are provided in radians."""
+    """Converts the ra and dec values for the VHS data to degrees as
+    they are provided in radians."""
     for type_ in ["vhs"]:
         for axis in ["ra_", "dec_"]:
             df[axis + type_] = 180 / np.pi * df[axis + type_]
@@ -445,11 +442,11 @@ def give_row_statistics(df):
     """Takes a dataframe and computes the mean values for each band."""
     for column in BAND_LIST:
         try:
-            LOGGER.info(f"{column}:\t{df[column].mean()*1e28:.4g}\t\pm \
-              {df[column].std()*1e28:.4g}\t 10**(-28) ergs/cm**2/Hz/s")
-        except KeyError as k:
-            LOGGER.info(f"Could not find the column {column} in the dataframe."
-                        "\nMoving on to the next one.")
+            LOGGER.info(f"{column}:\t{df[column].mean()*1e28:.4g}\t" + r"\pm"
+                        f"{df[column].std()*1e28:.4g}\t 10**(-28) ergs/cm**2/Hz/s")
+        except KeyError:
+            LOGGER.info("Could not find the column %s in the dataframe."
+                        "\nMoving on to the next one.", column)
 
 
 def find_good_indices(df):
@@ -488,8 +485,9 @@ def give_input_statistics(df, sourcetype):
     correspond to on the whole sky.
     """
     source_num = len(df)
-    LOGGER.info(f"There are {source_num} sources in the {sourcetype} eFEDS dataset, \
-        corresponding to {int(source_num/EFEDS_PERCENTAGE)} sources in the whole sky.")
+    total_source_num = source_num / GEN_CONFIG["CONSTS"].getfloat("perc_efeds")
+    LOGGER.info("There are %d sources in the %s eFEDS dataset, corresponding \
+to %d sources in the whole sky.", source_num, sourcetype, total_source_num)
     LOGGER.info(
         f"There are {len(find_good_indices(df))} sources with photometry in all bands.")
     bands = sorted(calculate_number_of_photometry(df))
@@ -504,7 +502,8 @@ def give_input_statistics(df, sourcetype):
     for band_num, source_num in \
             sorted(calculate_number_of_photometry(df).items()):
         LOGGER.info(
-            f"There are {source_num} sources with {band_num} bands of photometry available.")
+            f"There are {source_num} sources with {band_num} \
+bands of photometry available.")
 
 
 def flux_to_AB(f):
@@ -518,6 +517,7 @@ def rad_to_deg(x):
 
 
 def find_lower_exponent(context):
+    """Searches for the next lowest exponent of 2 and returns it"""
     i = 0
     while True:
         if 2**i > context:
@@ -534,9 +534,9 @@ def convert_context_to_band_indices(context):
     Example:
         if context = 13, it will return [1, 3, 4], since 2^(1-1) + 2^2 + 2^3 = 13.
     """
-    if type(context) is pd.Series:
+    if context.isinstance(pd.Series):
         context = int(context["used_context"])
-    if type(context) is not int:
+    if not context.isinstance(int):
         context = int(context)
         LOGGER.info(f"Forcing context to become {context}")
     if context == -1:  # Return all bands if context is -1
@@ -600,7 +600,8 @@ def log_run_info():
     if cat_config.getboolean("assemble_cat"):
         LOGGER.info("Catalogue assembly with '%s' as a stem:",
                     cat_config["cat_stem"])
-        for boolkey in ["use_matched", "use_processed", "reduce_to_specz", "write_lephare_input", "write_info_file"]:
+        for boolkey in ["use_matched", "use_processed", "reduce_to_specz",
+                        "write_lephare_input", "write_info_file"]:
             val = cat_config.getboolean(boolkey)
             LOGGER.info("%s:\t%s", boolkey, str(val))
     lep_config = CUR_CONFIG["LEPHARE"]
