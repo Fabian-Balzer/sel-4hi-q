@@ -19,7 +19,7 @@ GAL_SED		$LEPHAREWORK/HighZ/qso_templates.list            # GALAXMuzzin09_SEDY l
 GAL_LIB	    LIB_GAL_TEST                # Binary GAL LIBRARY (-> $ZPHOTWORK/lib_bin/*)
 GAL_FSCALE  1.                      # Arbitrary Flux Scale
 #SEL_AGE 	/data/zphot_vers25_03_03/sed/GAL/HYPERZ/AGE_GISSEL_HZ.dat	# List of Age for GISSEL(full path)
-AGE_RANGE  0.,15.e9                                     # Age Min-Max in yr
+# AGE_RANGE  0.,15.e9                                     # Age Min-Max in yr
 #
 ##############################################################################################
 ###########                          FILTERS                                     #############
@@ -72,7 +72,7 @@ MOD_EXTINC 	0,0		# model range for extinction
 # EXTINC_LAW	SB_calzetti.dat	# ext. law (in  $ZPHOTDIR/ext/*)
 # EB_V            0.,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.5 # E(B-V) (<50 values)
 EM_LINES    NO #       EMP_UV          # [NO/EMP_UV/EMP_SFR/PHYS] choice between emission line prescription  
-EM_DISPERSION   0.5,0.75,1.,1.5,2. # Dispersion allowed in the emission line flux factor
+# EM_DISPERSION   0 # 0.5,0.75,1.,1.5,2. # Dispersion allowed in the emission line flux factor
 #
 #------------------     ASCII OUTPUT FILES OPTION       -------------------------------
 LIB_ASCII       YES		# Writing Output in ASCII file (-> working directory)
@@ -94,7 +94,7 @@ BD_SCALE	0		 # Bands used for scaling (Sum 2^n; n=0->nbd-1, 0->all bands)
 GLB_CONTEXT	-1		 # Overwrite Context (Sum 2^n; n=0->nbd-1, 0->all bands, -1[-def] used context per object) 
 FORB_CONTEXT	-1		 # Not consider these filters in the fit  (Sum 2^n; n=0->nbd-1) 
 ERR_SCALE 0.02,0.02,0.05,0.05,0.05,0.1,0.1,0.1,0.1,0.2,0.2,0.2,0.2,0.05,0.05,0.2,0.02  # Systematic errors per band
-ERR_FACTOR      1.5
+ERR_FACTOR      1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5
 #
 #------------------    Theoretical libraries           --------------------------------
 # ZPHOTLIB	CE_COSMOS,STAR_COSMOS,QSO_COSMOS  # Library used for Chi2 (max:3)
@@ -103,6 +103,7 @@ ADD_EMLINES    0,100                                # range of model in which to
 #------------------     Output catalog Name           ---------------------------------
 CAT_OUT		zphot.out 	# Output catalog  (-> working directory) 
 PARA_OUT    $LEPHARE/lephare_scripts/lephare_parameters/outputpara.para     # Ouput parameters (full path) 
+VERBOSE         YES             # Display the templates/objects which are computed
 #
 #################           PHOTOMETRIC REDSHIFTS OPTIONS    
 # FIR LIBRARY 
@@ -130,6 +131,7 @@ EBV_RANGE      0,9               # E(B-V) MIN-MAX RANGE of E(B-V) used
 #
 #------------------  Fixed Z   (need format LONG for input Cat)  ----------------------
 ZFIX		NO		# fixed z and search best model  [YES,NO-def]
+EXTERNALZ_FILE  NONE            # Fix the redshift from an external file.
 #
 #------------------  Parabolic interpolation for Zbest     ----------------------------
 PDZ_TYPE    MIN   # MIN or BAY
@@ -138,8 +140,8 @@ Z_INTERP	YES		# redshift interpolation
 Z_METHOD	BEST		 # BEST/ML absolute magnitude, .spec, scaling will be given at this redshift 
 #------------------  Normalized ML(exp-(0.5*Chi^2)) curve analysis  -------------------
 #-------               Secondary peak analysis 
-DZ_WIN          0.25             # Window search for 2nd peaks   [0->5; 0.25-def]
-MIN_THRES       0.05            # Lower theshold for 2nd peaks  [0->1; 0.1-def]
+DZ_WIN          0.3             # Window search for 2nd peaks   [0->5; 0.25-def]
+MIN_THRES       0.02            # Lower theshold for 2nd peaks  [0->1; 0.1-def]
 #
 #-------             Probability (in %) per redshift intervals     -------------------- 
 #PROB_INTZ       0.01,0.1,0.1,0.2,0.2,0.3,0.3,0.4,0.4,0.5,0.5,0.6,0.6,0.7,0.7,0.8,0.8,0.9,0.9,1.,1.,1.1,1.1,1.3,1.3,1.5,1.5,2.,2.,3.,3.,4.,4.,5   # (even number) 
@@ -171,7 +173,7 @@ LIMITS_MAPP_CUT  90              #  Magnitude cut used in each redshift bin. Nee
 #
 #########   OUTPUT SPECTRA                     ###########
 #
-SPEC_OUT	   YES	 	 # spectrum for each object?  [YES,NO-def]
+SPEC_OUT	   NO	 	 # spectrum for each object?  [YES,NO-def]
 CHI2_OUT        NO               # output file with all values : z,mod,chi2,E(B-V),... 
                                  # BE CAREFUL can take a lot of space !!              
 #########  OUTPUT PDZ ANALYSIS  

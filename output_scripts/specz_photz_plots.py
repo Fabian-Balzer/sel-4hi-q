@@ -87,7 +87,7 @@ def plot_ttype(df, ttype, main, secondary):
     main.set_title(f"{ttype.capitalize()} sources")
     max_z = 5 if ttype == "pointlike" else 2
     plot_auxiliary_lines(main, secondary, max_z,
-                         label=give_photoz_performance_label(df))
+                         label=mt.give_photoz_performance_label(df))
 
 
 def plot_photoz_vs_specz(df, ttype="both"):

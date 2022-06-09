@@ -30,7 +30,6 @@ def assert_general():
 # %% Assert catalog availability:
 def assert_catalog_assembly():
     """Assertions needed for running the catalog assembly"""
-    cat_stem = mt.CUR_CONFIG["CAT_ASSEMBLY"]["cat_stem"]
     if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
         assert mt.GEN_CONFIG["PATHS"]["cat"] != ""
         available_cats = os.listdir(mt.GEN_CONFIG["PATHS"]["cat"])
@@ -71,8 +70,8 @@ def assert_lephare_assembly():
         if use_ext:
             mt.assert_file_exists(mt.give_temp_listname(
                 "extended"), "extended template list")
-        mt.assert_file_exists(mt.give_temp_listname(
-            "star"), "star template list")
+        # mt.assert_file_exists(mt.give_temp_listname(
+        #     "star"), "star template list")
 
     if zphot:
         mt.assert_file_exists(mt.give_parafile_fpath(

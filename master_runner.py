@@ -10,6 +10,7 @@ maybe needed:
 """
 # %%
 
+import os
 from shutil import move
 
 import input_scripts.availability_plots as av
@@ -63,10 +64,14 @@ def run_templates(ttype):
         arg_dict_mag["MOD_EXTINC"] = "11,23"
         arg_dict_mag["EB_V"] = "0.,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4"
     mt.run_lephare_command("mag_gal", arg_dict_mag)
-    # LePhare writes the output file in the same directory, so we need to move it:
-    move(mt.give_temp_libname(ttype, "mag", include_path=False, suffix=".dat"),
-         mt.give_temp_libname(ttype, "mag", suffix=".dat"))
-    mt.run_jystilts_program("rewrite_fits_header.py", ttype, "MAG")
+    try:
+        # LePhare writes the output file in the same directory, so we need to move it:
+        move(mt.give_temp_libname(ttype, "mag", use_workpath=True, suffix=".dat"),
+             mt.give_temp_libname(ttype, "mag", suffix=".dat"))
+        mt.run_jystilts_program("rewrite_fits_header.py", ttype, "MAG")
+    except OSError:
+        mt.LOGGER.error(
+            "Something went wrong trying to move the ASCII magnitude files.")
 
 
 def run_zphota(ttype):
@@ -74,8 +79,10 @@ def run_zphota(ttype):
     if not mt.assert_file_overwrite(mt.give_lephare_filename(ttype, out=True)):
         mt.LOGGER.info("Skipping the zphota run for %s.", ttype)
         return
+    star_lib = mt.give_temp_libname('star', include_path=False) if os.path.isfile(
+        mt.give_temp_libname('star')) else "baseline_star_mag_lib"
     arg_dict_sed = {"c": mt.give_parafile_fpath(),
-                    "ZPHOTLIB": f"{mt.give_temp_libname(ttype, include_path=False)},{mt.give_temp_libname('star', include_path=False)}",
+                    "ZPHOTLIB": f"{mt.give_temp_libname(ttype, include_path=False)},{star_lib}",
                     "CAT_IN": mt.give_lephare_filename(ttype),
                     "CAT_OUT": mt.give_lephare_filename(ttype, out=True),
                     "PARA_OUT": mt.give_parafile_fpath(out=True),
@@ -104,7 +111,8 @@ def run_lephare_commands():
     if lep_con.getboolean("run_templates"):
         for ttype in mt.USED_TTYPES:
             run_templates(ttype)
-        run_templates("star")
+        if os.path.isfile(mt.give_temp_listname("star")):
+            run_templates("star")
 
     if lep_con.getboolean("run_zphota"):
         for ttype in mt.USED_TTYPES:
@@ -113,17 +121,22 @@ def run_lephare_commands():
 
 
 if __name__ == "__main__":
-    # mt.log_run_info()
-    # assert_all()
+    mt.log_run_info()
+    assert_all()
 
-    # if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
-    #     assemble_catalog()
+    if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
+        assemble_catalog()
 
-    # run_lephare_commands()
+    run_lephare_commands()
 
     if mt.CUR_CONFIG["PLOTTING"].getboolean("output"):
         output_df = mt.read_output_df()
-        s_p.plot_photoz_vs_specz(output_df, "both")
+        if len(mt.USED_TTYPES) == 2:
+            s_p.plot_photoz_vs_specz(output_df, "both")
+        else:
+            for ttype in mt.USED_TTYPES:
+                s_p.plot_photoz_vs_specz(output_df, ttype)
+
         # for ttype in ["pointlike", "extended"]:
         # ta.plot_problematic_templates(output_df, ttype)
     if mt.CUR_CONFIG["PLOTTING"].getboolean("template"):

@@ -224,7 +224,7 @@ def give_temp_libname(ttype, libtype="mag", suffix="", include_path=True, use_wo
         temppath = GEN_CONFIG.get(
             "PATHS", "lepharework") + "lib_" + libtype + "/"
     temppath = temppath if include_path else ""
-    fname = CUR_CONFIG.get('LEPHARE', 'para_stem') + \
+    fname = CUR_CONFIG.get('LEPHARE', 'template_stem') + \
         "_" + ttype + "_" + libtype + "_lib" + suffix
     return temppath + fname
 
@@ -556,6 +556,9 @@ def run_jystilts_program(filename, *args, with_path=False):
     run_jystilts = f"java -jar {GEN_CONFIG['PATHS']['JYSTILTS']}"
     scriptpath = "" if with_path else f"{GEN_CONFIG['PATHS']['scripts']}jystilts_scripts/"
     match_table_string = f"{run_jystilts} '{scriptpath}{filename}' {' '.join(args)}"
+    if CUR_CONFIG["GENERAL"].getboolean("print_commands_only"):
+        print(match_table_string)
+        return
     try:
         subprocess.run(match_table_string, check=True, shell=True)
     except subprocess.CalledProcessError as err:
@@ -569,6 +572,9 @@ def run_lephare_command(command, arg_dict, additional=""):
     run_string = main_command + " " + \
         " ".join([f"-{arg} {val}" for arg, val in arg_dict.items()]
                  ) + " " + additional
+    if CUR_CONFIG["GENERAL"].getboolean("print_commands_only"):
+        print(run_string)
+        return
     LOGGER.debug("Running the following shell command:\n%s", run_string)
     try:
         subprocess.run(run_string, check=True, shell=True)

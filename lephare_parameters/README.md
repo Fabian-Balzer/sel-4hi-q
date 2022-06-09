@@ -89,3 +89,14 @@ $LEPHAREDIR/source/zphota -c $LEPHARE/data/lephare_files/inputpara.para \
 
 jystilts $LEPHARE/lephare_scripts/jystilts/rewrite_fits_header.py $LEPHARE/data/lephare_files/outputpara.para ${LEPHARE}/data/lephare_output/${STEM_OUT}_extended.out
 
+
+#### Next test run:
+/source/zphota -c /home/hslxrsrv3/p1wx150/LePhare_work/lephare_scripts/lephare_parameters/baseline_in.para \
+-ZPHOTLIB ananna_test_pointlike_mag_lib,baseline_pointlike_mag_lib,baseline_star_mag_lib \
+-CAT_IN /home/hslxrsrv3/p1wx150/LePhare_work/data/lephare_input/baseline_input_pointlike.in \
+-CAT_OUT /home/hslxrsrv3/p1wx150/LePhare_work/data/lephare_output/ananna_test_pointlike.out \
+-PARA_OUT /home/hslxrsrv3/p1wx150/LePhare_work/lephare_scripts/lephare_parameters/baseline_out.para \
+-GLB_CONTEXT 8191 \
+-MAG_REF 7 \
+-MAG_ABS -30,-20
+java -jar /home/hslxrsrv3/p1wx150/LePhare_work/other/programs/jystilts.jar '/home/hslxrsrv3/p1wx150/LePhare_work/lephare_scripts/jystilts_scripts/rewrite_fits_header.py' pointlike OUT

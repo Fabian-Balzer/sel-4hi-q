@@ -16,10 +16,10 @@ from util.my_logger import LOGGER
 
 try:
     MYDIR = os.environ["LEPHARE"] + "/"
-except KeyError:
+except KeyError as e:
     LOGGER.error(
         "Please initialize the 'LEPHARE' directory before running any further code.")
-    raise Exception
+    raise Exception from e
 
 try:
     CATPATH = os.environ["CATPATH"] + "/"
