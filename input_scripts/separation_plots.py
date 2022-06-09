@@ -72,7 +72,7 @@ def scatter_points(x, y, ax, lim, true_radius=None):
                              linestyle="dashed", alpha=0.85, fill=False, label=r"$r_{3\sigma}$")
         ax.add_patch(circle2)
     ax.legend(prop={"size": "x-small"})
-    # fig.suptitle(f"Match separation of {len(df)} sources between {survtype} and VHS data in eFEDS")
+    # fig.suptitle(f"Match separation of {len(df)} sources between {survey_name} and VHS data in eFEDS")
     # box = dict(boxstyle="round, pad=0.1", fc="gray", ec="k", lw=1, alpha=0.3)
 
 
@@ -137,61 +137,79 @@ def plot_separation_hist(ax, histdata, lim, draw_cutoff):
     ax.legend(prop={"size": "x-small"})
 
 
-def add_cols_if_necessary(df, survtype):
+def add_cols_if_necessary(df, survey_name):
     """Checks wether the given columns are already present."""
     cols = df.columns
-    if f"ra_{survtype}" not in cols:
+    if f"ra_{survey_name}" not in cols:
         raise ColumnMissingError
-    all_columns_found = f"true_sep_{survtype}" in cols
+    all_columns_found = f"true_sep_{survey_name}" in cols
     for col in ["ra", "dec"]:
-        colname = f"delta_{col}_{survtype}"
+        colname = f"delta_{col}_{survey_name}"
         if not colname in cols:
-            df[colname] = df[f"{col}_{survtype}"] - df[col]
-    colname = f"sep_to_{survtype}"
+            df[colname] = df[f"{col}_{survey_name}"] - df[col]
+    colname = f"sep_to_{survey_name}"
     if not colname in cols:
-        df[colname] = (df[f"delta_ra_{survtype}"] **
-                       2 + df[f"delta_dec_{survtype}"]**2)**0.5
+        df[colname] = (df[f"delta_ra_{survey_name}"] **
+                       2 + df[f"delta_dec_{survey_name}"]**2)**0.5
     return df, all_columns_found
 
 
-def plot_separation(df, survtype, radius, stem):
-    fig, axes = plt.subplots(2, 2, figsize=cm.set_figsize(
+def plot_separation(df, survey_name: str, radius: float):
+    """Produces a scatter plot of the separations of the sources in a given survey with [survey_name] to the parent catalogue's ra and dec.
+    Then produces a histogram showing the distribution of the true separations.
+    parameters:
+        [df]: pandas DataFrame
+            DataFrame containing the input catalogue in its processed form.
+        [survey_name]: str
+            The requested survey to compare the coordinates with.
+        [radius]: float
+            The radius used for the initial matches of the sources.
+    returns:
+        [scatter_fig]: mpl figure
+            Figure containing the main scatter plot.
+        [hist_fig]: mpl figure
+            Figure containing the corrected histogram plot"""
+    scatter_fig, axes = plt.subplots(2, 2, figsize=cm.set_figsize(
         fraction=.5, subplots=(2, 2), aspect=True))
-    fig.patch.set_facecolor('white')
+    scatter_fig.set_tight_layout(False)
     main, xhist, yhist = arrange_subplots(axes)
     try:
-        df, all_columns_found = add_cols_if_necessary(df, survtype)
+        df, all_columns_found = add_cols_if_necessary(df, survey_name)
     except ColumnMissingError:
-        logger.warning(
-            f"Could not find fitting columns to compare to for '{survtype}'. No plots are produced for it.")
+        mt.LOGGER.warning(
+            f"Could not find fitting columns to compare to for '{survey_name}'. No plots are produced for it.")
         return
-    df = df[df[f"delta_ra_{survtype}"].notnull()]
-    logger.info(
-        f"In total, there are {len(df)} matched sources within a matching radius of {radius}'' for {survtype}.")
-    x_data = df[f"delta_ra_{survtype}"] * 3600
-    y_data = df[f"delta_dec_{survtype}"] * 3600
+    df = df[df[f"delta_ra_{survey_name}"].notnull()]
+    mt.LOGGER.info(
+        f"In total, there are {len(df)} matched sources within a matching radius of {radius}'' for {survey_name}.")
+    x_data = df[f"delta_ra_{survey_name}"] * 3600
+    y_data = df[f"delta_dec_{survey_name}"] * 3600
     if all_columns_found:
-        true_sep = df[f"true_sep_{survtype}"] * 3600
+        true_sep = df[f"true_sep_{survey_name}"] * 3600
         true_radius = 3 * true_sep.std()
         # Calculate the point density:
         scatter_points(x_data, y_data, main, radius, true_radius)
         num_good = len(true_sep[true_sep < true_radius])
-        logger.info(
+        mt.LOGGER.info(
             f"The radius including sources with less than 3 \\sigma (3*{true_radius / 3:.3f}'') separation from the center is {true_radius:.3f}'', corresponding to {num_good} ({num_good/len(true_sep)*100:.1f} %) sources.")
     else:
         scatter_points(x_data, y_data, main, radius)
     # Look at the vertical and horizontal histograms
     produce_histograms(x_data, y_data, xhist, yhist, radius)
-    cm.save_figure(
-        fig, f"{survtype}_separation_plot", "input_analysis/separation", stem)
+    pretty_name = mt.give_survey_name(survey_name)
+    ls_name = mt.give_survey_name("sweep")
+    scatter_fig.suptitle(
+        f"Separation of sources ({ls_name} to {pretty_name})")
 
     # Produce a histogram with the given data
-    fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.5))
-    sep = df[f"sep_to_{survtype}"] * \
+    hist_fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.5))
+    scatter_fig.set_tight_layout(False)
+    sep = df[f"sep_to_{survey_name}"] * \
         3600 if not all_columns_found else true_sep
     plot_separation_hist(ax, sep, radius, all_columns_found)
-    cm.save_figure(
-        fig, f"{survtype}_separation_hist", "input_analysis/separation", stem)
+    hist_fig.suptitle(
+        f"Corrected separation ({ls_name} to {pretty_name})", y=0.9)
+    return scatter_fig, hist_fig
 
 
 def plot_all_separations(df, stem="", context=-1):
@@ -205,7 +223,7 @@ def plot_all_separations(df, stem="", context=-1):
         surveys = [survey for survey, bands in mt.BAND_DICT.items() if len(
             set(bands).intersection(desired_bands)) > 0]
         names = [name for name in names if name in surveys]
-    logger.info(f"Creating separation plots for {names}.")
+    mt.LOGGER.info(f"Creating separation plots for {names}.")
     for name in names:
         radius = radius_dict[name]
         plot_separation(df, name, radius, stem)

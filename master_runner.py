@@ -2,10 +2,6 @@
 """
 Created on Fri Feb 18 13:40:36 2022
 
-maybe needed:
-%load_ext autoreload
-%autoreload 2
-
 @author: fabian_balzer
 """
 # %%
@@ -13,13 +9,9 @@ maybe needed:
 import os
 from shutil import move
 
-import input_scripts.availability_plots as av
-import input_scripts.filter_coverage_plot as fc
-import input_scripts.separation_plots as sep
-import output_scripts.specz_photz_plots as s_p
-import output_scripts.template_analysis_plots as ta
 import util.my_tools as mt
-from input_scripts.filter_coverage_plot import read_filter_overview_file
+from input_scripts.input_plot_container import InputPlotContainer
+from output_scripts.output_plot_container import OutputPlotContainer
 from util.assert_config import assert_all
 
 # %%
@@ -129,21 +121,18 @@ if __name__ == "__main__":
 
     run_lephare_commands()
 
-    if mt.CUR_CONFIG["PLOTTING"].getboolean("output"):
-        output_df = mt.read_output_df()
-        if len(mt.USED_TTYPES) == 2:
-            s_p.plot_photoz_vs_specz(output_df, "both")
-        else:
-            for ttype in mt.USED_TTYPES:
-                s_p.plot_photoz_vs_specz(output_df, ttype)
+    # Input-related plots:
+    input_plot_container = InputPlotContainer(True)
 
-        # for ttype in ["pointlike", "extended"]:
-        # ta.plot_problematic_templates(output_df, ttype)
+    # Output-related plots:
+    output_plot_containter = OutputPlotContainer(True)
+
+    if mt.CUR_CONFIG["PLOTTING"].getboolean("output"):
+        output_plot_containter.plot_specz_photo_z()
+        output_plot_containter.plot_template_numbers()
+
     if mt.CUR_CONFIG["PLOTTING"].getboolean("template"):
-        output_df = mt.read_output_df()
-        for ttype in ["pointlike", "extended"]:
-            template_df = mt.read_template_library(
-                mt.give_temp_libname(ttype, suffix=".dat"))
+        output_plot_containter.plot_color_vs_redshift("g", "r")
 
     # # %%
     # # Construct the input dataframe:

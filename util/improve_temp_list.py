@@ -1,4 +1,5 @@
-"""Script to read a zfix run, plot the used templates, and write a new template list file based on the old one."""
+"""Script to read a zfix run, plot the used templates,
+and write a new template list file based on the old one."""
 # %%
 import util.my_tools as mt
 

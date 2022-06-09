@@ -82,7 +82,9 @@ def set_subplot_positions(main, secondary, is_left=False, is_right=False):
 
 def plot_ttype(df, ttype, main, secondary):
     """Wrapper function to filter the df for the ttype and plot it on the given axes"""
+    df = df[df["HasGoodz"]]
     df = df[df["Type"] == ttype]
+    stem = mt.CUR_CONFIG["LEPHARE"]["output_stem"]
     make_scatter_plots(df, main, secondary)
     main.set_title(f"{ttype.capitalize()} sources")
     max_z = 5 if ttype == "pointlike" else 2

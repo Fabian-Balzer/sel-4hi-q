@@ -1,3 +1,5 @@
+"""Module for analysing a template list file"""
+
 # %%
 import pandas as pd
 import util.my_tools as mt
@@ -37,7 +39,7 @@ def generate_template_list_info(ttype):
     label = f"tab:{ttype}_temp_lib"
     table_text = df.to_latex(
         caption=caption, label=label, position="htbp")
-    table_text = table_text.replace(r"{}", "ID").replace("TODO", "\TODO{}")
+    table_text = table_text.replace(r"{}", "ID").replace("TODO", r"\TODO{}")
     footnotetexts = ["Names as in the original libraries",
                      r"\cite{2009IlbertRedshiftPrecision}", r"\cite{2007Polletta}", r"\cite{2009Salvato}", r"Template from \url{http://classic.sdss.org/dr5/algorithms/spectemplates/}"]
     # Still need two closing brackets at the end

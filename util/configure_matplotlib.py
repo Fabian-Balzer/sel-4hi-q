@@ -10,7 +10,7 @@ Script for setting the matplotlib defaults
 
 import os
 
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -85,7 +85,7 @@ def save_current_figures(name, format_="pdf"):
 font = {'family': 'sans',
         'weight': 'normal',
         'size': 6}
-matplotlib.rc('font', **font)
+mpl.rc('font', **font)
 
 if USE_LATEX:
     tex_fonts = {
@@ -101,5 +101,18 @@ if USE_LATEX:
         "ytick.labelsize": 6,
     }
 
-    matplotlib.rcParams.update(tex_fonts)
-matplotlib.rcParams["figure.facecolor"] = "white"
+    mpl.rcParams.update(tex_fonts)
+mpl.rcParams["figure.facecolor"] = "white"
+
+custom_params = {
+    "legend.borderaxespad": 0.2,  # Legend closer to the border
+    "legend.handletextpad": 0.5,  # Distance between circle and label is smaller
+    "legend.labelspacing": .9,  # Vertical space between labels
+    "legend.markerscale": .5,     # The size of the dots
+    "legend.handlelength": 1,    # Length of the handles
+    "legend.columnspacing": .2,
+    "figure.autolayout": True,
+    "figure.titlesize": 9,
+    "figure.savefig.dpi": 300,
+}
+mpl.rcParams.update(custom_params)
