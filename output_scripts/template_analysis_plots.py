@@ -8,22 +8,56 @@ import util.configure_matplotlib as cm
 import util.my_tools as mt
 
 
-def plot_single_against_redshift(df, ttype, stem, ax, template_dict, c1, c2):
+def plot_color_versus_redshift(df: pd.DataFrame, ax, ttype: str,
+                               temp_df: pd.DataFrame, c1: str, c2: str,
+                               fitted_only: bool, plot_sources: bool):
+    """Produce a color-redshift plot of colors c1-c2 for the sources and templates. """
     # Select a subset of the source dataframe with valid spec-z and actual data points in both of the requested bands
-    for param in ["ZSPEC", f"mag_{c1}", f"mag_{c2}"]:
+    df = df[df["Type"] == ttype]
+    temp_df = temp_df[temp_df["Type"] == ttype]
+    df = df[df["HasGoodz"]]
+    for param in [f"mag_{c1}", f"mag_{c2}"]:
         df = df[(df[param] > 0) & (df[param] < 99)]
-    colname = f"{mt.BAND_LABEL_DICT[c1]} - {mt.BAND_LABEL_DICT[c2]}"
-
+    colname = f"{mt.generate_pretty_band_name(c1)} - {mt.generate_pretty_band_name(c2)}"
+    temp_nums_to_plot = give_count_df(
+        df, ttype, 0.1).index if fitted_only else None
+    temp_dict = mt.construct_template_dict(temp_df, temp_nums_to_plot)
     # Plot all templates:
-    info_dict = mt.provide_template_info(f"{stem}_{ttype}.list")
-    for temp_num in template_dict:
-        t_df = template_dict[temp_num]
-        y_data = t_df[f"mag_{c1}"] - t_df[f"mag_{c2}"]
-        label = temp_num  # str(info_dict.get(temp_num)).replace("_", "-")
-        ax.plot(t_df["ZSPEC"], y_data, "-", lw="0.5", label=label)
+    # info_dict = mt.provide_template_info(ttype)
+    for temp_label in sorted(temp_dict):
+        single_t_df = temp_dict[temp_label]
+        y_data = single_t_df[f"mag_{c1}"] - single_t_df[f"mag_{c2}"]
+        if not "E(B-V)" in temp_label:
+            ax.plot(single_t_df["ZSPEC"], y_data,
+                    "-", lw="0.5", label=temp_label)
+        else:
+            # Using this, the E(B-V)-lines will have the same color as their parents
+            color = ax.get_lines()[-1].get_color()
+            ax.plot(single_t_df["ZSPEC"], y_data, "--", lw="0.5", color=color)
+        # print(temp_num)
     df[colname] = df[f"mag_{c1}"] - df[f"mag_{c2}"]
-    zmax = 2.5 if ttype == "extended" else 4.5
+    zmax = 2.5 if ttype == "extended" else 5
+    ax.set_xlim(0, zmax)
+    ax.set_ylim(-1, 3)
+    ax.set_xlabel("(spectroscopic) redshift $z$", labelpad=0.4)
+    ax.set_ylabel(colname, labelpad=0.4)
+    ax.grid(True)
+    ax.set_title(ttype.capitalize())
+    if fitted_only:
+        temp_num = len([label for label in temp_dict if not "E(B-V)" in label])
+        ax.legend(ncol=ceil(temp_num / 3))
+    if not plot_sources:  # Guard against plotting sources if unwanted
+        return
     ymin, ymax = -1, 1
+    bad, good = df[df["IsOutlier"]], df[~df["IsOutlier"]]
+    for subset, label, style in [(bad, "Outliers", "rx"), (good, "Good sources", "kx")]:
+        z, y = subset["ZSPEC"], subset[colname]
+        if len(y) > 0:
+            ymin = min(ymin, min(y))
+            ymax = max(ymax, max(y))
+            ax.plot(z, y, style, markersize=1,
+                    label=f"{label} ({len(y)})", alpha=0.5)
+    ax.set_ylim(floor(ymin * 2) / 2, ceil(ymax * 2) / 2)
     # for i, row in df.iterrows():
     #     if row["ZSPEC"] - row["ZBEST"] > 0.2:
     #         x = [row["ZSPEC"], row["ZBEST"]]
@@ -33,19 +67,6 @@ def plot_single_against_redshift(df, ttype, stem, ax, template_dict, c1, c2):
     # for col, style in [("ZBEST", "rx"), ("ZSPEC", "kx")]:
     #     ax.plot(df[col], df[colname], style,
     #             markersize=0.5, label=col, alpha=0.5)
-
-    bad, good = df[df["ISOUTLIER"]], df[~df["ISOUTLIER"]]
-    for subset, label, style in [(bad, "Outliers", "rx"), (good, "Good sources", "kx")]:
-        z, y = subset["ZSPEC"], subset[colname]
-        if len(y) > 0:
-            ymin = min(ymin, min(y))
-            ymax = max(ymax, max(y))
-            ax.plot(z, y, style, markersize=1,
-                    label=f"{label} ({len(y)})", alpha=0.5)
-    ax.set_xlim(0, zmax)
-    ax.set_ylim(floor(ymin), ceil(ymax))
-    ax.set_xlabel("(spectroscopic) redshift $z$", labelpad=0.4)
-    ax.set_ylabel(colname, labelpad=0.4)
 
 
 def plot_multiple_against_redshift(source_df, template_df, ttype, stem, bands=("g", "z"), templates_to_plot=None, onebigplot=False, joint_fig=False):
@@ -102,53 +123,62 @@ def plot_multiple_against_redshift(source_df, template_df, ttype, stem, bands=("
         cm.save_current_figures(filename)
 
 
-def plot_problematic_templates(df, ttype):
-    """Plots a histogram with the available templates and the percentage of usage for LePhare"""
-    fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.8))
-    subset = df[df["Type"] == ttype]
-    good = subset[~subset["IsOutlier"]]
-    bad = subset[subset["IsOutlier"]]
+def give_count_df(df, ttype, threshold_factor=0):
+    """Analyzes an output dataframe for the models used for the best fits
+    and returns a dataframe listing the counts of outliers/good fits for
+    model numbers (in index) that were matched more times than the threshold."""
+    df = df[df["Type"] == ttype]
+    df = df[df["HasGoodz"]]
+    good = df[~df["IsOutlier"]]
+    bad = df[df["IsOutlier"]]
     df1 = good["MOD_BEST"].value_counts().rename("Good")
     df2 = bad["MOD_BEST"].value_counts().rename("Bad")
-    both = pd.concat([df1, df2], axis=1).drop(labels=[-99])
+    both = pd.concat([df1, df2], axis=1)
+    if -99 in both.index:
+        both = both.drop(labels=[-99])
     both["Total"] = both["Good"].fillna(0) + both["Bad"].fillna(0)
     both = both.sort_values(by="Total", ascending=False)
-
-    threshold = max(1, max(both["Total"]) * 0.07)
+    threshold = max(1, max(both["Total"]) * threshold_factor)
     mt.LOGGER.info(
         f"Adopting threshold (number of most occurences for models to be combined in 'other') of {threshold:.0f} for {ttype}.")
     other_dict = {"Good": {"Other": 0}, "Bad": {
         "Other": 0}, "Total": {"Other": 0}}
     for check in ["Good", "Bad"]:
-        is_single = (both[check] <= threshold) & (
+        is_below_threshold = (both[check] <= threshold) & (
             both["Total"] <= threshold * 2)
-        singles = both[is_single]
-        # logger.info([model for model in singles.index])
-        other_dict[check]["Other"] = len(singles)
-    is_single = (both["Bad"].fillna(0) <= threshold) & (
+        too_low = both[is_below_threshold]
+        other_dict[check]["Other"] = len(too_low)
+    is_below_threshold = (both["Bad"].fillna(0) <= threshold) & (
         both["Good"].fillna(0) <= threshold)
-    both = both[~is_single]
-    both = pd.concat([both, pd.DataFrame.from_dict(other_dict)])
-    axes.grid(True, axis="y")
+    both = both[~is_below_threshold]
+    if threshold >= 1:  # Here, the 'other'-col is not needed
+        both = pd.concat([both, pd.DataFrame.from_dict(other_dict)])
+    return both
+
+
+def plot_bar_template_outliers(df, ax, ttype):
+    """Produce a bar plot on the given ax for the templates of ttype."""
+    both = give_count_df(df, ttype, threshold_factor=0.1)
     labels = both.index
+    print(labels)
 
     x = np.arange(len(labels))
-    width = 0.4  # the width of the bars
+    width = 0.5  # the width of the bars
 
-    rects1 = axes.bar(x, both["Good"], width, bottom=both["Bad"].fillna(
-        0), label='Good fits', align="center")
-    rects2 = axes.bar(x, both["Bad"], width, label='Bad fits', color="red")
+    rects1 = ax.bar(x, both["Good"], width, bottom=both["Bad"].fillna(
+        0), label='Good fits', align="center", color="green", edgecolor="k")
+    rects2 = ax.bar(x, both["Bad"], width, label='Outliers',
+                    color="firebrick", edgecolor="k")
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
-    axes.set_ylabel('Number of times used')
-    title = f"Models used for the best fits ({ttype})"
-    axes.set_title(title, size="small")
-    axes.set_xticks(x)
-    axes.set_xticklabels(list(labels), minor=False, rotation=90, )
-    axes.legend(loc="upper right")
-    fig.set_facecolor("white")
-    stem = mt.CUR_CONFIG["LEPHARE"]["output_stem"]
-    cm.save_figure(fig, f"{ttype}_used_templates", "output_analysis", stem)
+    ax.set_ylabel('Number of times used')
+    # f"Models used for the best fits ({ttype})"
+    title = f"{ttype.capitalize()} sources"
+    ax.set_title(title)
+    ax.set_xticks(x)
+    ax.grid(True, axis="y")
+    ax.set_xticklabels(list(labels), minor=False, rotation=90, )
+    ax.legend()
     return both
 
 
@@ -157,12 +187,12 @@ if __name__ == "__main__":
         prefix="lephare_output/test2_", suffix=".fits")
     output_df = mt.add_filter_columns(output_df)
 
-    for ttype, templates_to_plot in [("extended", [54, 13, 30, 15, 23, 16, 29, 85, 11, 28, 69, 68, "Other"]), ("pointlike", [27, 25, 28, 29, 18, 22, 23])]:
-        # df2 = plot_problematic_templates(output_df, ttype)
-        # templates_to_plot = list(df2.index)
-        template_df = mt.read_template_library(f"{ttype}_mag_lib.dat")
-        plot_multiple_against_redshift(
-            output_df, template_df, ttype, bands=mt.ORDERED_BANDS, templates_to_plot=templates_to_plot, onebigplot=True, joint_fig=True)
+    # for ttype, templates_to_plot in [("extended", [54, 13, 30, 15, 23, 16, 29, 85, 11, 28, 69, 68, "Other"]), ("pointlike", [27, 25, 28, 29, 18, 22, 23])]:
+    #     # df2 = plot_problematic_templates(output_df, ttype)
+    #     # templates_to_plot = list(df2.index)
+    #     template_df = mt.read_template_library(f"{ttype}_mag_lib.dat")
+    #     plot_multiple_against_redshift(
+    #         output_df, template_df, ttype, bands=mt.ORDERED_BANDS, templates_to_plot=templates_to_plot, onebigplot=True, joint_fig=True)
     #     plot_multiple_against_redshift(
     #         output_df, template_df, ttype, bands=("W1", "W2"), onebigplot=False)
     #     plot_multiple_against_redshift(

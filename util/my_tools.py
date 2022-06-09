@@ -158,13 +158,18 @@ def give_processed_table_name(ttype):
     return path + stem + "_" + ttype + "_processed.fits"
 
 
-def give_survey_name(survey):
+def give_survey_name(survey_name: str):
     """Returns the survey name for the plots"""
     name_dict = {"galex": "GALEX (GR6+7)",
                  "vhs": "VHS (DR6)", "sweep": "LS (DR9)",
                  "hsc": "HSC (DR3)", "kids": "KiDS (DR4)",
-                 "ls10": "LS (DR10)"}
-    return name_dict[survey]
+                 "ls10": "LS (DR10)", "eros": "eFEDS ctps"}
+    try:
+        name = name_dict[survey_name]
+    except KeyError:
+        name = survey_name
+        LOGGER.warning("Unidentified survey '%s' found.", name)
+    return name
 
 
 def give_parafile_fpath(out=False):
@@ -247,17 +252,20 @@ def save_dataframe_as_fits(df, filename, overwrite=False):
     LOGGER.info("Successfully saved the dataframe at %s.", fpath)
 
 
-def read_output_df():
-    """Reads a pointlike and extended fits."""
-    # Add type columns for distinction
+def read_saved_df(cat_type="out"):
+    """Reads the pointlike and extended fits input file."""
     df_list = []
+    is_out = (cat_type == "out")
     for ttype in USED_TTYPES:
-        fpath = give_lephare_filename(ttype, out=True, suffix=".fits")
+        if cat_type in ["in", "out"]:
+            fpath = give_lephare_filename(ttype, out=is_out, suffix=".fits")
+        if cat_type == "in_processed":
+            fpath = give_processed_table_name(ttype)
         df = read_fits_as_dataframe(fpath)
         df["Type"] = ttype
         df_list.append(df)
     joined = pd.concat(df_list)
-    joined = add_filter_columns(joined)
+    joined = add_filter_columns(joined) if is_out else add_mag_columns(joined)
     return joined
 
 
@@ -282,22 +290,27 @@ def read_ascii_as_dataframe(filename):
     return df
 
 
-def read_template_library(fname):
-    """Reads a template library .dat file"""
-    fpath = GEN_CONFIG["PATHS"]["data"] + "lephare_files/" + fname
+def read_template_library():
+    """Reads the template library .dat files"""
+    df_list = []
+    for ttype in USED_TTYPES:
+        fpath = give_temp_libname(ttype, suffix=".dat")
+        # The first line includes info about the columns
+        with open(fpath, "r") as f:
+            coltext = f.readline()
+        cols = coltext.split()[1:]  # remove the hashtag
+        cols = cols[:-3] + [f"mag_{band}"for band in BAND_LIST]
+        cols = cols + [f"mag_err_{band}"for band in BAND_LIST]
+        df = pd.read_csv(fpath, delim_whitespace=True,
+                         header=None, skiprows=1, names=cols)
+        df = df.rename(columns={"redshift": "ZSPEC"})
+        df["Type"] = ttype
+        df_list.append(df)
+    joined = pd.concat(df_list)
+    return joined
 
-    with open(fpath, "r") as f:
-        coltext = f.readline()
-    cols = coltext.split()[1:]
-    cols = cols[:-3] + [f"mag_{band}"for band in BAND_LIST]
-    cols = cols + [f"mag_err_{band}"for band in BAND_LIST]
-    df = pd.read_csv(fpath, delim_whitespace=True,
-                     header=None, skiprows=1, names=cols)
-    df = df.rename(columns={"redshift": "ZSPEC"})
-    return df
 
-
-def construct_template_dict(temp_df, templates_to_plot):
+def construct_template_dict(temp_df, templates_to_plot=None):
     """Construct a dict with dataframes for each of the models
     requested, removing templates at E(B-V) != 0."""
     temp_dict = {}
@@ -305,17 +318,22 @@ def construct_template_dict(temp_df, templates_to_plot):
     templates_to_plot = available_templates if templates_to_plot is None \
         else available_templates.intersection(
             set(templates_to_plot))
-    for temp_number in templates_to_plot:
-        subset = temp_df[temp_df["model"] == temp_number].sort_values(by=[
-                                                                      "ZSPEC"])
-        subset = subset[(subset["ext_law"] == 0) & (subset["E(B-V)"] == 0)]
-        temp_dict[temp_number] = subset
+    for temp_num in templates_to_plot:
+        subset = temp_df[temp_df["model"] == temp_num]
+        # Since there are usually different numbers of templates, iterate over all of them:
+        for ebv in set(subset["E(B-V)"]):
+            ebv_string = "" if ebv == 0 else f"; E(B-V)={ebv}"
+            label = f"{temp_num}{ebv_string}"
+            subsubset = subset[subset["E(B-V)"] == ebv]
+            temp_dict[label] = subsubset.iloc[0:302]
+            # .sort_values(by=["ZSPEC"])
+            # subset = subset[(subset["ext_law"] == 0) & (subset["E(B-V)"] == 0)]
     return temp_dict
 
 
-def provide_template_info(fname):
+def provide_template_info(ttype):
     """Provides a dictionary linking the ID of a template to its name."""
-    path = GEN_CONFIG["PATHS"]["params"] + "template_lists/" + fname
+    path = give_temp_listname(ttype)
     with open(path, "r") as f:
         number_to_name = {}
         for i, line in enumerate(f.readlines(), start=1):
@@ -534,9 +552,9 @@ def convert_context_to_band_indices(context):
     Example:
         if context = 13, it will return [1, 3, 4], since 2^(1-1) + 2^2 + 2^3 = 13.
     """
-    if context.isinstance(pd.Series):
+    if isinstance(context, pd.Series):
         context = int(context["used_context"])
-    if not context.isinstance(int):
+    if not isinstance(context, int):
         context = int(context)
         LOGGER.info(f"Forcing context to become {context}")
     if context == -1:  # Return all bands if context is -1
