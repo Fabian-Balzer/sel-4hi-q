@@ -12,6 +12,7 @@ from configparser import ConfigParser
 
 import numpy as np
 import pandas as pd
+from astropy.io import fits
 from astropy.table import Table
 
 from util.my_logger import LOGGER
@@ -189,7 +190,7 @@ def give_filterfile_fpath(overview=True):
     return filtfilepath + fname
 
 
-def give_lephare_filename(ttype, out=False, suffix=None, include_path=True):
+def give_lephare_filename(ttype, out=False, suffix: str = None, include_path=True) -> str:
     """Generates a uniform table name for the LePhare table
     WARNING: Needs to be synced with jy_tools!"""
     if out:
@@ -227,20 +228,38 @@ def give_temp_libname(ttype, libtype="mag", suffix="", include_path=True, use_wo
     return temppath + fname
 
 
-def read_fits_as_dataframe(filename, saferead=False):
+def read_fits_as_dataframe(fname, saferead=False):
     """Read a given .fits file with the specified filename to return a pandas dataframe"""
     # This is the way to read the FITS data into a numpy structured array
     # (using astropy.io.fits.getdata didn't work out of the box
     # because it gives a FITSRec)
     if saferead:
-        t = Table.read(filename, format="fits")
+        t = Table.read(fname, format="fits")
         safe_names = [name for name in t.colnames if len(
             t[name].shape) <= 1]
         data = t[safe_names].to_pandas()
     else:
-        table = Table.read(filename, 1, format="fits")
+        table = Table.read(fname, 1, format="fits")
         data = table.to_pandas()
     df = pd.DataFrame(data)
+    return df
+
+
+def read_ascii_as_df(fname, out=True):
+    """Read a .out LePhare ASCII output file and return it as a dataframe."""
+    with open(fname, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+        index = lines.index("# Format topcat: \n")
+        header = lines[index + 1]
+    columns = header.split()[1:columns.index("MAG_OBS0")]
+    if out:
+        additional1 = [give_nice_band_name(band) for band in BAND_LIST]
+        additional2 = [give_nice_band_name(
+            band, err=True) for band in BAND_LIST]
+        columns = columns + additional1 + additional2
+    else:
+        raise NotImplementedError
+    df = pd.read_csv(fname, comment="#", names=columns, delim_whitespace=True)
     return df
 
 
@@ -467,6 +486,12 @@ def give_row_statistics(df):
                         "\nMoving on to the next one.", column)
 
 
+def give_plot_title(ttype, with_context=False):
+    """Provide a nice generic plot title that can optionally display the current context"""
+    contextstring = f" [$C={CONTEXT}$]" if with_context else ""
+    return f"{ttype.capitalize()} sources{contextstring}"
+
+
 def find_good_indices(df):
     """Returns the indices of the dataframe where photometry for all bands is
     available."""
@@ -584,7 +609,7 @@ def run_jystilts_program(filename, *args, with_path=False):
             "The following error was thrown when trying to run the jystilts code:\n%s", err)
 
 
-def run_lephare_command(command, arg_dict, additional=""):
+def run_lephare_command(command, arg_dict, ttype, additional=""):
     """Runs a given LePhare command in the LePhare source file."""
     main_command = f"{GEN_CONFIG['PATHS']['lepharedir']}/source/" + command
     run_string = main_command + " " + \
@@ -594,8 +619,14 @@ def run_lephare_command(command, arg_dict, additional=""):
         print(run_string)
         return
     LOGGER.debug("Running the following shell command:\n%s", run_string)
+    LOGGER.info("Running %s for %s. This could take a while...", command, ttype)
     try:
-        subprocess.run(run_string, check=True, shell=True)
+        result = subprocess.run(run_string, check=True,
+                                shell=True, capture_output=True, text=True)
+        lines = [line for line in result.stdout.splitlines()
+                 if line.startswith("# ")]
+        LOGGER.info("\n".join(lines))
+        return "\n".join(lines)
     except subprocess.CalledProcessError as err:
         LOGGER.error(
             "The following error was thrown when running the last shell command:\n%s", err)

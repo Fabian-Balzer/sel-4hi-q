@@ -105,7 +105,7 @@ if USE_LATEX:
 mpl.rcParams["figure.facecolor"] = "white"
 
 custom_params = {
-    "legend.borderaxespad": 0.2,  # Legend closer to the border
+    "legend.borderaxespad": .7,  # Legend closer to the border
     "legend.handletextpad": 0.5,  # Distance between circle and label is smaller
     "legend.labelspacing": .9,  # Vertical space between labels
     "legend.markerscale": .5,     # The size of the dots
@@ -113,6 +113,6 @@ custom_params = {
     "legend.columnspacing": .2,
     "figure.autolayout": True,
     "figure.titlesize": 9,
-    "figure.savefig.dpi": 300,
+    "savefig.dpi": 300,
 }
 mpl.rcParams.update(custom_params)

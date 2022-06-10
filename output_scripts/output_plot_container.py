@@ -98,13 +98,15 @@ class OutputPlotContainer:
 
 
 if __name__ == "__main__":
-    o_p_c = OutputPlotContainer(save_figures=False)
-    o_p_c.plot_color_vs_redshift(
-        "W1", "W2", fitted_only=True, plot_sources=True)
-    o_p_c.plot_color_vs_redshift(
-        "g", "r", fitted_only=True, plot_sources=True)
-    o_p_c.plot_color_vs_redshift(
-        "FUV", "r", fitted_only=True, plot_sources=True)
+    o_p_c = OutputPlotContainer(save_figures=True)
+    o_p_c.plot_specz_photo_z()
+    o_p_c.plot_template_numbers()
+    # o_p_c.plot_color_vs_redshift(
+    #     "W1", "W2", fitted_only=True, plot_sources=True)
+    # o_p_c.plot_color_vs_redshift(
+    #     "g", "r", fitted_only=True, plot_sources=True)
+    # o_p_c.plot_color_vs_redshift(
+    #     "FUV", "r", fitted_only=True, plot_sources=True)
     # o_p_c.plot_template_numbers()
 
 # %%

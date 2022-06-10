@@ -30,7 +30,8 @@ def run_filters():
                 "FILTER_REP": f"{mt.GEN_CONFIG['PATHS']['params']}filters",
                 "FILTER_FILE": mt.CUR_CONFIG["LEPHARE"]["filter_stem"]}
     additional = ">" + mt.give_filterfile_fpath()
-    mt.run_lephare_command("filter", arg_dict, additional)
+    mt.run_lephare_command(
+        "filter", arg_dict, ttype="everything", additional=additional)
 
 
 def run_templates(ttype):
@@ -43,7 +44,7 @@ def run_templates(ttype):
                     f"{prefix}_SED": mt.give_temp_listname(ttype),
                     f"{prefix}_LIB": mt.give_temp_libname(ttype, "sed", include_path=False)}
     arg_dict_sed["t"] = "S" if ttype == "star" else "G"
-    mt.run_lephare_command("sedtolib", arg_dict_sed)
+    mt.run_lephare_command("sedtolib", arg_dict_sed, ttype)
     arg_dict_mag = {"c": mt.give_parafile_fpath(),
                     f"{prefix}_LIB_IN": mt.give_temp_libname(ttype, "sed", include_path=False),
                     f"{prefix}_LIB_OUT": mt.give_temp_libname(ttype, "mag", include_path=False),
@@ -55,7 +56,7 @@ def run_templates(ttype):
         arg_dict_mag["EXTINC_LAW"] = "SMC_prevot.dat"
         arg_dict_mag["MOD_EXTINC"] = "11,23"
         arg_dict_mag["EB_V"] = "0.,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4"
-    mt.run_lephare_command("mag_gal", arg_dict_mag)
+    mt.run_lephare_command("mag_gal", arg_dict_mag, ttype)
     try:
         # LePhare writes the output file in the same directory, so we need to move it:
         move(mt.give_temp_libname(ttype, "mag", use_workpath=True, suffix=".dat"),
@@ -79,7 +80,8 @@ def run_zphota(ttype):
                     "CAT_OUT": mt.give_lephare_filename(ttype, out=True),
                     "PARA_OUT": mt.give_parafile_fpath(out=True),
                     "GLB_CONTEXT": mt.CONTEXT,
-                    "PDZ_OUT": mt.give_lephare_filename(ttype, out=True, suffix="")
+                    "PDZ_OUT": mt.give_lephare_filename(ttype, out=True, suffix=""),
+                    "LIB_ASCII": "YES"
                     }
     if ttype == "pointlike":
         arg_dict_sed["MAG_REF"] = "7"
@@ -89,7 +91,13 @@ def run_zphota(ttype):
         arg_dict_sed["MAG_REF"] = "7"
         arg_dict_sed["MAG_ABS"] = "-24,-8"
         # arg_dict_sed["APPLY_SYSSHIFT"] = "-0.2099,-0.1264,0.0228,-0.1534,-0.1234,-0.1437,-0.1797,-0.5375,-0.3046,-0.2395,-0.2261,-0.0718,0.0000,0.0000,-0.0294,-0.0755,-0.1896"
-    mt.run_lephare_command("zphota", arg_dict_sed)
+    info_text = mt.run_lephare_command("zphota", arg_dict_sed, ttype)
+    # Add info to the file as LePhare doesn't do this anymore
+    with open(mt.give_lephare_filename(ttype, True, ".out"), "r+", encoding="utf-8") as f:
+        content = f.read()
+        f.seek(0, 0)
+        f.write(info_text + '\n' + content)
+
     mt.run_jystilts_program("rewrite_fits_header.py", ttype, "OUT")
     mt.assess_lephare_run(ttype)
 

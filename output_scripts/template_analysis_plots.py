@@ -42,7 +42,7 @@ def plot_color_versus_redshift(df: pd.DataFrame, ax, ttype: str,
     ax.set_xlabel("(spectroscopic) redshift $z$", labelpad=0.4)
     ax.set_ylabel(colname, labelpad=0.4)
     ax.grid(True)
-    ax.set_title(ttype.capitalize())
+    ax.set_title(mt.give_plot_title(ttype))
     if fitted_only:
         temp_num = len([label for label in temp_dict if not "E(B-V)" in label])
         ax.legend(ncol=ceil(temp_num / 3))
@@ -160,7 +160,6 @@ def plot_bar_template_outliers(df, ax, ttype):
     """Produce a bar plot on the given ax for the templates of ttype."""
     both = give_count_df(df, ttype, threshold_factor=0.1)
     labels = both.index
-    print(labels)
 
     x = np.arange(len(labels))
     width = 0.5  # the width of the bars
@@ -173,8 +172,7 @@ def plot_bar_template_outliers(df, ax, ttype):
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Number of times used')
     # f"Models used for the best fits ({ttype})"
-    title = f"{ttype.capitalize()} sources"
-    ax.set_title(title)
+    ax.set_title(mt.give_plot_title(ttype, True))
     ax.set_xticks(x)
     ax.grid(True, axis="y")
     ax.set_xticklabels(list(labels), minor=False, rotation=90, )
