@@ -85,14 +85,35 @@ def give_context(bands, inverted=False):
 
 def give_bands_for_context(context: int):
     """Returns the context belonging to the set of bands provided."""
+    if context <= 0:
+        return BAND_LIST
     band_indices = convert_context_to_band_indices(context)
     return [BAND_LIST[index - 1] for index in band_indices]
 
 
-def give_survey_for_band(band):
+def give_survey_for_band(band: str) -> str:
     """Returns the survey that the band appeared in."""
-    surveys = [survey for survey, bands in BAND_DICT.items() if band in bands]
+    if band == "ZSPEC":
+        return band
+    surveys = [survey for survey, bands in BAND_DICT.items() if band.lower() in [
+        band1.lower() for band1 in bands]]
     return surveys[0] if len(surveys) > 0 else "unknown"
+
+
+def give_latex_band_name(band: str) -> str:
+    """Returns the latex rep of the given band."""
+    latex_map = {'fuv': "FUV", 'nuv': "NUV", 'g': "g", 'r': "r", 'z': "z", 'y': "Y",
+                 'j': "J", 'h': "H", 'ks': "Ks", 'w1': "WOne", 'w2': "WTwo", 'w3': "WThree",
+                      'w4': "WFour", 'i_hsc': "ihsc", 'i2_hsc': "iTwohsc", 'i_kids': "ikids", 'i_ls10': "ils"}
+    return "\\" + latex_map[band.lower()] + r"band{}"
+
+
+def give_latex_survey_name(survey: str, with_dr=False) -> str:
+    """Returns the latex rep of the given survey. If [with_dr] it adds the DR rep."""
+    latex_map = {"galex": "GALEX", "sweep": "LS", "hsc": "HSC",
+                 "kids": "KIDS", "vhs": "VHS", "ls10": "LSTen"}
+    suffix = r"DR{}" if with_dr else r"{}"
+    return "\\" + latex_map[survey.lower()] + suffix
 
 
 # Define the (hardcoded) path where the data sits in
@@ -173,6 +194,25 @@ def give_survey_name(survey_name: str):
     return name
 
 
+def give_survey_color(survey_name: str) -> str:
+    """Returns a uniform color for each survey"""
+    color_dict = {"galex": "blue", "sweep": "green",
+                  "vhs": "red", "hsc": "lightgreen", "kids": "darkgreen",
+                  "ls10": "darkolivegreen", "ZSPEC": "black"}
+    try:
+        color = color_dict[survey_name]
+    except KeyError:
+        color = "darkred"
+        LOGGER.warning("Unidentified survey '%s' found.", color)
+    return color
+
+
+def give_survey_color_for_band(band: str) -> str:
+    """Takes a photometric band, searches for the corresponding survey and returns the color associated with it."""
+    survey = give_survey_for_band(band)
+    return give_survey_color(survey)
+
+
 def give_parafile_fpath(out=False):
     """Provides the name of the currently set LePhare parameter file.
     If out is True, the outputpara-name is used, else the inputparaname"""
@@ -186,7 +226,7 @@ def give_filterfile_fpath(overview=True):
     """Provides the name of the requested filter file"""
     filtfilepath = GEN_CONFIG['PATHS']['params']
     filtstem = CUR_CONFIG["LEPHARE"]["filter_stem"]
-    fname = filtstem + "_overview.filt" if overview else filtstem + "transmission.filt"
+    fname = filtstem + "_overview.filt" if overview else filtstem + "_transmissions.filt"
     return filtfilepath + fname
 
 
@@ -205,12 +245,51 @@ def give_lephare_filename(ttype, out=False, suffix: str = None, include_path=Tru
     return path + stem + "_" + ttype + suffix
 
 
-def give_temp_listname(ttype, altstem=None):
+def give_temp_listname(ttype, altstem: str = None):
     """Provides the name of the list file with the templates."""
     listpath = GEN_CONFIG["PATHS"]["params"] + "template_lists/"
     stem = CUR_CONFIG['LEPHARE']['template_stem'] if altstem is None else altstem
     fname = f"{stem}_{ttype}.list"
     return listpath + fname
+
+
+def give_list_of_tempnames(ttype, altstem: str = None):
+    """Reads the currently selected list of templates and returns a list of the active ones."""
+    fname = give_temp_listname(ttype, altstem=altstem)
+    with open(fname, "r") as f:
+        templates = [line for line in f.readlines()
+                     if not line.startswith("#")]
+    templates = [temp.replace("\n", "").split()[0] for temp in templates]
+    return templates
+
+
+def give_list_of_tempnumbers(tempnames):
+    """Reads the currently selected list of templates and returns a list of the active ones."""
+    fname = give_temp_listname(ttype, altstem=altstem)
+    with open(fname, "r") as f:
+        templates = [line for line in f.readlines()
+                     if not line.startswith("#")]
+    templates = [temp.replace("\n", "").split()[0] for temp in templates]
+    return templates
+
+
+def get_temp_num_for_name(ttype: str, temp_name: str):
+    """Scans the template lists for the template in question and returns its index.
+    params:
+        ttype: str
+            'extended', 'pointlike'  Will check the requested list files in question
+        temp_name: str
+            name of the template
+    returns:
+        index: int || None
+            The index of the template in question, or None if the template is not available
+    """
+    temps = give_list_of_tempnames(ttype)
+    try:
+        return temps.index(temp_name) + 1  # Template numbering starts at 1
+    except ValueError:
+        LOGGER.warning(
+            "Couldn't find %s in the given %s template list.", temp_name, ttype)
 
 
 def give_temp_libname(ttype, libtype="mag", suffix="", include_path=True, use_workpath=False):
@@ -439,8 +518,9 @@ def add_outlier_information(df):
     df["ZMeasure"] = (df["ZBEST"] - df["ZSPEC"]) / (1 + df["ZSPEC"])
     df["IsOutlier"] = abs(df["ZMeasure"]) > 0.15
     df["HasGoodz"] = ((df["ZSPEC"] > 0) & (df["ZBEST"] > 0))
-    df["IsFalsePositive"] = ((df["ZSPEC"] > 0.5) & (df["ZBEST"] < 0.5))
-    df["IsFalseNegative"] = ((df["ZSPEC"] < 0.5) & (df["ZBEST"] > 0.5))
+    df["IsFalsePositive"] = ((df["ZSPEC"] < 0.5) & (df["ZBEST"] > 0.5))
+    df["IsFalseNegative"] = ((df["ZSPEC"] > 0.5) & (df["ZBEST"] < 0.5))
+    df["TemplateScore"] = np.exp(-df["ZMeasure"] - df["CHI_BEST"] / 2)
     return df
 
 
@@ -522,6 +602,11 @@ def calculate_number_of_photometry(df):
     return number_dict
 
 
+def give_amount_of_good_photometry(df, band):
+    """Returns the number of sources with good photometry for the given band in the dataframe provided."""
+    return len(df[df[f"mag_{band}"] > 0])
+
+
 def give_input_statistics(df, sourcetype):
     """Takes an input dataframe and constructs input statistics,
     including the number of sources and the the number this would
@@ -582,7 +667,7 @@ def convert_context_to_band_indices(context):
     if not isinstance(context, int):
         context = int(context)
         LOGGER.info(f"Forcing context to become {context}")
-    if context == -1:  # Return all bands if context is -1
+    if context <= 0:  # Return all bands if context is -1
         return list(range(1, len(BAND_LIST) + 1))
     filter_numbers = []
     while context > 0:

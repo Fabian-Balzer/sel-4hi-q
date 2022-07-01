@@ -24,10 +24,10 @@ def plot_r_band_magnitude(df, stem="", title=""):
     ax.hist([with_z["mag_r"], without_z["mag_r"]],
             bins=30, stacked=True, color=['k', 'g'], alpha=0.7, label=["With spec-$z$", "Without spec-$z$"], histtype="stepfilled", edgecolor="k")
     ax.legend(loc="upper left")
-    ax.set_xlabel(f"{mt.BAND_LABEL_DICT['r']}-band magnitude")
+    ax.set_xlabel(f"{mt.generate_pretty_band_name('r')}-band magnitude")
     ax.set_ylabel("Number of sources")
     if title != "":
-        title = f"{mt.BAND_LABEL_DICT['r']}-band distribution ({len(df[df['mag_r']>0])} sources, eFEDS field)" if title == "default" else title
+        title = f"{mt.generate_pretty_band_name('r')}-band distribution ({len(df[df['mag_r']>0])} sources, eFEDS field)" if title == "default" else title
         ax.set_title(title, size="small")
     cm.save_figure(fig, directory="input_analysis",
                    stem=stem, name="r_band_hist")
@@ -38,26 +38,27 @@ def construct_band_availability_dataframe(df, desired_bands):
     returns a band_count_df with the bands as an index."""
     counts, source_nums = {}, {}
     for ttype in ["extended", "pointlike"]:
-        ttypedf = df[df["Type"] == ttype]
-        total_length = len(ttypedf)
+        subset = df[df["Type"] == ttype]
+        total_length = len(subset)
         for band in desired_bands:
             refname = f"mag_{band}" if band != "ZSPEC" else band
-            subset = ttypedf[ttypedf[refname] > 0]
+            subset = subset[subset[refname] > 0]
             if band in counts:
                 counts[band][ttype] = len(subset) / total_length
             else:
                 counts[band] = {ttype: len(subset) / total_length}
         source_nums[ttype] = total_length
     band_count_df = pd.DataFrame(counts).T
-    # Add colours:
-    colours = {"galex": "blue", "sweep": "green",
-               "vhs": "red", "hsc": "lightgreen", "kids": "darkgreen"}
-    colour_dict = {band.replace("_", "-"): colour for key, colour in colours.items()
-                   for band in mt.BAND_DICT[key]}
-    colour_dict["ZSPEC"] = "black"
+    print(band_count_df)
+    colour_dict = {band: mt.give_survey_color_for_band(
+        band) for band in desired_bands}
+    survey_dict = {band: mt.give_survey_for_band(
+        band) for band in desired_bands}
     band_count_df["Colour"] = pd.DataFrame.from_dict(
         colour_dict, orient="index")
-    return band_count_df, colours, source_nums
+    band_count_df["Survey"] = pd.DataFrame.from_dict(
+        survey_dict, orient="index")
+    return band_count_df, source_nums
 
 
 def construct_num_band_dataframe(df, allowed_bands):
@@ -80,7 +81,8 @@ def construct_num_band_dataframe(df, allowed_bands):
 def construct_availability_bar_plots(band_count_df, ax, title, source_nums):
     """Constructs bar plots for the extended and pointlike subsample on the given ax."""
     ax.grid(True, axis="y")
-    labels = [mt.BAND_LABEL_DICT[band] for band in band_count_df.index]
+    labels = [mt.generate_pretty_band_name(
+        band) for band in band_count_df.index]
     x = np.arange(len(labels))
     width = 0.39  # the width of the bars
     space = 0
@@ -109,20 +111,23 @@ def construct_availability_bar_plots(band_count_df, ax, title, source_nums):
                  int(num * source_nums["pointlike"]) for num in band_count_df["pointlike"]], label_type='edge', rotation=90, padding=2.5, size="x-small")
 
 
-def plot_input_distribution(df, stem="", glb_context=-1, title=""):
+def plot_input_distribution(df, band_list: list, consider_specz=True, title=""):
     """Produce a bar plot of the relative input distribution for pointlike and extended.
     Parameters:
         df: Input or output Dataframe with magnitude columns in each band.
         glb_context: Global context to identify the used bands"""
-    desired_bands = mt.give_bands_for_context(glb_context) + ["ZSPEC"]
-    band_count_df, colours, source_nums = construct_band_availability_dataframe(
-        df, desired_bands)
+    if consider_specz:
+        band_list = list(band_list) + ["ZSPEC"]
+    band_count_df, source_nums = construct_band_availability_dataframe(
+        df, band_list)
     fig, axes = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.8))
-    if title != "":
-        title = f"Photometry in the eFEDS field  ({len(df)} sources in total)" if title == "default" else title
+    if title == "default":
+        title = f"Photometry in the eFEDS field  ({len(df)} sources in total)"
     construct_availability_bar_plots(band_count_df, axes, title, source_nums)
-    legend_patches = [Patch(facecolor=colour, edgecolor='k',
-                            label=mt.SURVEY_NAME_DICT[key]) for key, colour in colours.items()]
+    survey_dict = {survey: mt.give_survey_color(
+        survey) for survey in set(band_count_df["Survey"])}
+    legend_patches = [Patch(facecolor=color, edgecolor='k',
+                            label=mt.give_survey_name(survey)) for survey, color in survey_dict.items()]
     ext_plike_patches = [Patch(facecolor="white", edgecolor='k',
                                label=f"{label.capitalize()} ({source_nums[label]})", linestyle=lstyle, hatch=hatch) for label, lstyle, hatch in [("extended", "dashed", ""), ("pointlike", "-", "///")]]
     legend_2 = plt.legend(handles=ext_plike_patches, prop={
@@ -130,8 +135,7 @@ def plot_input_distribution(df, stem="", glb_context=-1, title=""):
     fig.add_artist(legend_2)
     fig.legend(handles=legend_patches, prop={
         "size": "x-small"}, bbox_to_anchor=(0.9, 0.9), loc=2)
-    cm.save_figure(fig, "input_distribution", "input_analysis", stem)
-    return band_count_df
+    return fig
 
 
 def plot_band_number_distribution(df, stem="", glb_context=-1, title=""):
@@ -157,13 +161,3 @@ def plot_band_number_distribution(df, stem="", glb_context=-1, title=""):
     ax.set_xticks(x)
     ax.set_xlim(4, max(x) + 1)
     cm.save_figure(fig, "band_number_distribution", "input_analysis", stem)
-
-
-if __name__ == "__main__":
-    df = mt.read_plike_and_ext(prefix="matches/test2_",
-                               suffix="_processed_table.fits")
-    df = mt.add_mag_columns(df)
-    # df = df[df["Type"] == "extended"]
-    plot_band_number_distribution(df)
-    # plot_r_band_magnitude(df)
-    # plot_input_distribution(df, title=False)
