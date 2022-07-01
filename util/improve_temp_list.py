@@ -3,7 +3,7 @@ and write a new template list file based on the old one."""
 # %%
 import util.my_tools as mt
 
-ttype = "pointlike"
+ttype = "extended"
 templist_fpath = mt.give_temp_listname(ttype)
 
 with open(templist_fpath, "r", encoding="utf-8") as f:

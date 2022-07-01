@@ -25,7 +25,10 @@ class OutputPlotContainer:
                 "Please specify a valid ttype [pointlike, extended or both] to plot the specz-photoz-plot.")
         self.stem = mt.CUR_CONFIG["LEPHARE"]["output_stem"]
         self.save_figures = save_figures
+        # try:
         self.template_df = mt.read_template_library()
+        # except FileNotFoundError:
+        #     mt.LOGGER.error("Couldn't locate template files.")
 
     def _quicksave_fig(self, fig, name):
         """Shortcut to save a given figure in the correct dir"""
@@ -68,7 +71,7 @@ class OutputPlotContainer:
         ta.plot_bar_template_outliers(self.df, ax, ttype)
         self._quicksave_fig(fig, f"{ttype}_used_templates")
 
-    def plot_color_vs_redshift(self, c1: str, c2: str, fitted_only=True, plot_sources=True):
+    def plot_color_vs_redshift(self, c1: str, c2: str, fitted_only=True, plot_sources=True, temp_nums: dict = None):
         """Wrapper function to produce a color-redshift plot for the templates and sources.
         Parameters:
             c1: str
@@ -79,35 +82,39 @@ class OutputPlotContainer:
                 Only plot the templates that have been fit.
             plot_sources: bool=True
                 Scatter all sources with spec-z.
+            temp_nums: dict<Int, str>
         """
+        temp_df = self.template_df[self.template_df["model"].apply(
+            lambda num: num in temp_nums)] if temp_nums is not None else self.template_df
         if self.produce_both:
             fig, (ax_plike, ax_ext) = plt.subplots(1, 2, figsize=cm.set_figsize(
                 width=cm.LATEXWIDTH, height=0.5 * cm.LATEXWIDTH, fraction=1))
             fig.set_tight_layout(True)
             ta.plot_color_versus_redshift(
-                self.df, ax_plike, "pointlike", self.template_df, c1, c2, fitted_only, plot_sources)
+                self.df, ax_plike, "pointlike", temp_df, c1, c2, fitted_only, plot_sources)
             ta.plot_color_versus_redshift(
-                self.df, ax_ext, "extended", self.template_df, c1, c2, fitted_only, plot_sources)
+                self.df, ax_ext, "extended", temp_df, c1, c2, fitted_only, plot_sources)
             self._quicksave_fig(fig, f"both_template_plot_{c1}-{c2}")
             return
         fig, ax = plt.subplots(
             1, 1, figsize=cm.set_figsize(width=0.5 * cm.LATEXWIDTH, height=0.5 * cm.LATEXWIDTH, fraction=1))
         ttype = "extended" if self.ext else "pointlike"
         ta.plot_color_versus_redshift(
-            self.df, ax, ttype, self.template_df, c1, c2, fitted_only, plot_sources)
+            self.df, ax, ttype, temp_df, c1, c2, fitted_only, plot_sources)
         self._quicksave_fig(fig, f"{ttype}_template_plot_{c1}-{c2}")
 
 
 if __name__ == "__main__":
     o_p_c = OutputPlotContainer(save_figures=True)
-    o_p_c.plot_specz_photo_z()
+    # o_p_c.plot_specz_photo_z()
     # o_p_c.plot_template_numbers()
     # o_p_c.plot_color_vs_redshift(
     #     "W1", "W2", fitted_only=True, plot_sources=True)
     # o_p_c.plot_color_vs_redshift(
-    #     "g", "r", fitted_only=True, plot_sources=True)
+    # "g", "r", fitted_only=True, plot_sources=True)
     # o_p_c.plot_color_vs_redshift(
     #     "FUV", "r", fitted_only=True, plot_sources=True)
     # o_p_c.plot_template_numbers()
+    mt.give_list_of_tempnames("extended")
 
 # %%

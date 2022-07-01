@@ -123,12 +123,10 @@ def plot_multiple_against_redshift(source_df, template_df, ttype, stem, bands=("
         cm.save_current_figures(filename)
 
 
-def give_count_df(df, ttype, threshold_factor=0):
+def give_count_df(df, ttype: str, threshold_factor=0):
     """Analyzes an output dataframe for the models used for the best fits
     and returns a dataframe listing the counts of outliers/good fits for
     model numbers (in index) that were matched more times than the threshold."""
-    df = df[df["Type"] == ttype]
-    df = df[df["HasGoodz"]]
     good = df[~df["IsOutlier"]]
     bad = df[df["IsOutlier"]]
     df1 = good["MOD_BEST"].value_counts().rename("Good")
@@ -158,6 +156,8 @@ def give_count_df(df, ttype, threshold_factor=0):
 
 def plot_bar_template_outliers(df, ax, ttype):
     """Produce a bar plot on the given ax for the templates of ttype."""
+    df = df[df["Type"] == ttype]
+    df = df[df["HasGoodz"]]
     both = give_count_df(df, ttype, threshold_factor=0.1)
     labels = both.index
 

@@ -6,35 +6,54 @@ Created on Wed Feb 23 12:20:24 2022
 """
 
 # %%
+import os
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import util.configure_matplotlib as cm
 import util.my_tools as mt
+from matplotlib.patches import Patch
+
+import input_scripts.collect_filter_data as c_f
 
 
-
-
-def produce_filter_plot(df, stem):
+def produce_filter_plot(df):
     """Create a plot showing the normalised transmission curves of the filters."""
-    fig, ax = plt.subplots(figsize=cm.set_figsize(fraction=0.912))
-    for key in df.keys().get_level_values(0).drop_duplicates().sort_values():
-        x_data = df[key]["Wavelength"]
-        y_data = df[key]["Transmission"]
-        band = key.split(">")[1]
-        label = mt.BAND_LABEL_DICT[band.replace("_", "-")]
+    fig, ax = plt.subplots(figsize=cm.set_figsize())
+    surveys = []
+    for band in df.keys().get_level_values(0).drop_duplicates().sort_values():
+        x_data = df[band]["lambda"] / 10
+        y_data = df[band]["trans"]
+        lambda_mean, band, survey = band.split(">")
+        surveys.append(survey)
+        label = mt.generate_pretty_band_name(band)
+        x, y = x_data[y_data.idxmax()], y_data.max()
+        if band in ["i2_hsc", "g", "r"]:
+            y -= 0.05
+        ax.text(float(lambda_mean) * 0.9, y + 0.01, label)
         # y_data = y_data / max(y_data)
-        ax.plot(x_data, y_data, label=label)
-        ax.fill_between(x_data, y_data, alpha=0.5)
+        ax.fill_between(x_data, y_data, alpha=0.5,
+                        color=mt.give_survey_color_for_band(band))
+        # ax.plot(x_data, y_data, label=label,
+        #         color="k", linewidth=0.5)
+
     # ax.set_xscale("log")
-    ax.set_xlim(0, 50000)
+    ax.set_xlim(1e2, 3e4)
+    ax.set_xscale("log")
     ax.set_ylim(0, 1)
     ax.grid(True)
     ax.axhline(y=1, color="k", linewidth=0.5)
-    ax.set_xlabel(r"$\lambda$ [$\AA$]")
+    ax.set_xlabel(r"$\lambda$ [nm]")
     ax.set_ylabel("Normalised filter transmission")
-    ax.legend(ncol=6, prop={'size': "small"},
-              bbox_to_anchor=(0, 1.2), loc="upper left")
-    cm.save_figure(fig, "coverage_plot", "input_analysis", stem)
+    survey_dict = {survey: mt.give_survey_color(
+        survey) for survey in set(surveys)}
+    legend_patches = [Patch(facecolor=color, edgecolor='k',
+                            label=mt.give_survey_name(survey)) for survey, color in survey_dict.items()]
+    fig.legend(handles=legend_patches, prop={
+        "size": "x-small"}, bbox_to_anchor=(0.78, 0.94), loc=2)
+    # ax.legend(ncol=6, prop={'size': "small"},
+    #           bbox_to_anchor=(0, 1.2), loc="upper left")
+    cm.save_figure(fig, "filter_coverage_plot", "input_analysis")
 
 
 def latex_with_lines(df, *args, **kwargs):
@@ -90,13 +109,13 @@ In \LePhare{}, """
                                  label="tab:filter_overview", position="htbp", float_format="{:0.2f}".format, columns=cols, escape=False)
     with open(fname, "w") as f:
         f.write(tabletext)
-        logger.info(
+        LOGGER.info(
             f"The LaTeX input text for the filters has been written to {fname}")
 
 
 if __name__ == "__main__":
-    # filter_df = read_filter_info_file()
-    # produce_filter_plot(filter_df)
+    filter_df = c_f.read_filter_transmission_file(consider_context=True)
+    produce_filter_plot(filter_df)
 
-    df = read_filter_overview_file("baseline_filters")
-    save_filter_info(df)
+    # df = read_filter_overview_file("baseline_filters")
+    # save_filter_info(df)
