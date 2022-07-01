@@ -1,0 +1,5 @@
+tempfile & # templates & eta & sig_nmad & psi_pos & psi_neg & context & time \\
+\code{baseline_pointlike.list} & $29$ & $0.358$ & $0.144$ & $0.084$ & $0.014$ & 8191 & 22-06-17 18:05 \\
+\code{baseline_extended.list} & $86$ & $0.330$ & $0.134$ & $0.227$ & $0.027$ & 8191 & 22-06-17 18:05 \\
+\code{ananna_test_pointlike.list} & 25 & $0.353$ & $0.140$ & $0.077$ & $0.015$ & 8191 & 22-07-01 10:02 \\
+\code{ananna_test_extended.list} & 15 & $0.250$ & $0.116$ & $0.173$ & $0.041$ & 8191 & 22-07-01 10:02 \\

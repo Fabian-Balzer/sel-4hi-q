@@ -91,15 +91,9 @@ def run_zphota(ttype):
         arg_dict_sed["MAG_REF"] = "7"
         arg_dict_sed["MAG_ABS"] = "-24,-8"
         # arg_dict_sed["APPLY_SYSSHIFT"] = "-0.2099,-0.1264,0.0228,-0.1534,-0.1234,-0.1437,-0.1797,-0.5375,-0.3046,-0.2395,-0.2261,-0.0718,0.0000,0.0000,-0.0294,-0.0755,-0.1896"
-    info_text = mt.run_lephare_command("zphota", arg_dict_sed, ttype)
-    # Add info to the file as LePhare doesn't do this anymore
-    with open(mt.give_lephare_filename(ttype, True, ".out"), "r+", encoding="utf-8") as f:
-        content = f.read()
-        f.seek(0, 0)
-        f.write(info_text + '\n' + content)
-
+    mt.run_lephare_command("zphota", arg_dict_sed, ttype)
     mt.run_jystilts_program("rewrite_fits_header.py", ttype, "OUT")
-    mt.assess_lephare_run(ttype)
+    mt.assess_lephare_run(ttype, write=True)
 
 
 def run_lephare_commands():
@@ -117,6 +111,7 @@ def run_lephare_commands():
     if lep_con.getboolean("run_zphota"):
         for ttype in mt.USED_TTYPES:
             run_zphota(ttype)
+
     mt.LOGGER.debug("Finished the LePhare commands")
 
 

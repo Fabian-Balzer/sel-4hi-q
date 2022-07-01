@@ -93,8 +93,9 @@ def clean_opt_agn(table):
     table = table.cmd_select("prob_rf >= 0.94")
     selection = "dec < 6.2 & dec > -3.2 & ra < 146.2 & ra > 126"
     table = table.cmd_select(selection)
-    columnlist = ["ra", "dec"]  # , "phot_z", "gaia_sourceid", "prob_rf"
+    columnlist = ["ra", "dec", "phot_z", "prob_rf"]  # , "phot_z", "gaia_sourceid", "prob_rf"
     table = jt.keep_columns(table, columnlist)
+    table = jt.change_colnames(table, ["phot_z", "prob_rf"], ["opt_agn_phot_z", "opt_agn_prob_rf"])
     table = table.cmd_addcol("AGN_Sel", "1")
     return table
 

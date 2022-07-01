@@ -13,7 +13,8 @@ class OutputPlotContainer:
     """Convenience class containing the output- and template data."""
 
     def __init__(self, save_figures=False):
-        self.df = mt.read_saved_df(cat_type="out")
+        # self.df = mt.read_saved_df(cat_type="out")
+        self.df = mt.read_saved_df(cat_type="in_processed")
         self.df_p = self.df[self.df["Type"] == "pointlike"]
         self.df_e = self.df[self.df["Type"] == "extended"]
         self.ext = "extended" in mt.USED_TTYPES
@@ -100,7 +101,7 @@ class OutputPlotContainer:
 if __name__ == "__main__":
     o_p_c = OutputPlotContainer(save_figures=True)
     o_p_c.plot_specz_photo_z()
-    o_p_c.plot_template_numbers()
+    # o_p_c.plot_template_numbers()
     # o_p_c.plot_color_vs_redshift(
     #     "W1", "W2", fitted_only=True, plot_sources=True)
     # o_p_c.plot_color_vs_redshift(

@@ -9,11 +9,13 @@ Created on Mon Jul 19 09:31:46 2021
 import os
 import subprocess
 from configparser import ConfigParser
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
 from astropy.io import fits
 from astropy.table import Table
+from genericpath import isfile
 
 from util.my_logger import LOGGER
 
@@ -205,12 +207,18 @@ def give_lephare_filename(ttype, out=False, suffix: str = None, include_path=Tru
     return path + stem + "_" + ttype + suffix
 
 
-def give_temp_listname(ttype, altstem=None):
+def give_temp_listname(ttype: str, altstem: str = None, include_path=True):
     """Provides the name of the list file with the templates."""
     listpath = GEN_CONFIG["PATHS"]["params"] + "template_lists/"
     stem = CUR_CONFIG['LEPHARE']['template_stem'] if altstem is None else altstem
     fname = f"{stem}_{ttype}.list"
-    return listpath + fname
+    return listpath + fname if include_path else fname
+
+
+def give_statsfile_fname():
+    """Provides the name of the stats file used to provide concise information on the LePhare run."""
+    listpath = GEN_CONFIG["PATHS"]["params"]
+    return listpath + "lephare_run_stats.txt"
 
 
 def give_temp_libname(ttype, libtype="mag", suffix="", include_path=True, use_workpath=False):
@@ -251,7 +259,7 @@ def read_ascii_as_df(fname, out=True):
         lines = f.readlines()
         index = lines.index("# Format topcat: \n")
         header = lines[index + 1]
-    columns = header.split()[1:columns.index("MAG_OBS0")]
+    columns = header.split()[1:header.split().index("MAG_OBS0")]
     if out:
         additional1 = [give_nice_band_name(band) for band in BAND_LIST]
         additional2 = [give_nice_band_name(
@@ -449,7 +457,7 @@ def linearfunc(z, m=0):
     return z + m * (1 + z)
 
 
-def give_output_statistics(df, filters_used=False):
+def give_output_statistics(df, filters_used=False) -> dict:
     """Takes a LePhare output DataFrame, filters it for good specz and photo-z
     rows and calculates the statistics (outlier fraction eta, accuracy
     sig_NMAD, false positive fraction and false negative fraction) for them.
@@ -472,7 +480,9 @@ def give_output_statistics(df, filters_used=False):
         LOGGER.info("Filter\tgood photoz\tbad photoz")
         for n, filt in enumerate(BAND_LIST):
             LOGGER.info(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
-    return {"eta": eta, "sig_nmad": sig_nmad, "psi_pos": psi_pos, "psi_neg": psi_neg}
+    stat_dict = {"eta": eta, "sig_nmad": sig_nmad,
+                 "psi_pos": psi_pos, "psi_neg": psi_neg}
+    return stat_dict
 
 
 def give_row_statistics(df):
@@ -621,12 +631,7 @@ def run_lephare_command(command, arg_dict, ttype, additional=""):
     LOGGER.debug("Running the following shell command:\n%s", run_string)
     LOGGER.info("Running %s for %s. This could take a while...", command, ttype)
     try:
-        result = subprocess.run(run_string, check=True,
-                                shell=True, capture_output=True, text=True)
-        lines = [line for line in result.stdout.splitlines()
-                 if line.startswith("# ")]
-        LOGGER.info("\n".join(lines))
-        return "\n".join(lines)
+        subprocess.run(run_string, check=True, shell=True)
     except subprocess.CalledProcessError as err:
         LOGGER.error(
             "The following error was thrown when running the last shell command:\n%s", err)
@@ -677,7 +682,7 @@ def log_run_info():
                 "Statistics about the LePhare run are going to be provided.")
 
 
-def assess_lephare_run(ttype):
+def assess_lephare_run(ttype, write=False):
     """Directly assess the quality of a photo-z run."""
     df = read_fits_as_dataframe(
         give_lephare_filename(ttype, out=True, suffix=".fits"))
@@ -693,6 +698,28 @@ def assess_lephare_run(ttype):
         "The false pos fraction is psi_pos = %.4f (%d)", stat_dict['psi_pos'], fpos)
     LOGGER.info(
         "The false neg fraction is psi_neg = %.4f (%d)", stat_dict['psi_neg'], fneg)
+    if not write:
+        return
+    # Read the template file and store the information in
+    stat_dict["tempfile"] = "\\code{" + \
+        give_temp_listname(ttype, include_path=False) + "}"
+    with open(give_temp_listname(ttype, include_path=True), "r", encoding="utf-8") as f:
+        lines = [line for line in f.readlines(
+        ) if not line.startswith("#") and len(line) > 5]
+    stat_dict["# templates"] = str(len(lines))
+    stat_dict["time"] = datetime.now().strftime("%y-%m-%d %H:%M")
+    stat_dict["context"] = str(CONTEXT)
+    order = ["tempfile", "# templates", "eta", "sig_nmad",
+             "psi_pos", "psi_neg", "context", "time"]
+    text = " & ".join([f"${stat_dict[key]:.3f}$" if not isinstance(
+        stat_dict[key], str) else stat_dict[key] for key in order]) + " \\\\\n"
+    fname = give_statsfile_fname()
+    if not isfile(fname):
+        # Write a header if the stats file is not yet available:
+        text = " & ".join(order) + " \\\\\n" + text
+    with open(fname, "a", encoding="utf-8") as f:
+        f.write(text)
+    LOGGER.info("Wrote the results to the stats file at '%s'", fname)
 
 
 def save_tex_file(fname, text):
