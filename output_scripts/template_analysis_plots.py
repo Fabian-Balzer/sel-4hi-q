@@ -241,6 +241,8 @@ def plot_bar_template_scores(df, ax, ttype):
     ax.set_xticks(x)
     ax.grid(True, axis="y")
     ax.set_xticklabels(list(labels), minor=False, rotation=90, )
+    text = mt.give_temp_listname(ttype).split("/")[-1].replace("_", r"\_")
+    ax.text(0.75, 0.9, text, transform=ax.transAxes)
     return count_df
 
 
@@ -249,8 +251,8 @@ if __name__ == "__main__":
 
     fig, ax = plt.subplots()
     # plot_bar_template_outliers(output_df, ax, "extended")
-    b = plot_bar_template_scores(output_df, ax, "pointlike")
-    print(give_templates_to_keep(output_df, "pointlike"))
+    b = plot_bar_template_scores(output_df, ax, "extended")
+    # print(give_templates_to_keep(output_df, "pointlike"))
     # for ttype, templates_to_plot in [("extended", [54, 13, 30, 15, 23, 16, 29, 85, 11, 28, 69, 68, "Other"]), ("pointlike", [27, 25, 28, 29, 18, 22, 23])]:
     #     # df2 = plot_problematic_templates(output_df, ttype)
     #     # templates_to_plot = list(df2.index)
