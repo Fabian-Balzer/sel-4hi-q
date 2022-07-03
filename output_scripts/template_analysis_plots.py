@@ -1,6 +1,7 @@
 # %%
 from math import ceil, floor
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -75,7 +76,7 @@ def plot_multiple_against_redshift(source_df, template_df, ttype, stem, bands=("
     Parameters:
         source_df: The pandas DataFrame containing output information of the sources.
         template_df: The pandas DataFrame hosting the template information
-        ttype: pointlike, extended or 
+        ttype: pointlike, extended or
         bands: The bands of interest for the plots."""
     if ttype != "both":
         source_df = source_df[source_df["Type"] == ttype]
@@ -123,10 +124,39 @@ def plot_multiple_against_redshift(source_df, template_df, ttype, stem, bands=("
         cm.save_current_figures(filename)
 
 
+def give_score_for_template(df, temp_num):
+    """Calculates the score of a template with given template number."""
+    subset = df[df["MOD_BEST"] == temp_num]
+    if len(subset) == 0:
+        return 0
+    outlier_scores = np.exp(-abs(subset["ZMeasure"]) - subset["CHI_BEST"] / 2)
+    return sum(outlier_scores) / len(subset)
+
+
+def give_templates_to_keep(df, ttype, removal_frac=0.25):
+    """Returns a list of the templates to keep via score selection"""
+    df = df[df["HasGoodz"]]
+    count_df = give_count_df(df, ttype)
+    count_df.sort_values("Score", inplace=True, ascending=False)
+    quartil = int(len(count_df) * (1 - removal_frac))
+    temps_to_keep = count_df.iloc[:quartil]
+    temps_to_keep = temps_to_keep[temps_to_keep["Bad_frac"] < 1]
+    temp_list = [mt.get_temp_name_for_num(
+        ttype, num) for num in temps_to_keep.index]
+    # Find the dropped templates:
+    ds1, ds2 = set(count_df.index), set(temps_to_keep.index)
+    print(ds1, ds2)
+    discarded_temps = ds1.difference(ds2)
+    mt.LOGGER.info("Dropping %d of %d templates with numbers %s.",
+                   len(discarded_temps), len(count_df), discarded_temps)
+    return temp_list
+
+
 def give_count_df(df, ttype: str, threshold_factor=0):
     """Analyzes an output dataframe for the models used for the best fits
-    and returns a dataframe listing the counts of outliers/good fits for
+    and returns a dataframe listing the counts of outliers/good fits and scores for
     model numbers (in index) that were matched more times than the threshold."""
+    df = df[df["Type"] == ttype]
     good = df[~df["IsOutlier"]]
     bad = df[df["IsOutlier"]]
     df1 = good["MOD_BEST"].value_counts().rename("Good")
@@ -136,9 +166,11 @@ def give_count_df(df, ttype: str, threshold_factor=0):
         both = both.drop(labels=[-99])
     both["Total"] = both["Good"].fillna(0) + both["Bad"].fillna(0)
     both = both.sort_values(by="Total", ascending=False)
+    both["Score"] = both.index.map(
+        lambda temp_num: give_score_for_template(df, temp_num))
     threshold = max(1, max(both["Total"]) * threshold_factor)
     mt.LOGGER.info(
-        f"Adopting threshold (number of most occurences for models to be combined in 'other') of {threshold:.0f} for {ttype}.")
+        "Adopting threshold (number of most occurences for models to be combined in 'other') of %.0f for %s.", threshold, ttype)
     other_dict = {"Good": {"Other": 0}, "Bad": {
         "Other": 0}, "Total": {"Other": 0}}
     for check in ["Good", "Bad"]:
@@ -149,8 +181,9 @@ def give_count_df(df, ttype: str, threshold_factor=0):
     is_below_threshold = (both["Bad"].fillna(0) <= threshold) & (
         both["Good"].fillna(0) <= threshold)
     both = both[~is_below_threshold]
-    if threshold >= 1:  # Here, the 'other'-col is not needed
+    if threshold_factor != 0:  # Here, the 'other'-col is not needed
         both = pd.concat([both, pd.DataFrame.from_dict(other_dict)])
+    both["Bad_frac"] = both["Bad"] / both["Total"]
     return both
 
 
@@ -180,11 +213,44 @@ def plot_bar_template_outliers(df, ax, ttype):
     return both
 
 
-if __name__ == "__main__":
-    output_df = mt.read_plike_and_ext(
-        prefix="lephare_output/test2_", suffix=".fits")
-    output_df = mt.add_filter_columns(output_df)
+def plot_bar_template_scores(df, ax, ttype):
+    """Plot the scores of the templates in a bar plot."""
+    df = df[df["HasGoodz"]]
+    count_df = give_count_df(df, ttype)
+    count_df.sort_values("Score", inplace=True, ascending=False)
+    labels = count_df.index
 
+    x = np.arange(len(labels))
+    width = 0.5  # the width of the bars
+    sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(
+        vmin=0, vmax=1), cmap=mpl.cm.inferno_r)
+    rects1 = ax.bar(x, count_df["Score"], width,
+                    align="center", edgecolor="k", color=sm.to_rgba(count_df["Bad_frac"]))
+    for i in x:
+        ax.text(i - width / 2, count_df["Score"].iloc[i] +
+                0.002, s=int(count_df["Total"].iloc[i]))
+    quartil = int(len(labels) * (1 - 0.25))
+    ax.axvline(x[quartil] - width, linestyle="--", color="red")
+    cbar = plt.colorbar(sm, pad=0.02)
+    cbar.set_label("Fraction of outliers", rotation=270, labelpad=10)
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Score')
+    # f"Models used for the best fits ({ttype})"
+    ax.set_title(mt.give_plot_title(ttype, True))
+    ax.set_xticks(x)
+    ax.grid(True, axis="y")
+    ax.set_xticklabels(list(labels), minor=False, rotation=90, )
+    return count_df
+
+
+if __name__ == "__main__":
+    output_df = mt.read_saved_df(cat_type="out")
+
+    fig, ax = plt.subplots()
+    # plot_bar_template_outliers(output_df, ax, "extended")
+    b = plot_bar_template_scores(output_df, ax, "pointlike")
+    print(give_templates_to_keep(output_df, "pointlike"))
     # for ttype, templates_to_plot in [("extended", [54, 13, 30, 15, 23, 16, 29, 85, 11, 28, 69, 68, "Other"]), ("pointlike", [27, 25, 28, 29, 18, 22, 23])]:
     #     # df2 = plot_problematic_templates(output_df, ttype)
     #     # templates_to_plot = list(df2.index)

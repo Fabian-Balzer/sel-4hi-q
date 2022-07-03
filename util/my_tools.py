@@ -274,7 +274,7 @@ def give_list_of_tempnames(ttype, altstem: str = None):
     return templates
 
 
-def give_list_of_tempnumbers(tempnames):
+def give_list_of_tempnumbers(ttype, tempnames, altstem: str = None):
     """Reads the currently selected list of templates and returns a list of the active ones."""
     fname = give_temp_listname(ttype, altstem=altstem)
     with open(fname, "r") as f:
@@ -301,6 +301,25 @@ def get_temp_num_for_name(ttype: str, temp_name: str):
     except ValueError:
         LOGGER.warning(
             "Couldn't find %s in the given %s template list.", temp_name, ttype)
+
+
+def get_temp_name_for_num(ttype: str, temp_num: str):
+    """Scans the template lists for the template in question and returns its index.
+    params:
+        ttype: str
+            'extended', 'pointlike'  Will check the requested list files in question
+        temp_name: str
+            name of the template
+    returns:
+        index: int || None
+            The index of the template in question, or None if the template is not available
+    """
+    try:
+        # Template numbering starts at 1
+        return give_list_of_tempnames(ttype)[temp_num - 1]
+    except IndexError:
+        LOGGER.warning(
+            "There are less than %d templates in the given %s template list.", temp_num, ttype)
 
 
 def give_temp_libname(ttype, libtype="mag", suffix="", include_path=True, use_workpath=False):
