@@ -54,10 +54,13 @@ def write_score_improved_temp_list(ttype):
     """Writes a new template list containing only three quarters of the templates with the highest scores."""
     df = mt.read_saved_df()
     good_score_temps = t_a.give_templates_to_keep(df, ttype)
+    # Convert the numbers into names
+    temp_list = [mt.get_temp_name_for_num(
+        ttype, num) for num in good_score_temps]
     new_templist_fpath = mt.give_temp_listname(
         ttype, altstem=mt.CUR_CONFIG["LEPHARE"]["template_stem"] + "_score_reduced")
     with open(new_templist_fpath, "w", encoding="utf-8") as f:
-        f.write('\n'.join(good_score_temps))
+        f.write('\n'.join(temp_list))
     mt.LOGGER.info(
         "Combined templates have been written to '%s'", new_templist_fpath)
 
@@ -66,5 +69,5 @@ if __name__ == "__main__":
     for TTYPE in ["pointlike", "extended"]:
         write_combined_temp_list(
             TTYPE, "baseline_score_reduced", "ananna_score_reduced")
-        # write_score_improved_temp_list(TTYPE)
+        write_score_improved_temp_list(TTYPE)
     #     write_zfix_improved_temp_list(TTYPE)

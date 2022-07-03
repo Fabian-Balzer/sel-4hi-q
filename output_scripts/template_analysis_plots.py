@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import util.configure_matplotlib as cm
 import util.my_tools as mt
+from matplotlib.transforms import Bbox
 
 
 def plot_color_versus_redshift(df: pd.DataFrame, ax, ttype: str,
@@ -134,21 +135,26 @@ def give_score_for_template(df, temp_num):
 
 
 def give_templates_to_keep(df, ttype, removal_frac=0.25):
-    """Returns a list of the templates to keep via score selection"""
-    df = df[df["HasGoodz"]]
+    """Returns a list of the templates to keep via score selection + the a list of the discarded templates"""
     count_df = give_count_df(df, ttype)
     count_df.sort_values("Score", inplace=True, ascending=False)
     quartil = int(len(count_df) * (1 - removal_frac))
-    temps_to_keep = count_df.iloc[:quartil]
+    temps_to_keep = pd.concat(
+        [count_df.iloc[:quartil], count_df[count_df["Bad_frac"] == 0]]).drop_duplicates()
     temps_to_keep = temps_to_keep[temps_to_keep["Bad_frac"] < 1]
-    temp_list = [mt.get_temp_name_for_num(
-        ttype, num) for num in temps_to_keep.index]
+    return [temp_num for temp_num in temps_to_keep.index]
+
+
+def give_templates_to_drop(df, ttype, removal_frac=0.25):
+    """Returns the a list of the discarded templates"""
+    count_df = give_count_df(df, ttype)
+    temps_to_keep = give_templates_to_keep(df, ttype, removal_frac)
     # Find the dropped templates:
-    ds1, ds2 = set(count_df.index), set(temps_to_keep.index)
+    ds1, ds2 = set(count_df.index), set(temps_to_keep)
     discarded_temps = ds1.difference(ds2)
     mt.LOGGER.info("Dropping %d of %d templates with numbers %s.",
                    len(discarded_temps), len(count_df), discarded_temps)
-    return temp_list
+    return discarded_temps
 
 
 def give_count_df(df, ttype: str, threshold_factor=0):
@@ -156,6 +162,7 @@ def give_count_df(df, ttype: str, threshold_factor=0):
     and returns a dataframe listing the counts of outliers/good fits and scores for
     model numbers (in index) that were matched more times than the threshold."""
     df = df[df["Type"] == ttype]
+    df = df[df["HasGoodz"]]
     good = df[~df["IsOutlier"]]
     bad = df[df["IsOutlier"]]
     df1 = good["MOD_BEST"].value_counts().rename("Good")
@@ -167,6 +174,10 @@ def give_count_df(df, ttype: str, threshold_factor=0):
     both = both.sort_values(by="Total", ascending=False)
     both["Score"] = both.index.map(
         lambda temp_num: give_score_for_template(df, temp_num))
+    both["Bad_frac"] = both["Bad"].fillna(0) / both["Total"]
+    if threshold_factor == 0:
+        return both
+    # Otherwise, adopt a threshold and a column containing 'other' templates.
     threshold = max(1, max(both["Total"]) * threshold_factor)
     mt.LOGGER.info(
         "Adopting threshold (number of most occurences for models to be combined in 'other') of %.0f for %s.", threshold, ttype)
@@ -180,9 +191,7 @@ def give_count_df(df, ttype: str, threshold_factor=0):
     is_below_threshold = (both["Bad"].fillna(0) <= threshold) & (
         both["Good"].fillna(0) <= threshold)
     both = both[~is_below_threshold]
-    if threshold_factor != 0:  # Here, the 'other'-col is not needed
-        both = pd.concat([both, pd.DataFrame.from_dict(other_dict)])
-    both["Bad_frac"] = both["Bad"] / both["Total"]
+    both = pd.concat([both, pd.DataFrame.from_dict(other_dict)])
     return both
 
 
@@ -214,7 +223,6 @@ def plot_bar_template_outliers(df, ax, ttype):
 
 def plot_bar_template_scores(df, ax, ttype):
     """Plot the scores of the templates in a bar plot."""
-    df = df[df["HasGoodz"]]
     count_df = give_count_df(df, ttype)
     count_df.sort_values("Score", inplace=True, ascending=False)
     labels = count_df.index
@@ -226,8 +234,10 @@ def plot_bar_template_scores(df, ax, ttype):
     rects1 = ax.bar(x, count_df["Score"], width,
                     align="center", edgecolor="k", color=sm.to_rgba(count_df["Bad_frac"]))
     for i in x:
-        ax.text(i - width / 2, count_df["Score"].iloc[i] +
-                0.002, s=int(count_df["Total"].iloc[i]))
+        num = int(count_df["Total"].iloc[i])
+        offset = len(str(num)) * 0.1
+        ax.text(i - offset, count_df["Score"].iloc[i] +
+                count_df["Score"].max() * 0.012, s=num)
     quartil = int(len(labels) * (1 - 0.25))
     ax.axvline(x[quartil] - width, linestyle="--", color="red")
     cbar = plt.colorbar(sm, pad=0.02)
@@ -236,21 +246,29 @@ def plot_bar_template_scores(df, ax, ttype):
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Score')
     # f"Models used for the best fits ({ttype})"
-    ax.set_title(mt.give_plot_title(ttype, True))
+    title_text = mt.give_plot_title(
+        ttype, True) + " (" + mt.give_temp_listname(ttype).split("/")[-1].replace("_", r"\_") + ")"
+    ax.set_title(title_text)
     ax.set_xticks(x)
+    ax.set_xlim(min(x) - width, max(x) + width)
     ax.grid(True, axis="y")
     ax.set_xticklabels(list(labels), minor=False, rotation=90, )
-    text = mt.give_temp_listname(ttype).split("/")[-1].replace("_", r"\_")
-    ax.text(0.75, 0.9, text, transform=ax.transAxes)
+    dropping = [str(temp_num)
+                for temp_num in sorted(give_templates_to_drop(df, ttype))]
+    drop_text = "Dropping:\n"
+    for i, temp_num in enumerate(dropping):
+        if i % 5 == 0 and i != 0:
+            drop_text += "\n"
+        drop_text += temp_num + ", "
+    ax.text(0.77, 0.8, drop_text.strip(", "), transform=ax.transAxes,
+            bbox=dict(facecolor='white', alpha=1), fontsize="small")
     return count_df
 
 
 if __name__ == "__main__":
     output_df = mt.read_saved_df(cat_type="out")
 
-    fig, ax = plt.subplots()
-    # plot_bar_template_outliers(output_df, ax, "extended")
-    b = plot_bar_template_scores(output_df, ax, "extended")
+    # b = plot_bar_template_scores(output_df, ax, "extended")
     # print(give_templates_to_keep(output_df, "pointlike"))
     # for ttype, templates_to_plot in [("extended", [54, 13, 30, 15, 23, 16, 29, 85, 11, 28, 69, 68, "Other"]), ("pointlike", [27, 25, 28, 29, 18, 22, 23])]:
     #     # df2 = plot_problematic_templates(output_df, ttype)
