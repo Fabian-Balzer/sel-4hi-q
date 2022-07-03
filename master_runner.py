@@ -52,7 +52,7 @@ def run_templates(ttype):
                     "LIB_ASCII": "YES",
                     "FILTER_FILE": mt.CUR_CONFIG["LEPHARE"]["filter_stem"]}
     arg_dict_mag["t"] = "S" if ttype == "star" else "G"
-    # Add extinction information
+    # Add extinction yinformation
     if ttype == "pointlike" and "extinc_range_pointlike" in mt.CUR_CONFIG["LEPHARE"].keys():
         arg_dict_mag["EXTINC_LAW"] = "SMC_prevot.dat,SB_calzetti.dat"
         arg_dict_mag["MOD_EXTINC"] = mt.CUR_CONFIG["LEPHARE"]["extinc_range_pointlike"]

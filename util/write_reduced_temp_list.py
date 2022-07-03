@@ -1,11 +1,14 @@
 """Script to read a zfix run, plot the used templates,
 and write a new template list file based on the old one."""
 # %%
+import output_scripts.template_analysis_plots as t_a
+
 import util.my_tools as mt
 
 
 def write_zfix_improved_temp_list(ttype):
-    """Writes a new template list containing only the templates that were fit to any sources of the current run."""
+    """Writes a new template list containing only the templates that were fit
+    to any sources of the current run."""
     templist_fpath = mt.give_temp_listname(ttype)
     # Open the old template file
     with open(templist_fpath, "r", encoding="utf-8") as f:
@@ -41,22 +44,27 @@ def write_combined_temp_list(ttype, stem1: str, stem2: str):
         if temp not in combined_temps:
             combined_temps.append(temp)
     new_templist_fpath = mt.give_temp_listname(ttype, altstem="combined")
-
     with open(new_templist_fpath, "w", encoding="utf-8") as f:
         f.writelines(combined_temps)
+    mt.LOGGER.info(
+        "Combined templates have been written to '%s'", new_templist_fpath)
 
 
 def write_score_improved_temp_list(ttype):
     """Writes a new template list containing only three quarters of the templates with the highest scores."""
+    df = mt.read_saved_df()
+    good_score_temps = t_a.give_templates_to_keep(df, ttype)
     new_templist_fpath = mt.give_temp_listname(
-        ttype, mt.CUR_CONFIG['LEPHARE']['template_stem'] + "_reduced")
-
-    # with open(new_templist_fpath, "w", encoding="utf-8") as f:
-    #     f.writelines(correct_temps)
+        ttype, altstem=mt.CUR_CONFIG["LEPHARE"]["template_stem"] + "_score_reduced")
+    with open(new_templist_fpath, "w", encoding="utf-8") as f:
+        f.write('\n'.join(good_score_temps))
+    mt.LOGGER.info(
+        "Combined templates have been written to '%s'", new_templist_fpath)
 
 
 if __name__ == "__main__":
-    write_combined_temp_list(
-        "pointlike", "baseline_zfix_improved", "ananna_zfix_improved")
-    # for TTYPE in ["pointlike"]:  # , "extended"]:
+    for TTYPE in ["pointlike", "extended"]:
+        write_combined_temp_list(
+            TTYPE, "baseline_score_reduced", "ananna_score_reduced")
+        # write_score_improved_temp_list(TTYPE)
     #     write_zfix_improved_temp_list(TTYPE)
