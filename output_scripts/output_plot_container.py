@@ -1,4 +1,5 @@
 # %%
+from tkinter import Y
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -24,10 +25,10 @@ class OutputPlotContainer:
                 "Please specify a valid ttype [pointlike, extended or both] to plot the specz-photoz-plot.")
         self.stem = mt.CUR_CONFIG["LEPHARE"]["output_stem"]
         self.save_figures = save_figures
-        # try:
-        self.template_df = mt.read_template_library()
-        # except FileNotFoundError:
-        #     mt.LOGGER.error("Couldn't locate template files.")
+        try:
+            self.template_df = mt.read_template_library()
+        except FileNotFoundError:
+            mt.LOGGER.error("Couldn't locate template files.")
 
     def _quicksave_fig(self, fig, name):
         """Shortcut to save a given figure in the correct dir"""
@@ -69,6 +70,16 @@ class OutputPlotContainer:
         ttype = "extended" if self.ext else "pointlike"
         ta.plot_bar_template_outliers(self.df, ax, ttype)
         self._quicksave_fig(fig, f"{ttype}_used_templates")
+
+    def plot_template_scores(self):
+        """Wrapper function to plot the template numbers"""
+        ttype_list = ["extended"] if self.ext else ["pointlike"]
+        if self.produce_both:
+            ttype_list = ["extended", "pointlike"]
+        for ttype in ttype_list:
+            fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize())
+            ta.plot_bar_template_scores(self.df, ax, ttype)
+            self._quicksave_fig(fig, f"{ttype}_used_templates")
 
     def plot_color_vs_redshift(self, c1: str, c2: str, fitted_only=True, plot_sources=True, temp_nums: dict = None):
         """Wrapper function to produce a color-redshift plot for the templates and sources.
@@ -114,6 +125,6 @@ if __name__ == "__main__":
     # o_p_c.plot_color_vs_redshift(
     #     "FUV", "r", fitted_only=True, plot_sources=True)
     # o_p_c.plot_template_numbers()
-    mt.give_list_of_tempnames("extended")
+    o_p_c.plot_template_scores()
 
 # %%
