@@ -34,13 +34,16 @@ def get_yes_no_input(question):
 def assert_file_overwrite(fpath):
     """Asks the user whether to really overwrite the given file."""
     if os.path.isfile(fpath):
-        return get_yes_no_input(
-            f"The file '{fpath}' already exists.\nContinue to overwrite it?")
+        if CUR_CONFIG["GENERAL"].getboolean("ask_overwrite"):
+            return get_yes_no_input(
+                f"The file '{fpath}' already exists.\nContinue to overwrite it?")
+        else:
+            LOGGER.warning("Overwriting the file '%s'", fpath.split("/")[-1])
     return True
 
 
 def assert_file_exists(fpath, ftype):
-    """Asks the user whether to really overwrite the given file."""
+    """Checks whether the file at fpath exists."""
     fname = fpath.split("/")[-1]
     assert os.path.isfile(
         fpath), f"No {ftype} file with the name {fname} could be \

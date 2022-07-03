@@ -52,9 +52,10 @@ def run_templates(ttype):
                     "LIB_ASCII": "YES",
                     "FILTER_FILE": mt.CUR_CONFIG["LEPHARE"]["filter_stem"]}
     arg_dict_mag["t"] = "S" if ttype == "star" else "G"
-    if ttype == "pointlike":
-        arg_dict_mag["EXTINC_LAW"] = "SMC_prevot.dat"
-        arg_dict_mag["MOD_EXTINC"] = "11,23"
+    # Add extinction yinformation
+    if ttype == "pointlike" and "extinc_range_pointlike" in mt.CUR_CONFIG["LEPHARE"].keys():
+        arg_dict_mag["EXTINC_LAW"] = "SMC_prevot.dat,SB_calzetti.dat"
+        arg_dict_mag["MOD_EXTINC"] = mt.CUR_CONFIG["LEPHARE"]["extinc_range_pointlike"]
         arg_dict_mag["EB_V"] = "0.,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4"
     mt.run_lephare_command("mag_gal", arg_dict_mag, ttype)
     try:
@@ -80,8 +81,9 @@ def run_zphota(ttype):
                     "CAT_OUT": mt.give_lephare_filename(ttype, out=True),
                     "PARA_OUT": mt.give_parafile_fpath(out=True),
                     "GLB_CONTEXT": mt.CONTEXT,
-                    "PDZ_OUT": mt.give_lephare_filename(ttype, out=True, suffix=""),
-                    "LIB_ASCII": "YES"
+                    # "PDZ_OUT": mt.give_lephare_filename(ttype, out=True, suffix=""),
+                    "LIB_ASCII": "YES",
+                    # "ZFIX": "YES"
                     }
     if ttype == "pointlike":
         arg_dict_sed["MAG_REF"] = "7"
@@ -132,10 +134,10 @@ if __name__ == "__main__":
 
     if mt.CUR_CONFIG["PLOTTING"].getboolean("output"):
         output_plot_containter.plot_specz_photo_z()
-        output_plot_containter.plot_template_numbers()
+    #     output_plot_containter.plot_template_numbers()
 
-    if mt.CUR_CONFIG["PLOTTING"].getboolean("template"):
-        output_plot_containter.plot_color_vs_redshift("g", "r")
+    # if mt.CUR_CONFIG["PLOTTING"].getboolean("template"):
+    #     output_plot_containter.plot_color_vs_redshift("g", "r")
 
     # # %%
     # # Construct the input dataframe:

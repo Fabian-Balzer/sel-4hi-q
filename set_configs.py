@@ -160,6 +160,7 @@ config["GENERAL"] = {
     "logging_level": 20,  # 10 would be for DEBUG
     "use_pointlike": True,
     "use_extended": True,
+    "ask_overwrite": True,
 }
 
 
@@ -178,6 +179,7 @@ config["LEPHARE"] = {
     "run_filters": False,
     "filter_stem": "baseline_filters",
     "run_templates": False,
+    "extinc_range_pointlike": "0,0,0,30",
     "template_stem": "baseline_templates",
     "run_zphota": LEPHAREDIR != "",
     "forbidden_bands": ['i_hsc', 'i2_hsc', 'i_kids', 'i_ls10'],

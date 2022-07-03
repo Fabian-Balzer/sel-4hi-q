@@ -1,5 +1,27 @@
 tempfile & # templates & eta & sig_nmad & psi_pos & psi_neg & context & time \\
 \code{baseline_pointlike.list} & $29$ & $0.358$ & $0.144$ & $0.084$ & $0.014$ & 8191 & 22-06-17 18:05 \\
 \code{baseline_extended.list} & $86$ & $0.330$ & $0.134$ & $0.227$ & $0.027$ & 8191 & 22-06-17 18:05 \\
-\code{ananna_test_pointlike.list} & 25 & $0.353$ & $0.140$ & $0.077$ & $0.015$ & 8191 & 22-07-01 10:02 \\
-\code{ananna_test_extended.list} & 15 & $0.250$ & $0.116$ & $0.173$ & $0.041$ & 8191 & 22-07-01 10:02 \\
+\code{ananna_pointlike.list} & 25 & $0.443$ & $0.164$ & $0.019$ & $0.064$ & 8191 & 22-07-01 15:48 \\
+\code{ananna_extended.list} & 15 & $0.250$ & $0.116$ & $0.041$ & $0.173$ & 8191 & 22-07-01 14:48 \\
+\code{zfix_improved_pointlike.list} & 19 & $0.315$ & $0.135$ & $0.015$ & $0.073$ & 8191 & 22-07-01 17:12 \\
+\code{zfix_improved_extended.list} & 45 & $0.337$ & $0.140$ & $0.021$ & $0.235$ & 8191 & 22-07-01 17:10 \\
+\code{baseline_zfix_improved_pointlike.list} & 19 & $0.315$ & $0.135$ & $0.015$ & $0.073$ & 8191 & 22-07-03 02:12 \\
+\code{baseline_pointlike.list} & 29 & $0.314$ & $0.135$ & $0.015$ & $0.075$ & 8191 & 22-07-03 02:24 \\
+\code{baseline_pointlike.list} & 29 & $0.334$ & $0.139$ & $0.018$ & $0.067$ & 8191 & 22-07-03 09:31 \\
+
+
+\code{baseline_pointlike.list} & 29 & $0.358$ & $0.144$ & $0.014$ & $0.084$ & 8191 & 22-07-03 10:27 \\
+\code{baseline_extended.list} & 86 & $0.330$ & $0.134$ & $0.027$ & $0.227$ & 8191 & 22-07-03 10:27 \\
+\code{ananna_pointlike.list} & 25 & $0.442$ & $0.166$ & $0.019$ & $0.061$ & 8191 & 22-07-03 10:35 \\
+\code{ananna_extended.list} & 15 & $0.250$ & $0.116$ & $0.041$ & $0.173$ & 8191 & 22-07-03 10:35 \\
+\code{combined_pointlike.list} & 37 & $0.336$ & $0.140$ & $0.019$ & $0.063$ & 8191 & 22-07-03 11:05 \\
+\code{combined_extended.list} & 101 & $0.321$ & $0.117$ & $0.027$ & $0.217$ & 8191 & 22-07-03 11:08 \\
+\code{combined_pointlike.list} & 37 & $0.336$ & $0.140$ & $0.019$ & $0.063$ & 8191 & 22-07-03 11:39 \\
+\code{combined_extended.list} & 101 & $0.321$ & $0.122$ & $0.027$ & $0.217$ & 8191 & 22-07-03 11:40 \\
+\code{baseline_score_reduced_pointlike.list} & 10 & $0.332$ & $0.139$ & $0.023$ & $0.054$ & 8191 & 22-07-03 11:48 \\
+\code{baseline_score_reduced_extended.list} & 17 & $0.347$ & $0.146$ & $0.021$ & $0.223$ & 8191 & 22-07-03 11:49 \\
+\code{ananna_score_reduced_pointlike.list} & 10 & $0.430$ & $0.163$ & $0.022$ & $0.030$ & 8191 & 22-07-03 11:51 \\
+\code{ananna_score_reduced_extended.list} & 6 & $0.176$ & $0.096$ & $0.020$ & $0.176$ & 8191 & 22-07-03 11:51 \\
+\code{combined_pointlike.list} & 16 & $0.334$ & $0.139$ & $0.019$ & $0.062$ & 8191 & 22-07-03 12:13 \\
+\code{combined_extended.list} & 23 & $0.333$ & $0.137$ & $0.021$ & $0.214$ & 8191 & 22-07-03 12:13 \\
+\code{combined_pointlike.list} & 16 & $0.316$ & $0.135$ & $0.018$ & $0.068$ & 8191 & 22-07-03 12:18 \\

@@ -95,8 +95,8 @@ def assert_lephare_assembly():
             if use_ext:
                 mt.assert_file_exists(mt.give_temp_libname(
                     "extended", "mag", suffix=".doc", use_workpath=True), "extended template")
-            mt.assert_file_exists(mt.give_temp_libname(
-                "star", "mag", suffix=".doc", use_workpath=True), "star template")
+            # mt.assert_file_exists(mt.give_temp_libname(
+            #     "star", "mag", suffix=".doc", use_workpath=True), "star template")
 
 
 # %% Assert plotting:

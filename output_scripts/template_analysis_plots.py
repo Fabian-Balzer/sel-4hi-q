@@ -145,7 +145,6 @@ def give_templates_to_keep(df, ttype, removal_frac=0.25):
         ttype, num) for num in temps_to_keep.index]
     # Find the dropped templates:
     ds1, ds2 = set(count_df.index), set(temps_to_keep.index)
-    print(ds1, ds2)
     discarded_temps = ds1.difference(ds2)
     mt.LOGGER.info("Dropping %d of %d templates with numbers %s.",
                    len(discarded_temps), len(count_df), discarded_temps)
