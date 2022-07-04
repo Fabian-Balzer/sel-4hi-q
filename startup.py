@@ -167,7 +167,7 @@ config["GENERAL"] = {
 
 config["CAT_ASSEMBLY"] = {
     "assemble_cat": CATPATH != "",
-    "cat_stem": "baseline_input",
+    "cat_stem": "baseline",
     "use_matched": False,
     "use_processed": False,
     "reduce_to_specz": False,
@@ -178,15 +178,15 @@ config["CAT_ASSEMBLY"] = {
 config["LEPHARE"] = {
     "para_stem": "baseline",
     "run_filters": False,
-    "filter_stem": "baseline_filters",
+    "filter_stem": "baseline",
     "run_templates": False,
     "extinc_range_pointlike": "0,0,0,30",
-    "template_stem": "baseline_templates",
+    "template_stem": "baseline",
     "run_zphota": LEPHAREDIR != "",
     "forbidden_bands": ['i_hsc', 'i2_hsc', 'i_kids', 'i_ls10'],
-    "input_stem": "baseline_input",
-    "output_stem": "baseline_output",
-    "give_stats": True,
+    "input_stem": "baseline",
+    "output_stem": "baseline",
+    "spec_out": False,
 }
 
 config["PLOTTING"] = {

@@ -81,6 +81,11 @@ def run_zphota(ttype):
                     "LIB_ASCII": "YES",
                     # "ZFIX": "YES"
                     }
+    if mt.CUR_CONFIG["LEPHARE"].getboolean("spec_out"):
+        arg_dict_sed["SPEC_OUT"] = "YES"
+        arg_dict_sed["CAT_LINES"] = "10,10"
+        mt.LOGGER.info(
+            "Producing .spec files, so only the first 10 rows are considered.")
     if ttype == "pointlike":
         arg_dict_sed["MAG_REF"] = "7"
         arg_dict_sed["MAG_ABS"] = "-30,-20"

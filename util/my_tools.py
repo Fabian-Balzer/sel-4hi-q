@@ -230,7 +230,7 @@ def give_parafile_fpath(out=False):
 def give_filterfile_fpath(overview=True):
     """Provides the name of the requested filter file"""
     filtfilepath = GEN_CONFIG['PATHS']['params']
-    filtstem = CUR_CONFIG["LEPHARE"]["filter_stem"]
+    filtstem = CUR_CONFIG["LEPHARE"]["filter_stem"] + "_filters"
     fname = filtstem + "_overview.filt" if overview else filtstem + "_transmissions.filt"
     return filtfilepath + fname
 
@@ -784,10 +784,6 @@ def log_run_info():
                     lep_config["input_stem"], lep_config["output_stem"])
         LOGGER.info("The provided global context is %s, corresponding to the following bands:\n%s",
                     CONTEXT, give_bands_for_context(CONTEXT))
-        if lep_config.getboolean("give_stats"):
-            # TODO Stats file?
-            LOGGER.info(
-                "Statistics about the LePhare run are going to be provided.")
 
 
 def assess_lephare_run(ttype, write=False):
