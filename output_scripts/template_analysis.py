@@ -59,4 +59,4 @@ def generate_template_list_info(ttype):
 if __name__ == "__main__":
     generate_template_list_info("pointlike")
     generate_template_list_info("extended")
-    generate_template_list_info("star")
+    # generate_template_list_info("star")

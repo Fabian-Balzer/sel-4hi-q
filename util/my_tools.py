@@ -598,10 +598,11 @@ def give_row_statistics(df):
                         "\nMoving on to the next one.", column)
 
 
-def give_plot_title(ttype, with_context=False):
+def give_plot_title(ttype, with_info=False):
     """Provide a nice generic plot title that can optionally display the current context"""
-    contextstring = f" [$C={CONTEXT}$]" if with_context else ""
-    return f"{ttype.capitalize()} sources{contextstring}"
+    temp = CUR_CONFIG['LEPHARE']['template_stem']
+    infostring = f" [$C={CONTEXT}$, {temp}]" if with_info else ""
+    return f"{ttype.capitalize()} sources{infostring}"
 
 
 def find_good_indices(df):

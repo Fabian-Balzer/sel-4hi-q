@@ -44,7 +44,7 @@ CONFIGPATH = MYDIR + "lephare_scripts/config/"
 JYPATH = f"{OTHERPATH}programs/jystilts.jar"
 
 
-DEFAULTCONFIG = "my_config.ini"
+DEFAULTCONFIG = "custom_config.ini"
 
 
 # %% General configuration that is shared between all runs:
@@ -114,7 +114,7 @@ config["FILTERS"] = {
     band: wl for band, wl in zip(BAND_LIST, FILTER_LIST)}
 
 
-fpath = CONFIGPATH + 'general.ini'
+fpath = CONFIGPATH + 'general_config.ini'
 with open(fpath, 'w', encoding="utf8") as configfile:
     config.write(configfile)
     LOGGER.info("A general config file has been written to %s", fpath)
@@ -160,6 +160,7 @@ config["GENERAL"] = {
     "logging_level": 20,  # 10 would be for DEBUG
     "use_pointlike": True,
     "use_extended": True,
+    "print_commands_only": False,
     "ask_overwrite": True,
 }
 
