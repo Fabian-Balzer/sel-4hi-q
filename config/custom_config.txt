@@ -2,6 +2,8 @@
 logging_level = 20
 use_pointlike = True
 use_extended = True
+print_commands_only = False
+ask_overwrite = True
 
 [CAT_ASSEMBLY]
 assemble_cat = False
@@ -17,12 +19,13 @@ para_stem = baseline
 run_filters = False
 filter_stem = baseline_filters
 run_templates = False
+extinc_range_pointlike = 0,0,0,30
 template_stem = baseline_templates
 run_zphota = False
-forbidden_bands = ['i_kids', 'i_ls10']
+forbidden_bands = ['i_hsc', 'i2_hsc', 'i_kids', 'i_ls10']
 input_stem = baseline_input
-output_stem = with_hsc
-give_stats = True
+output_stem = baseline_output
+spec_out = False
 
 [PLOTTING]
 input = False

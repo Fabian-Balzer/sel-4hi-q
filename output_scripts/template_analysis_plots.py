@@ -199,7 +199,7 @@ def plot_bar_template_outliers(df, ax, ttype):
     """Produce a bar plot on the given ax for the templates of ttype."""
     df = df[df["Type"] == ttype]
     df = df[df["HasGoodz"]]
-    both = give_count_df(df, ttype, threshold_factor=0.1)
+    both = give_count_df(df, ttype, threshold_factor=0.05)
     labels = both.index
 
     x = np.arange(len(labels))
@@ -217,7 +217,7 @@ def plot_bar_template_outliers(df, ax, ttype):
     ax.set_xticks(x)
     ax.grid(True, axis="y")
     ax.set_xticklabels(list(labels), minor=False, rotation=90, )
-    ax.legend()
+    ax.legend(loc="upper right")
     return both
 
 
@@ -246,11 +246,10 @@ def plot_bar_template_scores(df, ax, ttype):
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Score')
     # f"Models used for the best fits ({ttype})"
-    title_text = mt.give_plot_title(
-        ttype, True) + " (" + mt.give_temp_listname(ttype).split("/")[-1].replace("_", r"\_") + ")"
-    ax.set_title(title_text)
+    ax.set_title(mt.give_plot_title(ttype, True))
     ax.set_xticks(x)
     ax.set_xlim(min(x) - width, max(x) + width)
+    ax.set_ylim(0, count_df["Score"].max() * 1.1)
     ax.grid(True, axis="y")
     ax.set_xticklabels(list(labels), minor=False, rotation=90, )
     dropping = [str(temp_num)
@@ -260,7 +259,7 @@ def plot_bar_template_scores(df, ax, ttype):
         if i % 5 == 0 and i != 0:
             drop_text += "\n"
         drop_text += temp_num + ", "
-    ax.text(0.77, 0.8, drop_text.strip(", "), transform=ax.transAxes,
+    ax.text(0.77, 0.7, drop_text.strip(", "), transform=ax.transAxes,
             bbox=dict(facecolor='white', alpha=1), fontsize="small")
     return count_df
 

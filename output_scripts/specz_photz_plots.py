@@ -84,9 +84,8 @@ def plot_ttype(df, ttype, main, secondary):
     """Wrapper function to filter the df for the ttype and plot it on the given axes"""
     df = df[df["HasGoodz"]]
     df = df[df["Type"] == ttype]
-    stem = mt.CUR_CONFIG["LEPHARE"]["output_stem"]
     make_scatter_plots(df, main, secondary)
-    main.set_title(f"{ttype.capitalize()} sources")
+    main.set_title(mt.give_plot_title(ttype, True))
     max_z = 5 if ttype == "pointlike" else 2
     plot_auxiliary_lines(main, secondary, max_z,
                          label=mt.give_photoz_performance_label(df))

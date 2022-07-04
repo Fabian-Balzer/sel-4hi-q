@@ -30,11 +30,11 @@ class OutputPlotContainer:
         except FileNotFoundError:
             mt.LOGGER.error("Couldn't locate template files.")
 
-    def _quicksave_fig(self, fig, name, directory=""):
+    def _quicksave_fig(self, fig, name, dir_=""):
         """Shortcut to save a given figure in the correct dir"""
         if self.save_figures:
-            cm.save_figure(fig, name, "output_analysis/" +
-                           directory, self.stem)
+            dir_ = "/" + dir_ if dir_ != "" else ""
+            cm.save_figure(fig, name, f"output_analysis{dir_}", self.stem)
 
     def plot_specz_photo_z(self):
         """Wrapper function for producing specz_photo_z scatter plots"""
@@ -60,17 +60,16 @@ class OutputPlotContainer:
     def plot_template_numbers(self):
         """Wrapper function to plot the template numbers"""
         if self.produce_both:
-            fig, (ax_plike, ax_ext) = plt.subplots(1, 2, figsize=cm.set_figsize(
-                width=cm.LATEXWIDTH, height=0.5 * cm.LATEXWIDTH, fraction=1))
+            fig, (ax_plike, ax_ext) = plt.subplots(
+                1, 2, figsize=cm.set_figsize(height=2))
             ta.plot_bar_template_outliers(self.df, ax_plike, "pointlike")
             ta.plot_bar_template_outliers(self.df, ax_ext, "extended")
-            self._quicksave_fig(fig, "both_used_templates")
+            self._quicksave_fig(fig, "both_used_templates", "templates")
             return
-        fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(
-            width=0.5 * cm.LATEXWIDTH, height=0.5 * cm.LATEXWIDTH, fraction=1))
+        fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(height=2))
         ttype = "extended" if self.ext else "pointlike"
         ta.plot_bar_template_outliers(self.df, ax, ttype)
-        self._quicksave_fig(fig, f"{ttype}_used_templates")
+        self._quicksave_fig(fig, f"{ttype}_used_templates", "templates")
 
     def plot_template_scores(self):
         """Wrapper function to plot the template numbers"""
@@ -78,9 +77,10 @@ class OutputPlotContainer:
         if self.produce_both:
             ttype_list = ["pointlike", "extended"]
         for ttype in ttype_list:
-            fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize())
+            fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(height=2))
             ta.plot_bar_template_scores(self.df, ax, ttype)
-            self._quicksave_fig(fig, f"score_plot_{ttype}")
+            self._quicksave_fig(
+                fig, f"score_plot_{ttype}", directory="templates")
 
     def plot_color_vs_redshift(self, c1: str, c2: str, fitted_only=True, plot_sources=True, temp_nums: dict = None):
         """Wrapper function to produce a color-redshift plot for the templates and sources.
@@ -118,9 +118,9 @@ class OutputPlotContainer:
 
 if __name__ == "__main__":
     o_p_c = OutputPlotContainer(save_figures=True)
-    o_p_c.plot_template_scores()
+    # o_p_c.plot_template_scores()
     # o_p_c.plot_specz_photo_z()
-    # o_p_c.plot_template_numbers()
+    o_p_c.plot_template_numbers()
     # o_p_c.plot_color_vs_redshift(
     #     "W1", "W2", fitted_only=True, plot_sources=True)
     # o_p_c.plot_color_vs_redshift(

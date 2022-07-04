@@ -41,6 +41,8 @@ def write_combined_temp_list(ttype, stem1: str, stem2: str):
                    if not line.startswith("#")]
     combined_temps = []
     for temp in temps_1 + temps_2:
+        if not temp.endswith("\n"):
+            temp += "\n"
         if temp not in combined_temps:
             combined_temps.append(temp)
     new_templist_fpath = mt.give_temp_listname(ttype, altstem="combined")

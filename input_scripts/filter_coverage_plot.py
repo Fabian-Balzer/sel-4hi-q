@@ -17,9 +17,8 @@ from matplotlib.patches import Patch
 import input_scripts.collect_filter_data as c_f
 
 
-def produce_filter_plot(df):
+def produce_filter_plot(df, ax):
     """Create a plot showing the normalised transmission curves of the filters."""
-    fig, ax = plt.subplots(figsize=cm.set_figsize())
     surveys = []
     for band in df.keys().get_level_values(0).drop_duplicates().sort_values():
         x_data = df[band]["lambda"] / 10
@@ -49,11 +48,10 @@ def produce_filter_plot(df):
         survey) for survey in set(surveys)}
     legend_patches = [Patch(facecolor=color, edgecolor='k',
                             label=mt.give_survey_name(survey)) for survey, color in survey_dict.items()]
-    fig.legend(handles=legend_patches, prop={
+    ax.legend(handles=legend_patches, prop={
         "size": "x-small"}, bbox_to_anchor=(0.78, 0.94), loc=2)
     # ax.legend(ncol=6, prop={'size': "small"},
     #           bbox_to_anchor=(0, 1.2), loc="upper left")
-    cm.save_figure(fig, "filter_coverage_plot", "input_analysis")
 
 
 def latex_with_lines(df, *args, **kwargs):
@@ -115,7 +113,8 @@ In \LePhare{}, """
 
 if __name__ == "__main__":
     filter_df = c_f.read_filter_transmission_file(consider_context=True)
-    produce_filter_plot(filter_df)
+    fig, ax = plt.subplots()
+    produce_filter_plot(filter_df, ax)
 
     # df = read_filter_overview_file("baseline_filters")
     # save_filter_info(df)

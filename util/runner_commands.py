@@ -3,18 +3,14 @@
 Created on Fri Feb 18 13:40:36 2022
 
 @author: fabian_balzer
+Helper script for the commands to run
 """
-# %%
+
 
 import os
 from shutil import move
 
 import util.my_tools as mt
-from input_scripts.input_plot_container import InputPlotContainer
-from output_scripts.output_plot_container import OutputPlotContainer
-from util.assert_config import assert_all
-
-# %%
 
 
 def assemble_catalog():
@@ -85,6 +81,11 @@ def run_zphota(ttype):
                     "LIB_ASCII": "YES",
                     # "ZFIX": "YES"
                     }
+    if mt.CUR_CONFIG["LEPHARE"].getboolean("spec_out"):
+        arg_dict_sed["SPEC_OUT"] = "YES"
+        arg_dict_sed["CAT_LINES"] = "10,10"
+        mt.LOGGER.info(
+            "Producing .spec files, so only the first 10 rows are considered.")
     if ttype == "pointlike":
         arg_dict_sed["MAG_REF"] = "7"
         arg_dict_sed["MAG_ABS"] = "-30,-20"
@@ -115,40 +116,3 @@ def run_lephare_commands():
             run_zphota(ttype)
 
     mt.LOGGER.debug("Finished the LePhare commands")
-
-
-if __name__ == "__main__":
-    mt.log_run_info()
-    assert_all()
-
-    if mt.CUR_CONFIG["CAT_ASSEMBLY"].getboolean("assemble_cat"):
-        assemble_catalog()
-
-    run_lephare_commands()
-
-    # Input-related plots:
-    input_plot_container = InputPlotContainer(True)
-
-    # Output-related plots:
-    output_plot_containter = OutputPlotContainer(True)
-
-    if mt.CUR_CONFIG["PLOTTING"].getboolean("output"):
-        output_plot_containter.plot_specz_photo_z()
-    #     output_plot_containter.plot_template_numbers()
-
-    # if mt.CUR_CONFIG["PLOTTING"].getboolean("template"):
-    #     output_plot_containter.plot_color_vs_redshift("g", "r")
-
-    # # %%
-    # # Construct the input dataframe:
-    # input_df = mt.read_plike_and_ext(prefix="matches/test2_",
-    #                                  suffix="_processed_table.fits")
-    # input_df = mt.add_mag_columns(input_df)
-    # # av.plot_r_band_magnitude(df)
-    # av.plot_input_distribution(input_df)
-
-    # # %% Filter analysis:
-    # filter_df = fc.read_filter_info_file()
-    # fc.produce_filter_plot(filter_df)
-    # info_df = fc.read_filter_overview_file()
-    # fc.save_filter_info(info_df)

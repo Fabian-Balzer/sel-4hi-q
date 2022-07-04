@@ -230,7 +230,7 @@ def give_parafile_fpath(out=False):
 def give_filterfile_fpath(overview=True):
     """Provides the name of the requested filter file"""
     filtfilepath = GEN_CONFIG['PATHS']['params']
-    filtstem = CUR_CONFIG["LEPHARE"]["filter_stem"]
+    filtstem = CUR_CONFIG["LEPHARE"]["filter_stem"] + "_filters"
     fname = filtstem + "_overview.filt" if overview else filtstem + "_transmissions.filt"
     return filtfilepath + fname
 
@@ -598,10 +598,11 @@ def give_row_statistics(df):
                         "\nMoving on to the next one.", column)
 
 
-def give_plot_title(ttype, with_context=False):
+def give_plot_title(ttype, with_info=False):
     """Provide a nice generic plot title that can optionally display the current context"""
-    contextstring = f" [$C={CONTEXT}$]" if with_context else ""
-    return f"{ttype.capitalize()} sources{contextstring}"
+    temp = CUR_CONFIG['LEPHARE']['template_stem']
+    infostring = f" [$C={CONTEXT}$, {temp}]" if with_info else ""
+    return f"{ttype.capitalize()} sources{infostring}"
 
 
 def find_good_indices(df):
@@ -783,10 +784,6 @@ def log_run_info():
                     lep_config["input_stem"], lep_config["output_stem"])
         LOGGER.info("The provided global context is %s, corresponding to the following bands:\n%s",
                     CONTEXT, give_bands_for_context(CONTEXT))
-        if lep_config.getboolean("give_stats"):
-            # TODO Stats file?
-            LOGGER.info(
-                "Statistics about the LePhare run are going to be provided.")
 
 
 def assess_lephare_run(ttype, write=False):

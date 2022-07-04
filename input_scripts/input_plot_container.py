@@ -7,9 +7,10 @@ import util.configure_matplotlib as cm
 import util.my_tools as mt
 
 import input_scripts.availability_plots as av
-import input_scripts.filter_coverage_plot as f_c
 import input_scripts.magnitude_dist_plots as m_d
 import input_scripts.separation_plots as sep_p
+import input_scripts.collect_filter_data as c_f
+import input_scripts.filter_coverage_plot as f_c
 
 
 class InputPlotContainer:
@@ -97,6 +98,13 @@ class InputPlotContainer:
         s_p.plot_ttype(df, "pointlike", main_plike, secondary_plike)
         s_p.plot_ttype(df, "extended", main_ext, secondary_ext)
         self._quicksave_fig(fig, "optically_selected_agn_spec_z_phot_z")
+
+    def plot_filters(self):
+        """Produces a filter plot."""
+        filter_df = c_f.read_filter_transmission_file(consider_context=True)
+        fig, ax = plt.subplots(figsize=cm.set_figsize())
+        f_c.produce_filter_plot(filter_df, ax)
+        self._quicksave_fig(fig, "filter_coverage_plot")
 
 
 if __name__ == "__main__":
