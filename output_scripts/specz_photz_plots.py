@@ -80,12 +80,12 @@ def set_subplot_positions(main, secondary, is_left=False, is_right=False):
     secondary.set_position(rect_secondary)
 
 
-def plot_ttype(df, ttype, main, secondary):
+def plot_ttype(df, ttype, main, secondary, simple_title=False):
     """Wrapper function to filter the df for the ttype and plot it on the given axes"""
     df = df[df["HasGoodz"]]
     df = df[df["Type"] == ttype]
     make_scatter_plots(df, main, secondary)
-    main.set_title(mt.give_plot_title(ttype, True))
+    main.set_title(mt.give_plot_title(ttype, with_info=(not simple_title)))
     max_z = 5 if ttype == "pointlike" else 2
     plot_auxiliary_lines(main, secondary, max_z,
                          label=mt.give_photoz_performance_label(df))

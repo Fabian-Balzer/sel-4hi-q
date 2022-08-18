@@ -204,7 +204,7 @@ class Spectrum:
                 if "." in val:
                     model_specs[key] = float(val)
                 else:
-                    model_specs[key] = int(val)
+                    model_specs[key] = int(float(val))
         model_specs["color"] = color
         return model_specs
 
@@ -231,7 +231,7 @@ class Spectrum:
         df["context"] = 2**df.index
         if isinstance(self.args.allowed_filters, list):
             df["include_in_plot"] = pd.Series(df.index).apply(
-                lambda filt_index: filt_index in self.args.allowed_filters)
+                lambda filt_index: filt_index + 1 in self.args.allowed_filters)
         else:
             df["include_in_plot"] = True
         self.filter_df = df
@@ -305,8 +305,12 @@ class Spectrum:
         xmax = df.iloc[-1]["lambda_eff"] + 2 * df.iloc[-1]["filter_width"]
         xmin = df.iloc[0]["lambda_eff"] - 2 * df.iloc[0]["filter_width"]
         xmin = xmin if xmin > 0 else 1
-        ymax = self.filter_df["mag"].min() - 1.5  # Inverted for magnitudes!
-        ymin = self.filter_df["mag"].max() + 1.5
+        ymax = df["mag"].dropna().min() - 1.5  # Inverted for magnitudes!
+        ymin = df["mag"].dropna().max() + 1.5
+        if df['mag'].isnull().values.all():
+            LOGGER.error(
+                "Couldn't find valid magnitude values for obj with ID %s", self.id)
+            return
         info_cols = {"Type": "Type", "Model": "Model", "Zphot": "z",
                      "Chi2": r"$\chi^2$", "Extlaw": "Ext_law", "EB-V": r"$E_{B-V}$"}
         for i, val in enumerate(info_cols.values()):
@@ -326,21 +330,22 @@ class Spectrum:
                 self.main.text(0.05 + 0.1 * i, 0.95 - 0.05 * counter, text,
                                transform=self.main.transAxes, color=color)
             counter += 1
-        good_vals = self.filter_df[self.filter_df["mag"].notna(
-        ) & self.filter_df["mag_err"].notna() & (self.filter_df["mag_err"] < 2.)]
+        good_vals = df[df["mag"].notna() & df["mag_err"].notna()
+                       & (df["mag_err"] < 2.)]
         x, y = good_vals["lambda_eff"], good_vals["mag"]
         xerr, yerr = good_vals["filter_width"] / 2, good_vals["mag_err"]
         self.main.errorbar(x, y, xerr=xerr, yerr=yerr, color="black",
                            fmt="o")
         # Plot values with low S/N separately in gray
-        bad_vals = self.filter_df[self.filter_df["mag"].notna(
-        ) & self.filter_df["mag_err"].notna() & (self.filter_df["mag_err"] >= 2.)]
+        bad_vals = df[df["mag"].notna(
+        ) & df["mag_err"].notna() & (df["mag_err"] >= 2.)]
         x, y = bad_vals["lambda_eff"], bad_vals["mag"]
         xerr, yerr = bad_vals["filter_width"] / 2, bad_vals["mag_err"]
         self.main.errorbar(x, y, xerr=xerr, yerr=yerr, color="gray",
                            fmt="o")
         self.main.set_xlim(xmin, xmax)
         self.main.set_ylim(ymin, ymax)
+        self.main.grid(True)
 
         # Plot the pdz:
         self.pdf_ax.plot(self.pdf_df["z"],
@@ -358,11 +363,13 @@ class Spectrum:
         """Save the plot of the spectrum to the given fname."""
         self.fig.savefig(fname, format=self.args.device.strip("."),
                          dpi=300, bbox_inches='tight')
+        self.fig.clf()
 
     def save_plot_to_multi(self, multi_doc):
         """Append the plot on the multi-page plot"""
         self.fig.savefig(multi_doc, format='pdf',
                          dpi=300, bbox_inches='tight')
+        self.fig.clf()
 
 
 def get_specfiles_from_working_dir():

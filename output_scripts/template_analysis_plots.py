@@ -12,7 +12,7 @@ from matplotlib.transforms import Bbox
 
 def plot_color_versus_redshift(df: pd.DataFrame, ax, ttype: str,
                                temp_df: pd.DataFrame, c1: str, c2: str,
-                               fitted_only: bool, plot_sources: bool):
+                               fitted_only: bool, plot_sources: bool, plot_ebv=False, labels=()):
     """Produce a color-redshift plot of colors c1-c2 for the sources and templates. """
     # Select a subset of the source dataframe with valid spec-z and actual data points in both of the requested bands
     df = df[df["Type"] == ttype]
@@ -26,13 +26,17 @@ def plot_color_versus_redshift(df: pd.DataFrame, ax, ttype: str,
     temp_dict = mt.construct_template_dict(temp_df, temp_nums_to_plot)
     # Plot all templates:
     # info_dict = mt.provide_template_info(ttype)
+    i = 0
     for temp_label in sorted(temp_dict):
         single_t_df = temp_dict[temp_label]
         y_data = single_t_df[f"mag_{c1}"] - single_t_df[f"mag_{c2}"]
         if not "E(B-V)" in temp_label:
+            if len(labels) > 0:
+                temp_label = labels[i]
             ax.plot(single_t_df["ZSPEC"], y_data,
                     "-", lw="0.5", label=temp_label)
-        else:
+            i += 1
+        elif plot_ebv:
             # Using this, the E(B-V)-lines will have the same color as their parents
             color = ax.get_lines()[-1].get_color()
             ax.plot(single_t_df["ZSPEC"], y_data, "--", lw="0.5", color=color)
@@ -48,18 +52,19 @@ def plot_color_versus_redshift(df: pd.DataFrame, ax, ttype: str,
     if fitted_only:
         temp_num = len([label for label in temp_dict if not "E(B-V)" in label])
         ax.legend(ncol=ceil(temp_num / 3))
+    ax.legend()
     if not plot_sources:  # Guard against plotting sources if unwanted
         return
     ymin, ymax = -1, 1
     bad, good = df[df["IsOutlier"]], df[~df["IsOutlier"]]
-    for subset, label, style in [(bad, "Outliers", "rx"), (good, "Good sources", "kx")]:
+    for subset, label, style in [(bad, "Outliers", "kx"), (good, "Good sources", "kx")]:
         z, y = subset["ZSPEC"], subset[colname]
         if len(y) > 0:
             ymin = min(ymin, min(y))
             ymax = max(ymax, max(y))
             ax.plot(z, y, style, markersize=1,
                     label=f"{label} ({len(y)})", alpha=0.5)
-    ax.set_ylim(floor(ymin * 2) / 2, ceil(ymax * 2) / 2)
+    # ax.set_ylim(floor(ymin * 2) / 2, min(ceil(ymax * 2) / 2, 4))
     # for i, row in df.iterrows():
     #     if row["ZSPEC"] - row["ZBEST"] > 0.2:
     #         x = [row["ZSPEC"], row["ZBEST"]]
@@ -266,6 +271,25 @@ def plot_bar_template_scores(df, ax, ttype):
 
 if __name__ == "__main__":
     output_df = mt.read_saved_df(cat_type="out")
+    temp_df = mt.read_template_library()
+    fig, ax = plt.subplots(figsize=(6, 4))
+
+    templates = {
+        'pl_QSO_DR2_029_t0.spec': "Quasar",
+        # "S0_template_norm.sed": "S0",
+        # 'Ell1_A_0.sed': "Ell",
+        # 'M82_template_norm.sed': "M82",
+        # 'NGC4151_Central_64.00_NGC4579.dat': "Composite Sey 1",
+        'Sb_A_0.sed': "Spiral bar",
+        # 'Sc_A_0.sed': "Sc",
+        'I22491_template_norm.sed.save': "Starburst (I22491)",
+        # 'Sey2_template_norm.sed': "Sey 2",
+        #  'Spi4_template_norm.sed': "Spiral",
+    }
+    plot_color_versus_redshift(
+        output_df, ax, "pointlike", temp_df, "g", "r", fitted_only=False, plot_sources=False, plot_ebv=False, labels=[label for label in templates.values()])
+    cm.save_figure(fig, "redhift_evolution_without_sources",
+                   "presentation", format_="png")
 
     # b = plot_bar_template_scores(output_df, ax, "extended")
     # print(give_templates_to_keep(output_df, "pointlike"))

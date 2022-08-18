@@ -7,10 +7,10 @@ import util.configure_matplotlib as cm
 import util.my_tools as mt
 
 import input_scripts.availability_plots as av
-import input_scripts.magnitude_dist_plots as m_d
-import input_scripts.separation_plots as sep_p
 import input_scripts.collect_filter_data as c_f
 import input_scripts.filter_coverage_plot as f_c
+import input_scripts.magnitude_dist_plots as m_d
+import input_scripts.separation_plots as sep_p
 
 
 class InputPlotContainer:
@@ -33,7 +33,7 @@ class InputPlotContainer:
             dir_ = "/" + dir_ if dir_ != "" else ""
             cm.save_figure(fig, name, f"input_analysis{dir_}", self.stem)
 
-    def plot_separation(self, survey_name_to_radius: dict):
+    def plot_separation(self, survey_name_to_radius: dict, titles=False):
         """Generate separation scatter plots and histograms to each of the survey_names in [survey_name_to_radius].
         parameters:
             [survey_name_to_radius]: dict<str, float>
@@ -42,11 +42,11 @@ class InputPlotContainer:
         """
         for survey_name, radius in survey_name_to_radius.items():
             scatter_fig, hist_fig = sep_p.plot_separation(
-                self.df, survey_name, radius)
+                self.df, survey_name, radius, titles=titles)
             self._quicksave_fig(
-                scatter_fig, f"{survey_name}_sep_histogram", "separation")
+                scatter_fig, f"{survey_name}_sep_scatter", "separation")
             self._quicksave_fig(
-                hist_fig, f"{survey_name}_sep_scatter", "separation")
+                hist_fig, f"{survey_name}_sep_histogram", "separation")
 
     def plot_magnitude_dist(self, band_list=tuple(mt.BAND_LIST), context=-1):
         """Plot the magnitude distribution of sources for a given set of photometric bands, each in their individual plot.
@@ -95,8 +95,10 @@ class InputPlotContainer:
         s_p.set_subplot_positions(
             main_plike, secondary_plike, is_left=True)
         s_p.set_subplot_positions(main_ext, secondary_ext, is_right=True)
-        s_p.plot_ttype(df, "pointlike", main_plike, secondary_plike)
-        s_p.plot_ttype(df, "extended", main_ext, secondary_ext)
+        s_p.plot_ttype(df, "pointlike", main_plike,
+                       secondary_plike, simple_title=True)
+        s_p.plot_ttype(df, "extended", main_ext,
+                       secondary_ext, simple_title=True)
         self._quicksave_fig(fig, "optically_selected_agn_spec_z_phot_z")
 
     def plot_filters(self):
@@ -111,7 +113,8 @@ if __name__ == "__main__":
     i_p_c = InputPlotContainer(save_figures=True)
     radius_dict = {"vhs": 0.5,
                    "eros": 0.1, "hsc": 0.25, "galex": 3.5, "kids": 1.5}
-    # i_p_c.plot_separation(radius_dict)
+    i_p_c.plot_separation(radius_dict)
     # i_p_c.plot_comparison_photz_vs_specz()
     # i_p_c.plot_magnitude_dist(context=mt.CONTEXT)
     # i_p_c.plot_input_dist(context=mt.CONTEXT)
+    # i_p_c.plot_filters()

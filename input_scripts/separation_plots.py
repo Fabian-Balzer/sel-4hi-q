@@ -154,7 +154,7 @@ def add_cols_if_necessary(df, survey_name):
     return df, all_columns_found
 
 
-def plot_separation(df, survey_name: str, radius: float):
+def plot_separation(df, survey_name: str, radius: float, titles: bool):
     """Produces a scatter plot of the separations of the sources in a given survey with [survey_name] to the parent catalogue's ra and dec.
     Then produces a histogram showing the distribution of the true separations.
     parameters:
@@ -198,8 +198,9 @@ def plot_separation(df, survey_name: str, radius: float):
     produce_histograms(x_data, y_data, xhist, yhist, radius)
     pretty_name = mt.give_survey_name(survey_name)
     ls_name = mt.give_survey_name("sweep")
-    scatter_fig.suptitle(
-        f"Separation of sources ({ls_name} to {pretty_name})")
+    if titles:
+        scatter_fig.suptitle(
+            f"Separation of sources ({ls_name} to {pretty_name})")
 
     # Produce a histogram with the given data
     hist_fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(fraction=.5))
@@ -207,8 +208,9 @@ def plot_separation(df, survey_name: str, radius: float):
     sep = df[f"sep_to_{survey_name}"] * \
         3600 if not all_columns_found else true_sep
     plot_separation_hist(ax, sep, radius, all_columns_found)
-    hist_fig.suptitle(
-        f"Corrected separation ({ls_name} to {pretty_name})", y=0.9)
+    if titles:
+        hist_fig.suptitle(
+            f"Corrected separation ({ls_name} to {pretty_name})", y=0.9)
     return scatter_fig, hist_fig
 
 

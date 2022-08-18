@@ -33,8 +33,8 @@ def produce_filter_plot(df, ax):
         # y_data = y_data / max(y_data)
         ax.fill_between(x_data, y_data, alpha=0.5,
                         color=mt.give_survey_color_for_band(band))
-        # ax.plot(x_data, y_data, label=label,
-        #         color="k", linewidth=0.5)
+        ax.plot(x_data, y_data,
+                color="gray", linewidth=0.5)
 
     # ax.set_xscale("log")
     ax.set_xlim(1e2, 3e4)

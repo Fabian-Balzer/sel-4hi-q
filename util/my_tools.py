@@ -53,8 +53,8 @@ the expected file:\n{fpath}"
 
 CONFIGPATH = os.environ["LEPHARE"] + "/lephare_scripts/config/"
 GEN_CONFIG = ConfigParser()
-assert_file_exists(CONFIGPATH + "general.ini", "config")
-GEN_CONFIG.read(CONFIGPATH + "general.ini")
+assert_file_exists(CONFIGPATH + "general_config.ini", "config")
+GEN_CONFIG.read(CONFIGPATH + "general_config.ini")
 CUR_CONFIG = ConfigParser()
 CUR_CONFIG.read(CONFIGPATH + GEN_CONFIG["PATHS"]["current_config"])
 LOGGER.setLevel(CUR_CONFIG.getint("GENERAL", "logging_level"))
@@ -427,8 +427,10 @@ def read_template_library():
         with open(fpath, "r") as f:
             coltext = f.readline()
         cols = coltext.split()[1:]  # remove the hashtag
-        cols = cols[:-3] + [f"mag_{band}"for band in BAND_LIST]
-        cols = cols + [f"mag_err_{band}"for band in BAND_LIST]
+        cols = cols[:-3] + \
+            [f"mag_{band.replace('_', '-')}"for band in BAND_LIST]
+        cols = cols + \
+            [f"mag_err_{band.replace('_', '-')}"for band in BAND_LIST]
         df = pd.read_csv(fpath, delim_whitespace=True,
                          header=None, skiprows=1, names=cols)
         df = df.rename(columns={"redshift": "ZSPEC"})
@@ -550,7 +552,10 @@ def add_outlier_information(df):
     df["HasGoodz"] = ((df["ZSPEC"] > 0) & (df["ZBEST"] > 0))
     df["IsFalsePositive"] = ((df["ZSPEC"] < 0.5) & (df["ZBEST"] > 0.5))
     df["IsFalseNegative"] = ((df["ZSPEC"] > 0.5) & (df["ZBEST"] < 0.5))
-    df["TemplateScore"] = np.exp(-df["ZMeasure"] - df["CHI_BEST"] / 2)
+    try:
+        df["TemplateScore"] = np.exp(-df["ZMeasure"] - df["CHI_BEST"] / 2)
+    except KeyError:
+        pass
     return df
 
 
@@ -582,7 +587,7 @@ def give_output_statistics(df, filters_used=False) -> dict:
         LOGGER.info("Filter\tgood photoz\tbad photoz")
         for n, filt in enumerate(BAND_LIST):
             LOGGER.info(f"{filt}:\t{goods.count(n+1)}\t{bads.count(n+1)}")
-    stat_dict = {"eta": eta, "sig_nmad": sig_nmad,
+    stat_dict = {"N": len(df), "eta": eta, "sig_nmad": sig_nmad,
                  "psi_pos": psi_pos, "psi_neg": psi_neg}
     return stat_dict
 
@@ -759,6 +764,23 @@ def give_photoz_performance_label(df):
         f"{stat_dict['psi_neg']:.3f}$ ({fneg})"
     label = f"{len(df)} sources\n{etalabel}{sig_nmadlabel}"
     return label + fposlabel + fneglabel
+
+
+def give_stat_table(df, ttype):
+    """Provide a table with the accuracies the photo-z if the bands in band-list contain photometry."""
+    text = ""
+    df = df[df["Type"] == ttype]
+    stats = give_output_statistics(df)
+    # Header
+    text = "band & " + " & ".join([name for name in stats]) + "\\\\\\hline\n"
+    text += "All bands & " + " & ".join([f"{stat:.4f}" if isinstance(
+        stat, float) else str(stat) for stat in stats.values()]) + "\\\\\\hline\n"
+    for band in BAND_LIST:
+        stats = give_output_statistics(
+            df[df["mag_" + band.replace('_', '-')] > 0])
+        text += f"Reduced to {give_latex_band_name(band)} & " + " & ".join(
+            [f"{stat:.4f}" if isinstance(stat, float) else str(stat) for stat in stats.values()]) + "\\\\\\hline\n"
+    return text
 
 
 def log_run_info():

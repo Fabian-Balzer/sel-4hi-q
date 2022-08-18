@@ -80,9 +80,9 @@ class OutputPlotContainer:
             fig, ax = plt.subplots(1, 1, figsize=cm.set_figsize(height=2))
             ta.plot_bar_template_scores(self.df, ax, ttype)
             self._quicksave_fig(
-                fig, f"score_plot_{ttype}", directory="templates")
+                fig, f"score_plot_{ttype}", dir_="templates")
 
-    def plot_color_vs_redshift(self, c1: str, c2: str, fitted_only=True, plot_sources=True, temp_nums: dict = None):
+    def plot_color_vs_redshift(self, c1: str, c2: str, fitted_only=True, plot_sources=True, temp_nums: dict = None, plot_ebv=False):
         """Wrapper function to produce a color-redshift plot for the templates and sources.
         Parameters:
             c1: str
@@ -99,14 +99,14 @@ class OutputPlotContainer:
             lambda num: num in temp_nums)] if temp_nums is not None else self.template_df
         if self.produce_both:
             fig, (ax_plike, ax_ext) = plt.subplots(1, 2, figsize=cm.set_figsize(
-                width=cm.LATEXWIDTH, height=0.5 * cm.LATEXWIDTH, fraction=1))
+                width=cm.LATEXWIDTH, height=2, fraction=1))
             fig.set_tight_layout(True)
             ta.plot_color_versus_redshift(
-                self.df, ax_plike, "pointlike", temp_df, c1, c2, fitted_only, plot_sources)
+                self.df, ax_plike, "pointlike", temp_df, c1, c2, fitted_only, plot_sources, plot_ebv=plot_ebv)
             ta.plot_color_versus_redshift(
                 self.df, ax_ext, "extended", temp_df, c1, c2, fitted_only, plot_sources)
             self._quicksave_fig(
-                fig, f"both_template_plot_{c1}-{c2}", directory="templates")
+                fig, f"both_template_plot_{c1}-{c2}", dir_="templates")
             return
         fig, ax = plt.subplots(
             1, 1, figsize=cm.set_figsize(width=0.5 * cm.LATEXWIDTH, height=0.5 * cm.LATEXWIDTH, fraction=1))
@@ -115,18 +115,58 @@ class OutputPlotContainer:
             self.df, ax, ttype, temp_df, c1, c2, fitted_only, plot_sources)
         self._quicksave_fig(fig, f"{ttype}_template_plot_{c1}-{c2}")
 
+    def plot_outlier_frac_for_numbers(self):
+        """Look at the different number of bands used and plot the outlier fraction for each of them."""
+        fig, (ax_plike, ax_ext) = plt.subplots(
+            1, 2, figsize=cm.set_figsize(height=2))
+        sub_outliers = {}
+        for nbands in set(self.df_p["NBAND_USED"]):
+            stats = mt.give_output_statistics(
+                self.df_p[self.df_p["NBAND_USED"] == nbands])
+            sub_outliers[nbands] = (stats["eta"], stats["N"])
+        ax_plike.bar(sub_outliers.keys(), [val[0]
+                     for val in sub_outliers.values()])
+        for x, ytuple in sub_outliers.items():
+            ax_plike.text(x=x,
+                          y=ytuple[0] * 1.03, s=ytuple[1], ha='center')
+        ax_plike.set_title(mt.give_plot_title("pointlike", True))
+
+        sub_outliers = {}
+        for nbands in set(self.df_e["NBAND_USED"]):
+            stats = mt.give_output_statistics(
+                self.df_e[self.df_e["NBAND_USED"] == nbands])
+            sub_outliers[nbands] = (stats["eta"], stats["N"])
+        ax_ext.set_title(mt.give_plot_title("extended"))
+        ax_ext.bar(sub_outliers.keys(), [val[0]
+                   for val in sub_outliers.values()])
+        for x, ytuple in sub_outliers.items():
+            ax_ext.text(x=x,
+                        y=ytuple[0] * 1.03, s=ytuple[1], ha='center')
+        ax_ext.set_title(mt.give_plot_title("extended", True))
+        for ax in [ax_plike, ax_ext]:
+            ax.set_xlabel("Number of bands used")
+            ax.set_ylabel(r"$\eta_{\rm out}$")
+            ax.grid(True, axis="y")
+            ymax = ax.get_ylim()[1]
+            ax.set_ylim(0, ymax * 1.1)
+        self._quicksave_fig(fig, "outlier_frac_bar_plot")
+
 
 if __name__ == "__main__":
     o_p_c = OutputPlotContainer(save_figures=True)
+    # o_p_c.plot_outlier_frac_for_numbers()
     # o_p_c.plot_template_scores()
     # o_p_c.plot_specz_photo_z()
-    o_p_c.plot_template_numbers()
+    # o_p_c.plot_template_numbers()
+    o_p_c.plot_color_vs_redshift(
+        "W1", "W2", fitted_only=True, plot_sources=True, plot_ebv=True)
+    o_p_c.plot_color_vs_redshift(
+        "g", "Y", fitted_only=True, plot_sources=True, plot_ebv=True)
     # o_p_c.plot_color_vs_redshift(
-    #     "W1", "W2", fitted_only=True, plot_sources=True)
-    # o_p_c.plot_color_vs_redshift(
-    # "g", "r", fitted_only=True, plot_sources=True)
-    # o_p_c.plot_color_vs_redshift(
-    #     "FUV", "r", fitted_only=True, plot_sources=True)
+    #     "i-hsc", "z", fitted_only=True, plot_sources=True)
+
+    o_p_c.plot_color_vs_redshift(
+        "FUV", "r", fitted_only=True, plot_sources=True, plot_ebv=True)
     # o_p_c.plot_template_numbers()
 
 # %%
