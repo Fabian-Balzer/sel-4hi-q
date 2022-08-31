@@ -4,7 +4,7 @@ from sys import argv, path
 
 WORKPATH = os.environ["LEPHARE"] + "/"
 # This is needed to be able to import custom modules
-path.append(WORKPATH + "lephare_scripts/jystilts_scripts/modules")
+path.append(WORKPATH + "sel-4hi-q/jystilts_scripts/modules")
 path.append("/home/hslxrsrv3/p1wx150")
 import jy_tools as jt
 import stilts

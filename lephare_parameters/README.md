@@ -3,9 +3,9 @@ export STEM=newtest
 assemble_cat -h
 
 
-$LEPHAREDIR/source/filter -c $LEPHARE/lephare_scripts/lephare_parameters/baseline_in.para \
--FILTER_REP $LEPHARE/lephare_scripts/lephare_parameters/filters \
->$LEPHARE/lephare_scripts/lephare_parameters/baseline_filters.filt
+$LEPHAREDIR/source/filter -c $LEPHARE/sel-4hi-q/lephare_parameters/baseline_in.para \
+-FILTER_REP $LEPHARE/sel-4hi-q/lephare_parameters/filters \
+>$LEPHARE/sel-4hi-q/lephare_parameters/baseline_filters.filt
 
 
 # Create the extinction file:
@@ -53,9 +53,9 @@ mv ${EXTENDED_LIB}_mag_lib $LEPHARE/data/lephare_files/templates/
 mv ${POINTLIKE_LIB}_mag_lib $LEPHARE/data/lephare_files/templates/
 mv $star_mag_lib $LEPHARE/data/lephare_files/templates/
 # The template files may need to be shifted to $LEPHARE/data/lephare_files/templates/.
-jystilts $LEPHARE/lephare_scripts/jystilts/rewrite_fits_header.py 0 $LEPHARE/data/lephare_files/templates/star_mag_lib.dat
-jystilts $LEPHARE/lephare_scripts/jystilts/rewrite_fits_header.py 0 $LEPHARE/data/lephare_files/templates/${POINTLIKE_LIB}_mag_lib.dat
-jystilts $LEPHARE/lephare_scripts/jystilts/rewrite_fits_header.py 0 $LEPHARE/data/lephare_files/templates/${EXTENDED_LIB}_mag_lib.dat
+jystilts $LEPHARE/sel-4hi-q/jystilts/rewrite_fits_header.py 0 $LEPHARE/data/lephare_files/templates/star_mag_lib.dat
+jystilts $LEPHARE/sel-4hi-q/jystilts/rewrite_fits_header.py 0 $LEPHARE/data/lephare_files/templates/${POINTLIKE_LIB}_mag_lib.dat
+jystilts $LEPHARE/sel-4hi-q/jystilts/rewrite_fits_header.py 0 $LEPHARE/data/lephare_files/templates/${EXTENDED_LIB}_mag_lib.dat
 
 
 export STEM=new_test
@@ -72,7 +72,7 @@ $LEPHAREDIR/source/zphota -c $LEPHARE/data/lephare_files/inputpara.para \
 -ERR_SCALE 0.2,0.2,0.05,0.05,0.05,0.1,0.1,0.1,0.1,0.2,0.2,0.3,0.4,0.05,0.05,0.05 \
 -GLB_CONTEXT $POINTLIKECONTEXT
 
-jystilts $LEPHARE/lephare_scripts/jystilts/rewrite_fits_header.py $LEPHARE/data/lephare_files/outputpara.para ${LEPHARE}/data/lephare_output/${STEM_OUT}_pointlike.out
+jystilts $LEPHARE/sel-4hi-q/jystilts/rewrite_fits_header.py $LEPHARE/data/lephare_files/outputpara.para ${LEPHARE}/data/lephare_output/${STEM_OUT}_pointlike.out
 
 
 export EXTENDEDCONTEXT=8191# 32767 # 40959 # 8188
@@ -87,16 +87,16 @@ $LEPHAREDIR/source/zphota -c $LEPHARE/data/lephare_files/inputpara.para \
 -MAG_ABS -24,-8 \
 -GLB_CONTEXT $EXTENDEDCONTEXT
 
-jystilts $LEPHARE/lephare_scripts/jystilts/rewrite_fits_header.py $LEPHARE/data/lephare_files/outputpara.para ${LEPHARE}/data/lephare_output/${STEM_OUT}_extended.out
+jystilts $LEPHARE/sel-4hi-q/jystilts/rewrite_fits_header.py $LEPHARE/data/lephare_files/outputpara.para ${LEPHARE}/data/lephare_output/${STEM_OUT}_extended.out
 
 
 #### Next test run:
-/source/zphota -c /home/hslxrsrv3/p1wx150/LePhare_work/lephare_scripts/lephare_parameters/baseline_in.para \
+/source/zphota -c /home/hslxrsrv3/p1wx150/LePhare_work/sel-4hi-q/lephare_parameters/baseline_in.para \
 -ZPHOTLIB ananna_test_pointlike_mag_lib,baseline_pointlike_mag_lib,baseline_star_mag_lib \
 -CAT_IN /home/hslxrsrv3/p1wx150/LePhare_work/data/lephare_input/baseline_input_pointlike.in \
 -CAT_OUT /home/hslxrsrv3/p1wx150/LePhare_work/data/lephare_output/ananna_test_pointlike.out \
--PARA_OUT /home/hslxrsrv3/p1wx150/LePhare_work/lephare_scripts/lephare_parameters/baseline_out.para \
+-PARA_OUT /home/hslxrsrv3/p1wx150/LePhare_work/sel-4hi-q/lephare_parameters/baseline_out.para \
 -GLB_CONTEXT 8191 \
 -MAG_REF 7 \
 -MAG_ABS -30,-20
-java -jar /home/hslxrsrv3/p1wx150/LePhare_work/other/programs/jystilts.jar '/home/hslxrsrv3/p1wx150/LePhare_work/lephare_scripts/jystilts_scripts/rewrite_fits_header.py' pointlike OUT
+java -jar /home/hslxrsrv3/p1wx150/LePhare_work/other/programs/jystilts.jar '/home/hslxrsrv3/p1wx150/LePhare_work/sel-4hi-q/jystilts_scripts/rewrite_fits_header.py' pointlike OUT

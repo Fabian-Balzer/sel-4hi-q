@@ -5,7 +5,7 @@ import os
 import stilts
 from ConfigParser import ConfigParser
 
-CONFIGPATH = os.environ["LEPHARE"] + "/lephare_scripts/config/"
+CONFIGPATH = os.environ["LEPHARE"] + "/sel-4hi-q/config/"
 GEN_CONFIG = ConfigParser()
 GEN_CONFIG.read(CONFIGPATH + "general.ini")
 CUR_CONFIG = ConfigParser()

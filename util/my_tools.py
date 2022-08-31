@@ -51,7 +51,7 @@ found, which is going to be needed in the process.\nFull path of \
 the expected file:\n{fpath}"
 
 
-CONFIGPATH = os.environ["LEPHARE"] + "/lephare_scripts/config/"
+CONFIGPATH = os.environ["LEPHARE"] + "/sel-4hi-q/config/"
 GEN_CONFIG = ConfigParser()
 assert_file_exists(CONFIGPATH + "general_config.ini", "config")
 GEN_CONFIG.read(CONFIGPATH + "general_config.ini")

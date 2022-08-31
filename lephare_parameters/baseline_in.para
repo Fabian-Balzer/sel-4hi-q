@@ -102,7 +102,7 @@ ADD_EMLINES    0,100                                # range of model in which to
 #
 #------------------     Output catalog Name           ---------------------------------
 CAT_OUT		zphot.out 	# Output catalog  (-> working directory) 
-PARA_OUT    $LEPHARE/lephare_scripts/lephare_parameters/outputpara.para     # Ouput parameters (full path) 
+PARA_OUT    $LEPHARE/sel-4hi-q/lephare_parameters/outputpara.para     # Ouput parameters (full path) 
 VERBOSE         YES             # Display the templates/objects which are computed
 #
 #################           PHOTOMETRIC REDSHIFTS OPTIONS    

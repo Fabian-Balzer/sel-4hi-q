@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script to run LePhare's filter command and provide extinction information if desired.
-PARAPATH=$LEPHARE/lephare_scripts/lephare_parameters/
+PARAPATH=$LEPHARE/sel-4hi-q/lephare_parameters/
 PARANAME=dr10_test_inputpara.para
 
 # Create the filter file:

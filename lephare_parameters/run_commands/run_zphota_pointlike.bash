@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script to run LePhare's zphota program
-PARAPATH=$LEPHARE/lephare_scripts/lephare_parameters/
+PARAPATH=$LEPHARE/sel-4hi-q/lephare_parameters/
 PARANAME=dr10_test_inputpara.para
 
 
@@ -64,8 +64,8 @@ $LEPHAREDIR/source/zphota -c ${PARAPATH}${PARANAME} \
 
 # Convert the output to a .fits file, considering which output cols were requested:
 jystilts="java -jar /home/hslxrsrv3/p1wx150/jystilts.jar"
-$jystilts $LEPHARE/lephare_scripts/jystilts_scripts/rewrite_fits_header.py ${PARAPATH}outputpara.para $OUT_FPATH.out
+$jystilts $LEPHARE/sel-4hi-q/jystilts_scripts/rewrite_fits_header.py ${PARAPATH}outputpara.para $OUT_FPATH.out
 
 
 # Analyze the output:
-python3 $LEPHARE/lephare_scripts/assess_photoz_run.py $OUT_FPATH.fits pointlike -v
+python3 $LEPHARE/sel-4hi-q/assess_photoz_run.py $OUT_FPATH.fits pointlike -v

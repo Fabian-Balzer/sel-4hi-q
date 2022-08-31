@@ -12,6 +12,8 @@ import os
 from configparser import ConfigParser
 from pathlib import Path
 
+import requests
+
 from util.my_logger import LOGGER
 
 try:
@@ -38,9 +40,9 @@ OUTPUTPATH = DATAPATH + "lephare_output/"
 MATCHPATH = DATAPATH + "matches/"
 PLOTPATH = MYDIR + "plots/"
 OTHERPATH = MYDIR + "other/"
-SCRIPTPATH = MYDIR + "lephare_scripts/"
-PARAPATH = MYDIR + "lephare_scripts/lephare_parameters/"
-CONFIGPATH = MYDIR + "lephare_scripts/config/"
+SCRIPTPATH = MYDIR + "sel-4hi-q/"
+PARAPATH = MYDIR + "sel-4hi-q/lephare_parameters/"
+CONFIGPATH = MYDIR + "sel-4hi-q/config/"
 JYPATH = f"{OTHERPATH}programs/jystilts.jar"
 
 
@@ -202,3 +204,16 @@ fpath = CONFIGPATH + DEFAULTCONFIG
 with open(fpath, 'w', encoding="utf8") as configfile:
     config.write(configfile)
     LOGGER.info("A default config file has been written to %s", fpath)
+
+
+# %% Download the jystilts file:
+
+
+website = "http://www.star.bris.ac.uk/~mbt/stilts/jystilts.jar"
+destinationpath = OTHERPATH + "/other/programs/jystilts.jar"
+LOGGER.info("Downloading jystilts...")
+response = requests.get(website)
+print(response)
+with open(destinationpath, "wb") as f:
+    f.write(response.content)
+print(f"Downloaded and stored jystilts in {destinationpath}")

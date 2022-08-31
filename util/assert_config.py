@@ -8,7 +8,7 @@ import os
 from os.path import isfile
 from sys import path
 
-path.append(os.environ["LEPHARE"] + "/lephare_scripts")
+path.append(os.environ["LEPHARE"] + "/sel-4hi-q")
 
 import util.my_tools as mt
 

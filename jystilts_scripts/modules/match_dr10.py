@@ -3,7 +3,7 @@ from sys import path as p
 
 WORKPATH = os.environ["LEPHARE"] + "/"
 # This is needed to be able to import custom modules
-p.append(WORKPATH + "lephare_scripts/jystilts_scripts/modules")
+p.append(WORKPATH + "sel-4hi-q/jystilts_scripts/modules")
 p.append("/home/hslxrsrv3/p1wx150")
 p.append("C:/Program Files/Jystilts/stilts.jar")
 

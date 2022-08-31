@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script to run LePhare's MAG_GAL command for the star sources.
-PARAPATH=$LEPHARE/lephare_scripts/lephare_parameters/
+PARAPATH=$LEPHARE/sel-4hi-q/lephare_parameters/
 PARANAME=dr10_test_inputpara.para
 
 # Create the galaxy star magnitude library (results in 'star_${LIB_STEM}_mag_lib'):
@@ -10,7 +10,7 @@ LISTFILE=${LIB_STEM}.list
 echo "Using ${LISTFILE} as the stem for the star magnitude library."
 
 
-LISTPATH=$LEPHARE/lephare_scripts/lephare_parameters/template_lists/
+LISTPATH=$LEPHARE/sel-4hi-q/lephare_parameters/template_lists/
 
 # Check whether the .list file even exists:
 [ ! -f "${LISTPATH}${LISTFILE}" ] && {
@@ -51,5 +51,5 @@ mv ${MAGLIBNAME}.dat $LIBPATH
 
 # Convert it to a .fits file:
 jystilts="java -jar /home/hslxrsrv3/p1wx150/jystilts.jar"
-$jystilts $LEPHARE/lephare_scripts/jystilts_scripts/rewrite_fits_header.py 0 $MAGLIBFPATH
+$jystilts $LEPHARE/sel-4hi-q/jystilts_scripts/rewrite_fits_header.py 0 $MAGLIBFPATH
 rm $MAGLIBFPATH
